@@ -1,0 +1,34 @@
+{
+  "project_id": "MY_NOVEL",
+  "generated_at": "2026-02-13T09:54:29.899525+00:00",
+  "total_files": 4,
+  "metadata": {
+    "author": "",
+    "narrator": "",
+    "publisher": "",
+    "year": 2026,
+    "description": ""
+  },
+  "files": [
+    {
+      "path": "audiobook\\.gitkeep",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "chapters\\.gitkeep",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "chapters\\ch01.mp3",
+      "size_bytes": 718124,
+      "sha256": "0eddb55f14418fa013af5212212db80ec2ef84d906bbd2260e2dacc9b1915afc"
+    },
+    {
+      "path": "chapters\\ch02.mp3",
+      "size_bytes": 636524,
+      "sha256": "dccf1959bbb2c45bdf78aabfff676596de934fa327da4837a383b47aed96a04c"
+    }
+  ]
+}

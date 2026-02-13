@@ -1,0 +1,43 @@
+{
+  "id": "MINIMAL_EXAMPLE",
+  "version": "1.0",
+  "created": "2026-02-13T00:00:00Z",
+  "languages": ["en"],
+
+  "chapters": [
+    {
+      "id": "ch01",
+      "title": "Introduction",
+      "language": "en",
+      "source": "01_TEXT/chapters/ch01.txt",
+      "character": "narrator",
+      "mode": "single"
+    }
+  ],
+
+  "characters": {
+    "narrator": {
+      "name": "Narrator",
+      "engine": "edge",
+      "voice": "en-US-GuyNeural"
+    }
+  },
+
+  "generation": {
+    "chunk_max_chars": 200,
+    "chunk_strategy": "breath_group",
+    "crossfade_ms": 120
+  },
+
+  "qc": {
+    "snr_min_db": 20
+  },
+
+  "mix": {
+    "target_lufs": -16
+  },
+
+  "export": {
+    "formats": ["mp3"]
+  }
+}
