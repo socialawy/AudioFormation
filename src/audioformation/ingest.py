@@ -15,7 +15,7 @@ from audioformation.project import (
     save_project_json,
 )
 from audioformation.pipeline import update_node_status
-from audioformation.utils.arabic import is_arabic, classify_diacritization
+from audioformation.utils.arabic import detect_language, classify_diacritization
 from audioformation.utils.security import sanitize_filename
 
 
@@ -72,7 +72,7 @@ def ingest_text(
         if language:
             detected_lang = language
         else:
-            detected_lang = "ar" if is_arabic(content) else "en"
+            detected_lang = detect_language(content)
 
         # Generate chapter ID from filename
         ch_id = safe_name.replace(".txt", "").replace(" ", "_").lower()

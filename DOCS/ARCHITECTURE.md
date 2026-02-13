@@ -476,7 +476,6 @@ VideoFormation API:        localhost:3001
 | Audio I/O | pydub + ffmpeg | Universal format support | ✅ Industry standard |
 | TTS: Free | edge-tts (rany2/edge-tts) | ✅ BUILT v7 - Fixed 403 DRM errors |
 | TTS: Fallback | gTTS (Google TTS) | 🆕 ADDED - Emergency fallback engine |
-| TTS: Local | coqui-tts (idiap fork) | ⏳ PHASE 2 - Planned for next phase |
 | TTS: Local | coqui-tts (idiap fork) | Voice cloning, offline, XTTS-v2 | ⚠️ Coqui AI shutdown late 2024. Community fork by Idiap (pip install coqui-tts ~0.27.x). Pin version. Still best local cloning option |
 | TTS: Cloud | httpx | Generic API client | ✅ Stable |
 | Synthesis | numpy + soundfile | Procedural audio generation | ✅ Stable |

@@ -67,22 +67,23 @@ Optional: NVIDIA GPU with 4GB+ VRAM for XTTS voice cloning (Phase 2)
 - **Cloud engines**: ElevenLabs, OpenAI TTS (Phase 2, API keys required)
 
 ## Features
-Feature	Status
-Edge TTS (free, Arabic + English)	✅ BUILT
-SSML direction mapping	✅ BUILT
-Text chunking (breath-group)	✅ BUILT
-Per-chunk QC scanning	✅ BUILT
-LUFS normalization	✅ BUILT
-MP3 export with manifest	✅ BUILT
-Arabic diacritics detection	✅ BUILT
-Engine fallback chain (edge-tts → gTTS)	✅ BUILT
-gTTS emergency fallback	🆕 ADDED
-XTTS voice cloning	⏳ PHASE 2
-Multi-speaker dialogue	⏳ PHASE 2
-Ambient pad generation	⏳ PHASE 2
-VAD-based ducking	⏳ PHASE 2
-M4B audiobook export	⏳ PHASE 2
-Web dashboard	⏳ PHASE 2
+Feature | Status
+-------|-------
+Edge TTS (free, Arabic + English) | ✅ BUILT
+SSML direction mapping | ✅ BUILT
+Text chunking (breath-group) | ✅ BUILT
+Per-chunk QC scanning | ✅ BUILT
+LUFS normalization | ✅ BUILT
+MP3 export with manifest | ✅ BUILT
+Arabic diacritics detection | ✅ BUILT
+Engine fallback chain (edge-tts → gTTS) | ✅ BUILT
+gTTS emergency fallback | 🆕 ADDED
+XTTS voice cloning | ⏳ PHASE 2
+Multi-speaker dialogue | ⏳ PHASE 2
+Ambient pad generation | ⏳ PHASE 2
+VAD-based ducking | ⏳ PHASE 2
+M4B audiobook export | ⏳ PHASE 2
+Web dashboard | ⏳ PHASE 2
 
 ## Architecture
 ```text

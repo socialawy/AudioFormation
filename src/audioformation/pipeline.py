@@ -7,6 +7,7 @@ Supports `--from <node>` resumption by checking pipeline-status.json.
 
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from audioformation.config import PIPELINE_NODES, HARD_GATES, AUTO_GATES
@@ -144,9 +145,8 @@ def can_proceed_to(project_id: str, target_node: str) -> tuple[bool, str]:
 
     for i in range(target_idx):
         node = PIPELINE_NODES[i]
-        if node in HARD_GATES:
-            if not is_gate_passed(project_id, node):
-                return False, f"Hard gate '{node}' has not passed."
+        if node in HARD_GATES and not is_gate_passed(project_id, node):
+            return False, f"Hard gate '{node}' has not passed."
 
     return True, "OK"
 
@@ -164,3 +164,34 @@ def nodes_in_range(from_node: str, to_node: str | None = None) -> list[str]:
         end = len(PIPELINE_NODES)
 
     return PIPELINE_NODES[start:end]
+
+
+def mark_node(project_dir: Path, node: str, status: str, **extra):
+    """
+    Convenience wrapper: update a pipeline node's status.
+    
+    Args:
+        project_dir: Path to project root
+        node: Node name (bootstrap, ingest, validate, etc.)
+        status: One of: pending, complete, partial, failed, skipped
+        **extra: Additional fields merged into node dict
+    """
+    status_file = project_dir / "pipeline-status.json"
+
+    if status_file.exists():
+        data = json.loads(status_file.read_text(encoding="utf-8"))
+    else:
+        data = {"project_id": project_dir.name, "nodes": {}}
+
+    node_data = {
+        "status": status,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    node_data.update(extra)
+
+    data.setdefault("nodes", {})[node] = node_data
+
+    status_file.write_text(
+        json.dumps(data, indent=2, ensure_ascii=False),
+        encoding="utf-8"
+    )

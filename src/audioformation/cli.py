@@ -14,6 +14,7 @@ import click
 
 from audioformation import __version__
 from audioformation.config import PROJECTS_ROOT, PIPELINE_NODES, HARD_GATES, AUTO_GATES
+from audioformation.pipeline import mark_node
 
 
 # ──────────────────────────────────────────────
@@ -71,6 +72,9 @@ def new(name: str) -> None:
 
     click.secho(f"✓ Created project: {project_path.name}", fg="green")
     click.echo(f"  Path: {project_path.resolve()}")
+
+    # Write pipeline status — bootstrap complete
+    mark_node(project_path, "bootstrap", "complete")
 
     if hw.get("gpu_available"):
         click.echo(f"  GPU:  {hw['gpu_name']} ({hw['vram_total_gb']} GB VRAM)")
@@ -260,6 +264,7 @@ def validate(project_id: str) -> None:
 def ingest(project_id: str, source: Path, language: str | None) -> None:
     """Import text files into a project (Node 1)."""
     from audioformation.ingest import ingest_text
+    from audioformation.project import get_project_path
 
     if not _project_guard(project_id):
         return
@@ -294,6 +299,11 @@ def ingest(project_id: str, source: Path, language: str | None) -> None:
         f"✓ Ingested {result['ingested']} files, skipped {result['skipped']}.",
         fg="green",
     )
+    
+    # Write pipeline status — ingest complete
+    project_path = get_project_path(project_id)
+    mark_node(project_path, "ingest", "complete", files_ingested=result["ingested"])
+    
     click.echo(f"  Next: audioformation validate {project_id}")
 
 
@@ -417,6 +427,18 @@ def qc(project_id: str, report: bool) -> None:
 
         click.echo()
 
+    # Write pipeline status — qc_scan
+    from audioformation.pipeline import mark_node
+    from audioformation.project import load_project_json
+    
+    # Calculate overall result
+    total_chunks = sum(r.get("total_chunks", 0) for r in all_reports)
+    total_failed = sum(r.get("failures", 0) for r in all_reports)
+    fail_pct = (total_failed / total_chunks * 100) if total_chunks > 0 else 0
+    
+    qc_status = "failed" if fail_pct > 5 else "complete"
+    mark_node(project_path, "qc_scan", qc_status, 
+              chunks_scanned=total_chunks, fail_percent=round(fail_pct, 1))
 
 @main.command("process")
 @click.argument("project_id")

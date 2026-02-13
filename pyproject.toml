@@ -23,8 +23,9 @@ dependencies = [
     "soundfile>=0.12,<1",
 
     # TTS engines
-    "edge-tts>=6.1,<7",
+    "edge-tts>=7.0",   # v7 fixed DRM token 403s
     "httpx>=0.27,<1",
+    "transformers>=4.44,<5",  # Pin to prevent breakage
 
     # Audio analysis
     "pyloudnorm>=0.2,<1",
