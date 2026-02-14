@@ -1,8 +1,21 @@
 # 🏭 AudioFormation
 
+## Description
+
 **Production audio pipeline: Voice, SFX, Music, Mix, Export.**
 
 Companion to VideoFormation (same architecture, different domain).
+
+### Philosophy (Mirrors VideoFormation)
+
+Principle	| Implementation
+-----------|---------------
+Single Source of Truth	| project.json governs everything
+Validation Gates	| Hard gates before generation, mixing, export
+Automation First	| CLI drives pipeline; dashboard is optional
+Engine Agnostic	| Swap TTS/music engines without touching project files
+Hardware Aware	| Auto-detects GPU, suggests optimal engine
+Bilingual First	| Arabic + English as primary languages
 
 ## Quick Start
 
