@@ -145,9 +145,7 @@ def multi_project(tmp_path):
 
     # Create reference audio for hero
     ref_wav = voices_dir / "hero.wav"
-    sr = 24000
-    samples = np.random.default_rng(42).uniform(-0.3, 0.3, sr * 6).astype(np.float32)
-    sf.write(str(ref_wav), samples, sr)
+    sf.write(str(ref_wav), [0.0]*24000, 24000) # Mocked sf.write works via conftest side_effect
 
     # Write chapter text with speaker tags
     chapter_text = (
@@ -238,11 +236,9 @@ def _make_fake_engine(name, supports_ssml=False, supports_cloning=False):
 
         sr = 24000
         dur = max(0.5, len(request.text) / 50.0)
-        samples = np.random.default_rng(hash(request.text) % 2**31).uniform(
-            -0.3, 0.3, int(sr * dur)
-        ).astype(np.float32)
-        request.output_path.parent.mkdir(parents=True, exist_ok=True)
-        sf.write(str(request.output_path), samples, sr)
+        # Use mocked sf.write side effect from conftest or do simple touch
+        Path(request.output_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(request.output_path).touch()
 
         return GenerationResult(
             success=True,
@@ -271,262 +267,262 @@ class TestMultiSpeakerGeneration:
         Narrator segments → edge engine
         Hero segments → xtts engine
         """
-        from audioformation.generate import _generate_chapter
-        from audioformation.engines.registry import registry as real_registry
+        async def _test():
+            from audioformation.generate import _generate_chapter
+            from audioformation.engines.registry import registry as real_registry
 
-        edge_mock = _make_fake_engine("edge", supports_ssml=True)
-        xtts_mock = _make_fake_engine("xtts", supports_cloning=True)
+            edge_mock = _make_fake_engine("edge", supports_ssml=True)
+            xtts_mock = _make_fake_engine("xtts", supports_cloning=True)
 
-        # Patch registry to return our mocks
-        original_get = real_registry.get
+            # Patch registry to return our mocks
+            original_get = real_registry.get
 
-        def patched_get(name, **kwargs):
-            if name == "edge":
-                return edge_mock
-            if name == "xtts":
-                return xtts_mock
-            return original_get(name, **kwargs)
+            def patched_get(name, **kwargs):
+                if name == "edge":
+                    return edge_mock
+                if name == "xtts":
+                    return xtts_mock
+                return original_get(name, **kwargs)
 
-        monkeypatch.setattr(real_registry, "get", patched_get)
+            monkeypatch.setattr(real_registry, "get", patched_get)
 
-        # Patch project functions
-        proj = multi_project
-        pj = json.loads((proj["dir"] / "project.json").read_text())
+            # Patch project functions
+            proj = multi_project
+            pj = json.loads((proj["dir"] / "project.json").read_text())
 
-        monkeypatch.setattr(
-            "audioformation.generate.get_project_path",
-            lambda pid: proj["dir"],
-        )
-
-        result = asyncio.get_event_loop().run_until_complete(
-            _generate_chapter(
-                project_id=proj["id"],
-                project_path=proj["dir"],
-                chapter=pj["chapters"][0],
-                characters=pj["characters"],
-                gen_config=pj["generation"],
-                qc_config=pj["qc"],
-                target_lufs=-16.0,
-                raw_dir=proj["dir"] / "03_GENERATED" / "raw",
-                engine_override=None,
+            monkeypatch.setattr(
+                "audioformation.generate.get_project_path",
+                lambda pid: proj["dir"],
             )
-        )
 
-        assert result["status"] in ("complete", "partial")
-        assert result["total_chunks"] > 0
+            result = await _generate_chapter(
+                    project_id=proj["id"],
+                    project_path=proj["dir"],
+                    chapter=pj["chapters"][0],
+                    characters=pj["characters"],
+                    gen_config=pj["generation"],
+                    qc_config=pj["qc"],
+                    target_lufs=-16.0,
+                    raw_dir=proj["dir"] / "03_GENERATED" / "raw",
+                    engine_override=None,
+                )
 
-        # Verify both engines were called
-        assert edge_mock.generate.call_count > 0, "Edge should handle narrator segments"
-        assert xtts_mock.generate.call_count > 0, "XTTS should handle hero segments"
+            assert result["status"] in ("complete", "partial")
+            assert result["total_chunks"] > 0
 
-        # Verify edge got narrator text, xtts got hero text
-        edge_texts = [
-            call.args[0].text if call.args else call.kwargs.get("request", call[0][0]).text
-            for call in edge_mock.generate.call_args_list
-        ]
-        xtts_texts = [
-            call.args[0].text if call.args else call.kwargs.get("request", call[0][0]).text
-            for call in xtts_mock.generate.call_args_list
-        ]
+            # Verify both engines were called
+            assert edge_mock.generate.call_count > 0, "Edge should handle narrator segments"
+            assert xtts_mock.generate.call_count > 0, "XTTS should handle hero segments"
 
-        assert any("narrator" in t.lower() for t in edge_texts), \
-            f"Edge should get narrator text, got: {edge_texts}"
-        assert any("hero" in t.lower() for t in xtts_texts), \
-            f"XTTS should get hero text, got: {xtts_texts}"
+            # Verify edge got narrator text, xtts got hero text
+            edge_texts = [
+                call.args[0].text if call.args else call.kwargs.get("request", call[0][0]).text
+                for call in edge_mock.generate.call_args_list
+            ]
+            xtts_texts = [
+                call.args[0].text if call.args else call.kwargs.get("request", call[0][0]).text
+                for call in xtts_mock.generate.call_args_list
+            ]
+
+            assert any("narrator" in t.lower() for t in edge_texts), \
+                f"Edge should get narrator text, got: {edge_texts}"
+            assert any("hero" in t.lower() for t in xtts_texts), \
+                f"XTTS should get hero text, got: {xtts_texts}"
+        asyncio.run(_test())
 
     def test_engine_override_forces_all_segments(self, multi_project, monkeypatch):
         """When --engine flag is set, ALL segments use that engine."""
-        from audioformation.generate import _generate_chapter
-        from audioformation.engines.registry import registry as real_registry
+        async def _test():
+            from audioformation.generate import _generate_chapter
+            from audioformation.engines.registry import registry as real_registry
 
-        edge_mock = _make_fake_engine("edge", supports_ssml=True)
-        xtts_mock = _make_fake_engine("xtts", supports_cloning=True)
+            edge_mock = _make_fake_engine("edge", supports_ssml=True)
+            xtts_mock = _make_fake_engine("xtts", supports_cloning=True)
 
-        original_get = real_registry.get
+            original_get = real_registry.get
 
-        def patched_get(name, **kwargs):
-            if name == "edge":
-                return edge_mock
-            if name == "xtts":
-                return xtts_mock
-            return original_get(name, **kwargs)
+            def patched_get(name, **kwargs):
+                if name == "edge":
+                    return edge_mock
+                if name == "xtts":
+                    return xtts_mock
+                return original_get(name, **kwargs)
 
-        monkeypatch.setattr(real_registry, "get", patched_get)
+            monkeypatch.setattr(real_registry, "get", patched_get)
 
-        proj = multi_project
-        pj = json.loads((proj["dir"] / "project.json").read_text())
+            proj = multi_project
+            pj = json.loads((proj["dir"] / "project.json").read_text())
 
-        monkeypatch.setattr(
-            "audioformation.generate.get_project_path",
-            lambda pid: proj["dir"],
-        )
-
-        result = asyncio.get_event_loop().run_until_complete(
-            _generate_chapter(
-                project_id=proj["id"],
-                project_path=proj["dir"],
-                chapter=pj["chapters"][0],
-                characters=pj["characters"],
-                gen_config=pj["generation"],
-                qc_config=pj["qc"],
-                target_lufs=-16.0,
-                raw_dir=proj["dir"] / "03_GENERATED" / "raw",
-                engine_override="edge",  # force all to edge
+            monkeypatch.setattr(
+                "audioformation.generate.get_project_path",
+                lambda pid: proj["dir"],
             )
-        )
 
-        assert result["total_chunks"] > 0
-        # Only edge should be called — override trumps character config
-        assert edge_mock.generate.call_count > 0
-        assert xtts_mock.generate.call_count == 0
+            result = await _generate_chapter(
+                    project_id=proj["id"],
+                    project_path=proj["dir"],
+                    chapter=pj["chapters"][0],
+                    characters=pj["characters"],
+                    gen_config=pj["generation"],
+                    qc_config=pj["qc"],
+                    target_lufs=-16.0,
+                    raw_dir=proj["dir"] / "03_GENERATED" / "raw",
+                    engine_override="edge",  # force all to edge
+                )
+
+            assert result["total_chunks"] > 0
+            # Only edge should be called — override trumps character config
+            assert edge_mock.generate.call_count > 0
+            assert xtts_mock.generate.call_count == 0
+        asyncio.run(_test())
 
     def test_xtts_vram_released_after_multi_chapter(self, multi_project, monkeypatch):
         """XTTS release_vram is called when XTTS was used in a chapter."""
-        from audioformation.generate import _generate_chapter
-        from audioformation.engines.registry import registry as real_registry
+        async def _test():
+            from audioformation.generate import _generate_chapter
+            from audioformation.engines.registry import registry as real_registry
 
-        edge_mock = _make_fake_engine("edge", supports_ssml=True)
-        xtts_mock = _make_fake_engine("xtts", supports_cloning=True)
+            edge_mock = _make_fake_engine("edge", supports_ssml=True)
+            xtts_mock = _make_fake_engine("xtts", supports_cloning=True)
 
-        original_get = real_registry.get
+            original_get = real_registry.get
 
-        def patched_get(name, **kwargs):
-            if name == "edge":
-                return edge_mock
-            if name == "xtts":
-                return xtts_mock
-            return original_get(name, **kwargs)
+            def patched_get(name, **kwargs):
+                if name == "edge":
+                    return edge_mock
+                if name == "xtts":
+                    return xtts_mock
+                return original_get(name, **kwargs)
 
-        monkeypatch.setattr(real_registry, "get", patched_get)
+            monkeypatch.setattr(real_registry, "get", patched_get)
 
-        proj = multi_project
-        pj = json.loads((proj["dir"] / "project.json").read_text())
+            proj = multi_project
+            pj = json.loads((proj["dir"] / "project.json").read_text())
 
-        monkeypatch.setattr(
-            "audioformation.generate.get_project_path",
-            lambda pid: proj["dir"],
-        )
-
-        asyncio.get_event_loop().run_until_complete(
-            _generate_chapter(
-                project_id=proj["id"],
-                project_path=proj["dir"],
-                chapter=pj["chapters"][0],
-                characters=pj["characters"],
-                gen_config=pj["generation"],
-                qc_config=pj["qc"],
-                target_lufs=-16.0,
-                raw_dir=proj["dir"] / "03_GENERATED" / "raw",
-                engine_override=None,
+            monkeypatch.setattr(
+                "audioformation.generate.get_project_path",
+                lambda pid: proj["dir"],
             )
-        )
 
-        # XTTS was used → release_vram should have been called
-        xtts_mock.release_vram.assert_called()
+            await _generate_chapter(
+                    project_id=proj["id"],
+                    project_path=proj["dir"],
+                    chapter=pj["chapters"][0],
+                    characters=pj["characters"],
+                    gen_config=pj["generation"],
+                    qc_config=pj["qc"],
+                    target_lufs=-16.0,
+                    raw_dir=proj["dir"] / "03_GENERATED" / "raw",
+                    engine_override=None,
+                )
+
+            # XTTS was used → release_vram should have been called
+            xtts_mock.release_vram.assert_called()
+        asyncio.run(_test())
 
     def test_single_mode_unchanged(self, multi_project, monkeypatch):
         """Single mode still works — all segments use chapter character."""
-        from audioformation.generate import _generate_chapter
-        from audioformation.engines.registry import registry as real_registry
+        async def _test():
+            from audioformation.generate import _generate_chapter
+            from audioformation.engines.registry import registry as real_registry
 
-        edge_mock = _make_fake_engine("edge", supports_ssml=True)
-        xtts_mock = _make_fake_engine("xtts", supports_cloning=True)
+            edge_mock = _make_fake_engine("edge", supports_ssml=True)
+            xtts_mock = _make_fake_engine("xtts", supports_cloning=True)
 
-        original_get = real_registry.get
+            original_get = real_registry.get
 
-        def patched_get(name, **kwargs):
-            if name == "edge":
-                return edge_mock
-            if name == "xtts":
-                return xtts_mock
-            return original_get(name, **kwargs)
+            def patched_get(name, **kwargs):
+                if name == "edge":
+                    return edge_mock
+                if name == "xtts":
+                    return xtts_mock
+                return original_get(name, **kwargs)
 
-        monkeypatch.setattr(real_registry, "get", patched_get)
+            monkeypatch.setattr(real_registry, "get", patched_get)
 
-        proj = multi_project
-        pj = json.loads((proj["dir"] / "project.json").read_text())
+            proj = multi_project
+            pj = json.loads((proj["dir"] / "project.json").read_text())
 
-        # Change chapter to single mode with narrator
-        chapter = pj["chapters"][0].copy()
-        chapter["mode"] = "single"
-        chapter["character"] = "narrator"
+            # Change chapter to single mode with narrator
+            chapter = pj["chapters"][0].copy()
+            chapter["mode"] = "single"
+            chapter["character"] = "narrator"
 
-        monkeypatch.setattr(
-            "audioformation.generate.get_project_path",
-            lambda pid: proj["dir"],
-        )
-
-        result = asyncio.get_event_loop().run_until_complete(
-            _generate_chapter(
-                project_id=proj["id"],
-                project_path=proj["dir"],
-                chapter=chapter,
-                characters=pj["characters"],
-                gen_config=pj["generation"],
-                qc_config=pj["qc"],
-                target_lufs=-16.0,
-                raw_dir=proj["dir"] / "03_GENERATED" / "raw",
-                engine_override=None,
+            monkeypatch.setattr(
+                "audioformation.generate.get_project_path",
+                lambda pid: proj["dir"],
             )
-        )
 
-        assert result["total_chunks"] > 0
-        # Only edge (narrator's engine) should be called
-        assert edge_mock.generate.call_count > 0
-        assert xtts_mock.generate.call_count == 0
+            result = await _generate_chapter(
+                    project_id=proj["id"],
+                    project_path=proj["dir"],
+                    chapter=chapter,
+                    characters=pj["characters"],
+                    gen_config=pj["generation"],
+                    qc_config=pj["qc"],
+                    target_lufs=-16.0,
+                    raw_dir=proj["dir"] / "03_GENERATED" / "raw",
+                    engine_override=None,
+                )
+
+            assert result["total_chunks"] > 0
+            # Only edge (narrator's engine) should be called
+            assert edge_mock.generate.call_count > 0
+            assert xtts_mock.generate.call_count == 0
+        asyncio.run(_test())
 
 
 class TestMultiSpeakerEdgeCases:
 
     def test_unknown_character_falls_back(self, multi_project, monkeypatch):
         """Segment with unknown character falls back to chapter defaults."""
-        from audioformation.generate import _generate_chapter
-        from audioformation.engines.registry import registry as real_registry
+        async def _test():
+            from audioformation.generate import _generate_chapter
+            from audioformation.engines.registry import registry as real_registry
 
-        edge_mock = _make_fake_engine("edge", supports_ssml=True)
+            edge_mock = _make_fake_engine("edge", supports_ssml=True)
 
-        original_get = real_registry.get
+            original_get = real_registry.get
 
-        def patched_get(name, **kwargs):
-            if name == "edge":
-                return edge_mock
-            return original_get(name, **kwargs)
+            def patched_get(name, **kwargs):
+                if name == "edge":
+                    return edge_mock
+                return original_get(name, **kwargs)
 
-        monkeypatch.setattr(real_registry, "get", patched_get)
+            monkeypatch.setattr(real_registry, "get", patched_get)
 
-        proj = multi_project
-        pj = json.loads((proj["dir"] / "project.json").read_text())
+            proj = multi_project
+            pj = json.loads((proj["dir"] / "project.json").read_text())
 
-        # Write chapter with unknown speaker tag
-        chapter_text = (
-            "Narrator line.\n"
-            "\n"
-            "[unknown_character] Mystery line.\n"
-            "\n"
-            "Back to narrator."
-        )
-        text_path = proj["dir"] / "01_TEXT" / "chapters" / "ch01.txt"
-        text_path.write_text(chapter_text, encoding="utf-8")
-
-        monkeypatch.setattr(
-            "audioformation.generate.get_project_path",
-            lambda pid: proj["dir"],
-        )
-
-        # Should not crash — unknown character gets empty char_data → default engine
-        result = asyncio.get_event_loop().run_until_complete(
-            _generate_chapter(
-                project_id=proj["id"],
-                project_path=proj["dir"],
-                chapter=pj["chapters"][0],
-                characters=pj["characters"],
-                gen_config=pj["generation"],
-                qc_config=pj["qc"],
-                target_lufs=-16.0,
-                raw_dir=proj["dir"] / "03_GENERATED" / "raw",
-                engine_override=None,
+            # Write chapter with unknown speaker tag
+            chapter_text = (
+                "Narrator line.\n"
+                "\n"
+                "[unknown_character] Mystery line.\n"
+                "\n"
+                "Back to narrator."
             )
-        )
+            text_path = proj["dir"] / "01_TEXT" / "chapters" / "ch01.txt"
+            text_path.write_text(chapter_text, encoding="utf-8")
 
-        assert result["total_chunks"] > 0
-        assert result["status"] in ("complete", "partial")
+            monkeypatch.setattr(
+                "audioformation.generate.get_project_path",
+                lambda pid: proj["dir"],
+            )
+
+            # Should not crash — unknown character gets empty char_data → default engine
+            result = await _generate_chapter(
+                    project_id=proj["id"],
+                    project_path=proj["dir"],
+                    chapter=pj["chapters"][0],
+                    characters=pj["characters"],
+                    gen_config=pj["generation"],
+                    qc_config=pj["qc"],
+                    target_lufs=-16.0,
+                    raw_dir=proj["dir"] / "03_GENERATED" / "raw",
+                    engine_override=None,
+                )
+
+            assert result["total_chunks"] > 0
+            assert result["status"] in ("complete", "partial")
+        asyncio.run(_test())

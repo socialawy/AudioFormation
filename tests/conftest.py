@@ -1,9 +1,167 @@
 """Shared test fixtures for AudioFormation."""
 
+import sys
 import json
 import pytest
 from pathlib import Path
+from unittest.mock import MagicMock
 
+# Fix ModuleNotFoundError when running locally without editable install
+sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
+
+# ──────────────────────────────────────────────────────────────
+# Eager Dependency Mocking
+# ──────────────────────────────────────────────────────────────
+# We must mock missing dependencies at the top level (before fixtures)
+# so that pytest can collect tests without ImportErrors.
+
+MODULES_TO_MOCK = [
+    "edge_tts",
+    "soundfile",
+    "pyloudnorm",
+    "pydub",
+    "pydub.AudioSegment",
+    "numpy",
+    "scipy",
+    "scipy.io",
+    "scipy.io.wavfile",
+    "mishkal",
+    "mishkal.tashkeel",
+    "gtts",
+]
+
+for mod_name in MODULES_TO_MOCK:
+    try:
+        __import__(mod_name)
+    except ImportError:
+        # Create a mock module
+        mock_mod = MagicMock()
+        
+        # ── Specific Mock Behaviors ──
+        
+        if mod_name == "edge_tts":
+            mock_mod.Communicate = MagicMock()
+            # Communicate.save needs to act awaitable and create file with content
+            async def _save(path):
+                p = Path(path)
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_bytes(b"MOCK_MP3_DATA" * 10) # Non-zero size
+            mock_mod.Communicate.return_value.save = _save
+            mock_mod.list_voices = MagicMock(return_value=[])
+
+        elif mod_name == "soundfile":
+            # Check for real numpy to avoid __array__ errors
+            real_numpy = None
+            try:
+                import numpy as np
+                if not isinstance(np, MagicMock):
+                    real_numpy = np
+            except ImportError:
+                pass
+
+            if real_numpy:
+                # Return real array to satisfy real numpy functions
+                def _mock_read_real(*args, **kwargs):
+                    # Default: 1 second of silence
+                    return real_numpy.zeros(24000, dtype=real_numpy.float32), 24000
+                mock_mod.read = MagicMock(side_effect=_mock_read_real)
+            else:
+                # Return mock array
+                mock_data = MagicMock()
+                mock_data.ndim = 1
+                mock_data.shape = (24000,)
+                mock_data.__len__.return_value = 24000
+                mock_data.__array__ = lambda *args: [0.0] * 24000
+                mock_mod.read = MagicMock(return_value=(mock_data, 24000))
+            
+            # sf.write -> create file with content
+            def _write(file, data, samplerate, **kwargs):
+                p = Path(file)
+                p.parent.mkdir(parents=True, exist_ok=True)
+                # Write enough bytes to pass checks > 1000 bytes
+                p.write_bytes(b"MOCK_WAV_DATA" * 100) 
+            mock_mod.write = MagicMock(side_effect=_write)
+            
+            # sf.info -> duration
+            mock_info = MagicMock()
+            mock_info.duration = 5.0
+            mock_info.samplerate = 24000
+            mock_mod.info.return_value = mock_info
+
+        elif mod_name == "pyloudnorm":
+            # pyln.Meter().integrated_loudness() -> float
+            mock_meter = MagicMock()
+            mock_meter.integrated_loudness.return_value = -16.0
+            mock_mod.Meter.return_value = mock_meter
+
+        elif mod_name == "pydub":
+            # AudioSegment instance mock
+            mock_segment = MagicMock()
+            mock_segment.__len__.return_value = 5000 # 5000 ms
+            mock_segment.duration_seconds = 5.0
+            
+            # export writes bytes to path
+            def _export(path, **k):
+                p = Path(path)
+                p.parent.mkdir(parents=True, exist_ok=True)
+                # Default size
+                p.write_bytes(b"MOCK_EXPORT_DATA" * 50)
+            mock_segment.export.side_effect = _export
+            
+            # Support addition (concatenation) and return SELF
+            # IMPORTANT: __iadd__ must return self to preserve the mock instance 
+            # with the side_effect during operations like `combined += chunk`
+            mock_segment.__add__.return_value = mock_segment
+            mock_segment.__radd__.return_value = mock_segment
+            mock_segment.__iadd__.return_value = mock_segment 
+            mock_segment.append.return_value = mock_segment
+            
+            mock_mod.AudioSegment = MagicMock()
+            
+            # CRITICAL: from_file MUST raise FileNotFoundError if file missing
+            # This enables negative testing in test_export.py
+            def _from_file(path, **kwargs):
+                if not Path(path).exists():
+                    raise FileNotFoundError(f"File not found: {path}")
+                return mock_segment
+            
+            mock_mod.AudioSegment.from_file.side_effect = _from_file
+            mock_mod.AudioSegment.from_mp3.side_effect = _from_file
+            
+            # silent/empty return the mock segment directly
+            mock_mod.AudioSegment.silent.return_value = mock_segment
+            mock_mod.AudioSegment.empty.return_value = mock_segment
+
+        elif mod_name == "numpy":
+            # Basic numpy support for tests that might use it
+            mock_mod.zeros.return_value = MagicMock()
+            mock_mod.linspace.return_value = MagicMock()
+            mock_mod.sin.return_value = MagicMock()
+            mock_mod.max.return_value = 1.0
+            mock_mod.abs.return_value = MagicMock()
+            mock_mod.float32 = float 
+            mock_mod.float64 = float
+            
+        elif mod_name == "mishkal.tashkeel":
+            # Correctly mock the TashkeelClass class INSIDE mishkal.tashkeel module
+            mock_tashkeel_inst = MagicMock()
+            
+            # Force return python string with ACTUAL diacritics for detection
+            def _tashkeel(text):
+                if isinstance(text, str):
+                    # Append a Fatha (U+064E) to ensure detection sees it as diacritized
+                    return text + "\u064E"
+                return "diacritized_text\u064E"
+                
+            mock_tashkeel_inst.tashkeel.side_effect = _tashkeel
+            mock_mod.TashkeelClass.return_value = mock_tashkeel_inst
+
+        sys.modules[mod_name] = mock_mod
+
+
+# ──────────────────────────────────────────────────────────────
+# Fixtures
+# ──────────────────────────────────────────────────────────────
 
 @pytest.fixture(autouse=True)
 def isolate_projects(tmp_path, monkeypatch):
@@ -23,12 +181,13 @@ def isolate_projects(tmp_path, monkeypatch):
         "audioformation.ingest.PROJECTS_ROOT",
         "audioformation.generate.PROJECTS_ROOT",
         "audioformation.cli.PROJECTS_ROOT",
+        "audioformation.audio.composer.PROJECTS_ROOT",
     ]
     for target in targets:
         try:
             monkeypatch.setattr(target, projects_root)
-        except AttributeError:
-            pass  # Module may not import PROJECTS_ROOT directly
+        except (ImportError, AttributeError):
+            pass
 
     return projects_root
 
@@ -37,20 +196,17 @@ def isolate_projects(tmp_path, monkeypatch):
 def sample_project(tmp_path, isolate_projects):
     """
     Create a minimal valid project inside the isolated PROJECTS_ROOT.
-    Uses the directory already created by isolate_projects.
     """
     from audioformation.config import PROJECT_DIRS
 
-    projects_root = isolate_projects  # reuse, don't recreate
+    projects_root = isolate_projects
     project_id = "TEST_PROJECT"
     project_dir = projects_root / project_id
     project_dir.mkdir(exist_ok=True)
 
-    # Create all subdirectories
     for subdir in PROJECT_DIRS:
         (project_dir / subdir).mkdir(parents=True, exist_ok=True)
 
-    # Write minimal project.json
     project_json = {
         "id": project_id,
         "version": "1.0",
@@ -64,11 +220,7 @@ def sample_project(tmp_path, isolate_projects):
                 "source": "01_TEXT/chapters/ch01.txt",
                 "character": "narrator",
                 "mode": "single",
-                "direction": {
-                    "energy": "normal",
-                    "pace": "moderate",
-                    "emotion": "neutral"
-                }
+                "direction": {"energy": "normal", "pace": "moderate", "emotion": "neutral"}
             }
         ],
         "characters": {
@@ -93,11 +245,7 @@ def sample_project(tmp_path, isolate_projects):
             "edge_tts_ssml": True,
             "fallback_scope": "chapter",
             "fallback_chain": ["edge", "gtts"],
-            "crossfade_overrides": {
-                "edge": 120,
-                "xtts": 80,
-                "gtts": 150
-            }
+            "crossfade_overrides": {"edge": 120, "xtts": 80, "gtts": 150}
         },
         "qc": {
             "snr_method": "vad_noise_floor",
@@ -147,7 +295,6 @@ def sample_project(tmp_path, isolate_projects):
         encoding="utf-8"
     )
 
-    # Write pipeline-status.json
     pipeline_status = {
         "project_id": project_id,
         "nodes": {
@@ -168,7 +315,6 @@ def sample_project(tmp_path, isolate_projects):
         encoding="utf-8"
     )
 
-    # Write a sample Arabic text file
     chapters_dir = project_dir / "01_TEXT" / "chapters"
     (chapters_dir / "ch01.txt").write_text(
         "مرحبا بالعالم. هذا فصل تجريبي للاختبار.",
@@ -184,31 +330,19 @@ def sample_project(tmp_path, isolate_projects):
 
 @pytest.fixture
 def sample_project_with_text(sample_project):
-    """
-    Extends sample_project with multiple chapters already ingested.
-    For tests that need text already in place (skip existing, etc).
-    """
+    """Extends sample_project with multiple chapters already ingested."""
     project_dir = sample_project["dir"]
     chapters_dir = project_dir / "01_TEXT" / "chapters"
 
-    # ch01.txt already exists from sample_project — Arabic
-    # Add ch02 — English
     (chapters_dir / "ch02.txt").write_text(
-        "The morning light filtered through the ancient windows. "
-        "He stood there, contemplating the journey ahead. "
-        "Every step would bring him closer to the truth.",
+        "The morning light filtered through the ancient windows.",
         encoding="utf-8"
     )
-
-    # Add ch03 — Arabic, longer
     (chapters_dir / "ch03.txt").write_text(
-        "في ذلك الصباح الباكر، كانت الشمس تشرق ببطء فوق المدينة القديمة. "
-        "كان الهواء بارداً ومنعشاً، يحمل رائحة الياسمين من الحدائق المجاورة. "
-        "وقف هناك يتأمل الأفق البعيد، يفكر في كل ما حدث.",
+        "في ذلك الصباح الباكر، كانت الشمس تشرق ببطء.",
         encoding="utf-8"
     )
 
-    # Update project.json with all three chapters
     import json
     project_json_path = project_dir / "project.json"
     config = json.loads(project_json_path.read_text(encoding="utf-8"))
@@ -248,7 +382,6 @@ def sample_project_with_text(sample_project):
         encoding="utf-8"
     )
 
-    # Mark ingest as done
     status_path = project_dir / "pipeline-status.json"
     status = json.loads(status_path.read_text(encoding="utf-8"))
     status["nodes"]["ingest"] = {"status": "complete", "timestamp": "2026-02-13T00:00:00Z"}

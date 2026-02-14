@@ -3,11 +3,16 @@ AudioFormation CLI — Click command groups.
 
 Phase 1 commands: new, list, status, hardware, validate, ingest,
 generate, qc, export, quick, engines, run.
+
+Phase 2 commands: cast (manage characters), compose (ambient music),
+                  preview (fast check), compare (A/B testing).
 """
 
 import asyncio
 import json
 import sys
+import shutil
+import time
 from pathlib import Path
 
 import click
@@ -209,6 +214,158 @@ def hardware() -> None:
         click.secho("  ffmpeg: ✗ NOT FOUND", fg="red")
         click.echo("    Install: https://ffmpeg.org/download.html")
         click.echo("    Required for audio processing and export.")
+
+
+# ──────────────────────────────────────────────
+# Character Management (Cast)
+# ──────────────────────────────────────────────
+
+
+@main.group()
+def cast() -> None:
+    """Manage project characters and voices."""
+    pass
+
+
+@cast.command("list")
+@click.argument("project_id")
+def cast_list(project_id: str) -> None:
+    """List characters in a project."""
+    from audioformation.project import load_project_json
+
+    if not _project_guard(project_id):
+        return
+
+    try:
+        pj = load_project_json(project_id)
+    except FileNotFoundError:
+        click.secho("✗ project.json not found.", fg="red")
+        sys.exit(1)
+
+    characters = pj.get("characters", {})
+    if not characters:
+        click.echo(f"No characters found in project {project_id}.")
+        return
+
+    click.secho(f"Cast for {project_id}:", bold=True)
+    click.echo(f"{'ID':<15} {'Name':<20} {'Engine':<12} {'Voice/Ref'}")
+    click.echo("─" * 80)
+
+    for char_id, char_data in characters.items():
+        name = char_data.get("name", "")
+        engine = char_data.get("engine", "")
+        voice = char_data.get("voice") or char_data.get("reference_audio") or ""
+        
+        # Truncate long paths for display
+        if len(voice) > 30 and "/" in voice:
+            voice = "..." + voice[-27:]
+
+        click.echo(f"{char_id:<15} {name[:19]:<20} {engine:<12} {voice}")
+
+
+@cast.command("add")
+@click.argument("project_id")
+@click.option("--id", "char_id", required=True, help="Character ID (e.g., 'hero').")
+@click.option("--name", required=True, help="Display name.")
+@click.option("--engine", default="edge", help="TTS engine (default: edge).")
+@click.option("--voice", default=None, help="Voice ID (for edge/cloud) or None.")
+@click.option("--dialect", default="msa", help="Dialect code (msa, eg, etc.).")
+@click.option("--persona", default="", help="Description of character persona.")
+def cast_add(project_id: str, char_id: str, name: str, engine: str, voice: str | None, dialect: str, persona: str) -> None:
+    """Add or update a character in project.json."""
+    from audioformation.project import load_project_json, save_project_json
+
+    if not _project_guard(project_id):
+        return
+
+    pj = load_project_json(project_id)
+    
+    char_entry = {
+        "name": name,
+        "engine": engine,
+        "voice": voice,
+        "dialect": dialect,
+        "persona": persona,
+        "reference_audio": None
+    }
+
+    # If updating, preserve existing fields if not overwritten
+    if char_id in pj.get("characters", {}):
+        existing = pj["characters"][char_id]
+        if not voice and existing.get("voice"):
+            char_entry["voice"] = existing["voice"]
+        if not persona and existing.get("persona"):
+            char_entry["persona"] = existing["persona"]
+        if existing.get("reference_audio"):
+            char_entry["reference_audio"] = existing["reference_audio"]
+        action = "Updated"
+    else:
+        action = "Added"
+
+    pj.setdefault("characters", {})[char_id] = char_entry
+    save_project_json(project_id, pj)
+
+    click.secho(f"✓ {action} character: {char_id}", fg="green")
+
+
+@cast.command("clone")
+@click.argument("project_id")
+@click.option("--id", "char_id", required=True, help="Character ID.")
+@click.option("--reference", type=click.Path(exists=True, path_type=Path), required=True,
+              help="Path to reference audio file.")
+@click.option("--name", default=None, help="Character name (optional if exists).")
+def cast_clone(project_id: str, char_id: str, reference: Path, name: str | None) -> None:
+    """
+    Setup voice cloning: copy audio ref and set engine to XTTS.
+    """
+    from audioformation.project import load_project_json, save_project_json, get_project_path
+    from audioformation.utils.security import sanitize_filename
+
+    if not _project_guard(project_id):
+        return
+
+    project_path = get_project_path(project_id)
+    voices_dir = project_path / "02_VOICES" / "references"
+    voices_dir.mkdir(parents=True, exist_ok=True)
+
+    # Copy file
+    safe_name = sanitize_filename(reference.name)
+    dest_path = voices_dir / safe_name
+    shutil.copy2(reference, dest_path)
+    
+    # Relative path for project.json
+    rel_path = f"02_VOICES/references/{safe_name}"
+
+    pj = load_project_json(project_id)
+    characters = pj.setdefault("characters", {})
+
+    if char_id in characters:
+        char_data = characters[char_id]
+        char_data["engine"] = "xtts"
+        char_data["reference_audio"] = rel_path
+        # Clear voice ID since we are using reference
+        char_data["voice"] = None
+        if name:
+            char_data["name"] = name
+        action = "Updated"
+    else:
+        if not name:
+            name = char_id.title()
+        char_data = {
+            "name": name,
+            "engine": "xtts",
+            "voice": None,
+            "dialect": "msa",
+            "persona": "Voice clone",
+            "reference_audio": rel_path
+        }
+        characters[char_id] = char_data
+        action = "Created"
+
+    save_project_json(project_id, pj)
+
+    click.secho(f"✓ Copied reference to: {rel_path}", fg="green")
+    click.secho(f"✓ {action} character '{char_id}' using XTTS engine.", fg="green")
 
 
 # ──────────────────────────────────────────────
@@ -521,6 +678,57 @@ def process_audio(project_id: str) -> None:
     click.echo(f"  Output: {processed_dir}")
 
 
+@main.command("compose")
+@click.argument("project_id")
+@click.option("--preset", default="contemplative", help="Mood preset (contemplative, tense, wonder, etc.)")
+@click.option("--duration", type=float, default=60.0, help="Duration in seconds (default: 60)")
+@click.option("--output", "output_filename", default=None, help="Output filename (optional)")
+@click.option("--list", "list_only", is_flag=True, help="List available presets and exit")
+def compose(project_id: str, preset: str, duration: float, output_filename: str | None, list_only: bool) -> None:
+    """Generate ambient pad music (Node 5)."""
+    from audioformation.audio.composer import generate_pad, list_presets
+    from audioformation.project import get_project_path
+    from audioformation.pipeline import mark_node
+
+    if not _project_guard(project_id):
+        return
+
+    if list_only:
+        presets = list_presets()
+        click.echo("Available presets:")
+        for p in presets:
+            click.echo(f"  • {p}")
+        return
+
+    click.echo(f"Generating ambient pad for: {project_id}")
+    click.echo(f"  Preset:   {preset}")
+    click.echo(f"  Duration: {duration}s")
+
+    project_path = get_project_path(project_id)
+    music_dir = project_path / "05_MUSIC" / "generated"
+    music_dir.mkdir(parents=True, exist_ok=True)
+
+    if not output_filename:
+        timestamp = str(int(time.time()))
+        output_filename = f"{preset}_{timestamp}.wav"
+    
+    output_path = music_dir / output_filename
+
+    try:
+        generate_pad(preset, duration_sec=duration, output_path=output_path)
+    except ValueError as e:
+        click.secho(f"✗ Error: {e}", fg="red")
+        sys.exit(1)
+    except Exception as e:
+        click.secho(f"✗ Generation failed: {e}", fg="red")
+        sys.exit(1)
+
+    click.secho(f"✓ Saved: {output_path.name}", fg="green")
+    
+    # Update pipeline status
+    mark_node(project_path, "compose", "complete", preset=preset, duration=duration)
+
+
 @main.command("export")
 @click.argument("project_id")
 @click.option("--format", "fmt", type=click.Choice(["mp3", "wav", "m4b"]), default="mp3",
@@ -705,6 +913,117 @@ def quick(text: str | None, engine: str, voice: str, output: Path | None) -> Non
 
 
 # ──────────────────────────────────────────────
+# Preview & Compare (Phase 2)
+# ──────────────────────────────────────────────
+
+
+@main.command()
+@click.argument("project_id")
+@click.argument("chapter_id")
+@click.option("--duration", type=float, default=30.0, help="Preview duration in seconds (default: 30).")
+@click.option("--chars", type=int, default=None, help="Preview length in characters (overrides duration).")
+@click.option("--engine", type=str, default=None, help="Override TTS engine.")
+@click.option("--voice", type=str, default=None, help="Override voice ID.")
+def preview(project_id: str, chapter_id: str, duration: float, chars: int | None, engine: str | None, voice: str | None) -> None:
+    """Generate a quick preview of a chapter."""
+    from audioformation.project import get_project_path, load_project_json
+    from audioformation.engines.registry import registry
+    from audioformation.engines.base import GenerationRequest
+    from audioformation.utils.text import chunk_text
+
+    if not _project_guard(project_id):
+        return
+
+    project_path = get_project_path(project_id)
+    pj = load_project_json(project_id)
+    
+    # Find chapter
+    chapter = next((c for c in pj.get("chapters", []) if c["id"] == chapter_id), None)
+    if not chapter:
+        click.secho(f"✗ Chapter '{chapter_id}' not found.", fg="red")
+        sys.exit(1)
+
+    # Load source text
+    source_path = project_path / chapter.get("source", "")
+    if not source_path.exists():
+        click.secho(f"✗ Source file not found: {source_path}", fg="red")
+        sys.exit(1)
+        
+    text = source_path.read_text(encoding="utf-8").strip()
+    
+    # Truncate text for preview
+    # Approx 15 chars per second for speech
+    preview_chars = chars or int(duration * 15)
+    if len(text) > preview_chars:
+        # Cut at last space to be clean
+        cut_point = text[:preview_chars].rfind(" ")
+        if cut_point > 0:
+            text = text[:cut_point] + "..."
+        else:
+            text = text[:preview_chars] + "..."
+
+    # Determine character/engine
+    char_id = chapter.get("character", "narrator")
+    char_data = pj.get("characters", {}).get(char_id, {})
+    
+    target_engine = engine or char_data.get("engine", "edge")
+    target_voice = voice or char_data.get("voice")
+    
+    click.echo(f"Generating preview for {project_id}/{chapter_id}")
+    click.echo(f"  Engine: {target_engine}")
+    click.echo(f"  Voice:  {target_voice}")
+    click.echo(f"  Length: {len(text)} chars (~{len(text)/15:.1f}s)")
+    
+    try:
+        tts = registry.get(target_engine)
+    except KeyError:
+        click.secho(f"✗ Engine '{target_engine}' not available.", fg="red")
+        sys.exit(1)
+
+    # Output path
+    preview_dir = project_path / "03_GENERATED" / "compare"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = str(int(time.time()))
+    output_path = preview_dir / f"preview_{chapter_id}_{timestamp}.wav"
+
+    request = GenerationRequest(
+        text=text,
+        output_path=output_path,
+        voice=target_voice,
+        language=chapter.get("language", "ar"),
+        # Use simple single-request generation for preview (no chunking)
+    )
+
+    # Run generation
+    try:
+        result = _run_async(tts.generate(request))
+        if result.success:
+            click.secho(f"✓ Saved preview: {output_path.name}", fg="green")
+            click.echo(f"  Path: {output_path}")
+        else:
+            click.secho(f"✗ Preview failed: {result.error}", fg="red")
+    except Exception as e:
+        click.secho(f"✗ Error: {e}", fg="red")
+
+
+@main.command()
+@click.argument("project_id")
+@click.argument("chapter_id")
+@click.option("--engines", type=str, default="edge,gtts", help="Comma-separated engines to compare.")
+def compare(project_id: str, chapter_id: str, engines: str) -> None:
+    """Generate A/B comparisons using multiple engines."""
+    # Re-use preview logic loop
+    engine_list = [e.strip() for e in engines.split(",")]
+    
+    click.echo(f"Comparing engines: {', '.join(engine_list)}")
+    
+    ctx = click.get_current_context()
+    for eng in engine_list:
+        click.echo(f"\n--- {eng} ---")
+        ctx.invoke(preview, project_id=project_id, chapter_id=chapter_id, engine=eng, duration=30.0, chars=None, voice=None)
+
+
+# ──────────────────────────────────────────────
 # Engine management
 # ──────────────────────────────────────────────
 
@@ -862,9 +1181,7 @@ def run(project_id: str, run_all: bool, from_node: str | None, dry_run: bool, en
             ctx.invoke(process_audio, project_id=project_id)
 
         elif node == "compose":
-            click.echo("  Compose: skipping (Phase 3).")
-            from audioformation.pipeline import update_node_status
-            update_node_status(project_id, "compose", "skipped")
+            ctx.invoke(compose, project_id=project_id, preset="contemplative", duration=60.0, output_filename=None, list_only=False)
 
         elif node == "mix":
             click.echo("  Mix: skipping (Phase 3).")

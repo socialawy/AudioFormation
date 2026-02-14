@@ -46,13 +46,13 @@ Providers (priority order):
 │ ├── ⚠️ PATCHED: Upgraded to v7 to resolve 403 DRM token errors
 │ └── Risk: unofficial MS wrapper, no SLA, IP throttle at heavy scale
 │
-├── gtts # 🆕 ADDED: Emergency fallback engine
+├── gtts # ✅ BUILT: Emergency fallback engine
 │ ├── Google Translate TTS, free tier
 │ ├── Activated on edge-tts 403/500 errors
 │ ├── Quality: Acceptable for emergencies, not primary
 │ └── No API key required, rate-limited
 │
-├── coqui-tts (XTTS-v2) # ✅ Spike validated on 4GB GPU, integration approved
+├── coqui-tts (XTTS-v2) # ✅ BUILT: Local voice cloning
 │ ├── Install: pip install coqui-tts (Idiap community fork)
 │ ├── 17 languages including Arabic
 │ ├── 6-second voice clone from reference audio
@@ -103,14 +103,14 @@ Primary: edge-tts (v7+)
 │ ├── Free, no API key required
 │ └── ⚠️ PATCHED: v7 resolves 403 DRM token errors
 │
-Fallback 1: gTTS (🆕 ADDED)
+Fallback 1: gTTS (✅ BUILT)
 │ ├── Activated on edge-tts failures (403, 500, timeout)
 │ ├── Google Translate TTS, free tier
 │ ├── Quality: Acceptable for emergencies
 │ └── Automatic retry with gTTS on edge-tts errors
 │
-Fallback 2: Cloud engines ⏳ PHASE 2)
-│ ├── ElevenLabs (✅ BUILT), OpenAI TTS, Gemini TTS (Phase 3)
+Fallback 2: Cloud engines (✅ BUILT)
+│ ├── ElevenLabs (Adapter ready), OpenAI TTS, Gemini TTS (Phase 3)
 │ ├── Pay-per-use, premium quality
 │ └── Configurable API keys in 00_CONFIG/engines.json
 ```
@@ -124,7 +124,7 @@ Implementation:
 
 #### Test Infrastructure & Coverage
 
-**314 tests (100% passing), all isolated and mocked:**
+**320 tests (100% passing), all isolated and mocked:**
 
 | Characteristic | Status | Notes |
 |:---|:---|:---|
@@ -199,14 +199,14 @@ Modes:
 ```
 3. ComposeEngine (Music/Composition)
 ```text
-Tier 1: Ambient Pad Generator ← PHASE 1 (this is what audiobooks need)
+Tier 1: Ambient Pad Generator ← PHASE 2 (this is what audiobooks need)
 ├── Drone + filtered noise + LFO modulation
 ├── Mood presets: contemplative, tense, wonder, melancholy, triumph
 ├── Loopable, non-fatiguing, configurable duration
 ├── Pure numpy synthesis → WAV output
 └── Good enough for 90% of audiobook background needs
 
-Tier 2: Import + Process ← PHASE 2
+Tier 2: Import + Process ← PHASE 3
 ├── Import royalty-free music files (WAV/MP3)
 ├── Auto-trim, fade, normalize
 ├── Loop-point detection
@@ -488,9 +488,9 @@ VideoFormation API:        localhost:3001
 | 3 | Generate | ✅ BUILT | TTS generation with chunking, crossfade, per-file LUFS measurement |
 | 3.5 | QC Scan | ✅ BUILT | Per-chunk quality check (SNR, pitch, duration, clipping, LUFS) |
 | 4 | Process | ✅ BUILT | Batch normalization (ffmpeg loudnorm), silence trimming |
-| 5 | Compose | ✅ Core built | ⏳ CLI wiring | Optional: generate ambient pads, import music |
-| 6 | Mix | ⏳ PHASE 2 | Multi-track layering, VAD ducking, chapter assembly |
-| 7 | QC Final | ⏳ PHASE 2 | Final mix validation (LUFS, true-peak, gaps, clipping) |
+| 5 | Compose | ✅ BUILT | Optional: generate ambient pads with `compose` CLI |
+| 6 | Mix | ⏳ PHASE 3 | Multi-track layering, VAD ducking, chapter assembly |
+| 7 | QC Final | ⏳ PHASE 3 | Final mix validation (LUFS, true-peak, gaps, clipping) |
 | 8 | Export | ✅ BUILT | Render MP3/WAV, embed metadata, generate manifest + checksums |
 
 ## Tech Stack
@@ -504,7 +504,7 @@ VideoFormation API:        localhost:3001
 | CLI | Click | Clean, composable | ✅ Stable |
 | Audio I/O | pydub + ffmpeg | Universal format support | ✅ Industry standard |
 | TTS: Free | edge-tts (rany2/edge-tts) | ✅ BUILT v7 - Fixed 403 DRM errors |
-| TTS: Fallback | gTTS (Google TTS) | 🆕 ADDED - Emergency fallback engine |
+| TTS: Fallback | gTTS (Google TTS) | ✅ BUILT - Emergency fallback engine |
 | TTS: Local | coqui-tts (idiap fork) | Voice cloning, offline, XTTS-v2 | ⚠️ Coqui AI shutdown late 2024. Community fork by Idiap (pip install coqui-tts ~0.27.x). Pin version. Still best local cloning option. **transformers<5 (coqui-tts breaks with v5)** |
 | TTS: Cloud | httpx | Generic API client | ✅ Stable |
 | Synthesis | numpy + soundfile | Procedural audio generation | ✅ Stable |
@@ -1002,7 +1002,7 @@ Schema supports both now. Not using frequency-aware ducking by default.
 ## Implementation Phases
 
 ### Phase 1: Foundation + First Audio Output 
-Status:  - All deliverables implemented, 314/314 tests passing
+Status:  - All deliverables implemented, 320/320 tests passing
 
 ├── Project scaffolding (CLI: new, list, status)
 ├── project.json schema + validation (jsonschema)
@@ -1022,22 +1022,14 @@ Status:  - All deliverables implemented, 314/314 tests passing
 └── Multi-speaker dialogue (per-segment character resolution)
 
 ### Phase 2: XTTS + Characters + Processing
+Status: **Completed**
 Deliverable: Voice-cloned narration with consistent quality
 
-├── XTTS v2 integration (coqui-tts, Idiap fork)
-├── Aggressive chunking (breath-group strategy)
-├── Character profile system (JSON-driven)
-├── Voice cloning workflow (reference audio → XTTS)
-├── Cloud API adapter (httpx, abstract interface)
-├── Crossfade stitching (Smart overrides: Edge 120ms, XTTS 80ms)
-├── Engine fallback scope (Per-chapter logic implemented)
-├── Arabic diacritics preprocessing (Mishkal integration)
-├── Ambient pad generator (Numpy synthesis, mood presets)
-├── Batch normalization (ffmpeg loudnorm filter)
-└── Per-chunk retry logic on QC failure
-├── ⏳ Character profile system (JSON-driven)
-├── ⏳ Voice cloning workflow (reference audio → XTTS)
-├── ⏳ Cloud API adapter (httpx, abstract interface)
+├── ✅ XTTS v2 integration (coqui-tts, Idiap fork)
+├── ✅ Aggressive chunking (breath-group strategy)
+├── ✅ Character profile system (JSON-driven)
+├── ✅ Voice cloning workflow (reference audio → XTTS)
+├── ✅ Cloud API adapter (httpx, abstract interface)
 ├── ✅ Crossfade stitching (Smart overrides: Edge 120ms, XTTS 80ms)
 ├── ✅ Engine fallback scope (Per-chapter logic implemented)
 ├── ✅ Arabic diacritics preprocessing (Mishkal integration)

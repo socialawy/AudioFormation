@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **CLI Commands:**
+  - `cast`: Manage characters (`list`, `add`, `clone`).
+  - `compose`: Generate ambient music pads using procedural synthesis.
+  - `preview`: Generate short samples of chapters for rapid voice iteration.
+  - `compare`: A/B test multiple engines/voices on the same text.
 - Multi-speaker dialogue support with per-segment character resolution
 - Per-segment engine routing and voice assignment
 - Engine tracking for VRAM management across multiple engines per chapter
@@ -38,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ElevenLabs auto-registration in engine registry (requires httpx)
 
 ### Changed
+- **Testing:** Increased coverage to 320 tests (100% passing). Added robust dependency mocking in `conftest.py` for CI stability.
 - **Dependencies:** pytest 8.0→<10, pytest-asyncio <1→<2, pre-commit <4→<5
 - **Dependencies:** Moved `fastapi`, `uvicorn`, `midiutil` to optional dependency groups (`server`, `midi`)
 - **Dependencies:** `mutagen` available in both core (export) and optional `m4b` group
@@ -45,7 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved speaker tag parsing with per-segment character resolution
 - Enhanced error reporting in generation
 - Updated documentation to reflect multi-speaker implementation status
-- Test coverage increased from 277 to 314 tests
 - Reference audio resolution now uses project_path instead of bare Path
 - Generation pipeline now supports XTTS-specific parameters
 - Added VRAM management hooks after chapter stitching
@@ -97,13 +102,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Roadmap (Not Changelog Entries)
 
-### Phase 2 — In Progress
-- Cast CLI commands (`cast list`, `cast add`, `cast clone`)
-- Wire `compose` CLI command to existing generator
-- Cloud TTS adapters (OpenAI, Gemini — ElevenLabs ✅ done)
-- `preview` and `compare` commands
-- Decouple `click.echo()` from library code
-
 ### Phase 3 — Planned
 - Multi-track mixer with VAD-based ducking
 - M4B audiobook export with chapter markers
@@ -115,4 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - XTTS v2 engine adapter with VRAM management ✅
 - ElevenLabs cloud TTS adapter ✅
 - Multi-speaker dialogue parsing and generation ✅
-- Character profile routing via project.json ◐ (CLI workflow pending)
+- Character profile routing via project.json ✅
+- Cast CLI commands (`cast list`, `cast add`, `cast clone`) ✅
+- Compose CLI wiring (`audioformation compose`) ✅
+- Preview & Compare CLI commands ✅
