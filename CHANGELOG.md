@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Multi-speaker dialogue support with per-segment character resolution
+- Per-segment engine routing and voice assignment
+- Engine tracking for VRAM management across multiple engines per chapter
+- Fallback handling for unknown speaker tags to chapter default
+- Comprehensive multi-speaker test suite (532 lines, 13 test classes)
+- Enhanced VRAM management to handle multiple engines used in single chapter
+- Backward compatibility for single-mode chapters
+- Simple text format with `[speaker_id]` tags on separate lines
 - XTTS v2 engine adapter with voice cloning support
 - Reference audio path resolution against project directory
 - XTTS generation parameters (temperature, repetition_penalty) with config overrides
@@ -25,19 +33,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Defensive validation for malformed project.json entries
 - File selection fixes in CLI process/export commands
 - Ambient pad generation with mood presets
-- Pipeline wiring for Items 1-6 complete
+- Pipeline wiring for Items 1-8 complete
 
 ### Changed
 - Upgraded edge-tts to v7 to resolve 403 DRM token errors
-- Improved speaker tag parsing with explicit logic
+- Improved speaker tag parsing with per-segment character resolution
 - Enhanced error reporting in generation
-- Updated documentation to reflect actual implementation status
-- Test coverage increased from 264 to 277 tests
+- Updated documentation to reflect multi-speaker implementation status
+- Test coverage increased from 277 to 314 tests
 - Reference audio resolution now uses project_path instead of bare Path
 - Generation pipeline now supports XTTS-specific parameters
 - Added VRAM management hooks after chapter stitching
+- Enhanced VRAM management to iterate over all engines used per chapter
+- Updated generation requests to use segment-specific voice and reference audio
 
 ### Fixed
+- **QC Command:** Fixed `NameError: name 'all_reports' is not defined` in `qc` command
+- **Chapter File Detection:** Fixed underscore filtering to properly distinguish chapter files from chunk files using numeric suffix check
+- **SSML for Arabic:** Disabled SSML for edge-tts Arabic voices to prevent tags being read as text
+- **torch CUDA Property:** Fixed `AttributeError` by using `total_memory` instead of `total_mem`
 - FileExistsError in tests (added exist_ok=True)
 - Invalid escape sequence warning in CLI
 - File selection logic excluding chunk files
@@ -77,10 +91,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Upcoming - Phase 2]
 
 ### Planned
-- XTTS v2 integration for local voice cloning
-- Multi-speaker dialogue parsing and generation
-- Character profile system with voice assignments
 - Advanced mixing with VAD-based ducking
 - M4B audiobook export with chapter markers
 - Web dashboard for project management
 - Cloud engine support (ElevenLabs, OpenAI TTS)
+
+### Completed
+- XTTS v2 integration for local voice cloning ✅
+- Multi-speaker dialogue parsing and generation ✅
+- Character profile system with voice assignments ✅

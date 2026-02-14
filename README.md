@@ -79,7 +79,7 @@ Arabic diacritics detection | ✅ BUILT
 Engine fallback chain (edge-tts → gTTS) | ✅ BUILT
 gTTS emergency fallback | ✅ BUILT
 XTTS voice cloning | ⏳ PHASE 2
-Multi-speaker dialogue | ⏳ PHASE 2
+Multi-speaker dialogue | ✅ BUILT
 Ambient pad generation | ✅ BUILT
 VAD-based ducking | ⏳ PHASE 2
 M4B audiobook export | ⏳ PHASE 2
@@ -124,10 +124,39 @@ pytest -v
 ```
 
 ## Current Status
-- ✅ **Phase 1 Complete**: All core functionality implemented and tested (264/264 tests passing)
+- ✅ **Phase 1 Complete**: All core functionality implemented and tested (314/314 tests passing)
 - ✅ **Engine Fallback**: edge-tts → gTTS automatic fallback for robust generation
 - ✅ **Arabic Support**: Full Arabic text processing with diacritics detection
-- ⏳ **Phase 2**: XTTS voice cloning, multi-speaker dialogue, advanced mixing
+- ✅ **Multi-Speaker**: Per-segment character resolution with engine-specific routing
+- ⏳ **Phase 2**: XTTS voice cloning, advanced mixing, M4B audiobook export
+
+## Known Issues & Limitations
+
+| Issue | Impact | Workaround | Planned Fix |
+|:---|:---|:---|:---|
+| **Arabic SSML** | Direction config (pace/energy/emotion) not applied for Arabic edge-tts voices | Set `"edge_tts_ssml": false` in project.json | Alternative: Use XTTS for expressive Arabic narration |
+| **Mishkal Quality** | Some Arabic words incorrectly diacritized, causing mispronunciation | Manual review of `.diacritized.txt` files | Evaluate CAMeL Tools or hybrid approach |
+| **Robotic Tone** | Edge-tts Arabic voices lack narrative expressiveness | Use direction config with non-Arabic voices, or XTTS | Research: Fine-tuned XTTS for Arabic narration |
+| **Session Length** | Tonal drift possible in very long generation sessions (>100 chunks) | Break into sessions: ≤50 chunks optimal, ≤100 chunks acceptable | Phase 3: Session management + quality gates |
+
+## Roadmap
+
+### Phase 2 (In Progress)
+- ⏳ XTTS voice cloning with reference audio
+- ⏳ Cloud API adapters (ElevenLabs, OpenAI)
+- ⏳ Advanced mixing with VAD-based ducking
+- ⏳ M4B audiobook export with chapters
+
+### Phase 3 (Planned)
+- Narrative control: Words Per Minute (WPM) specification
+- Tone profiles: dramatic, documentary, intimate presets
+- Web dashboard with timeline visualization
+- Session management with quality consistency checks
+
+### Phase 4 (Future)
+- FishAudio-S1 / IndexTTS evaluation
+- PyInstaller packaging for standalone distribution
+- VideoFormation integration
 
 ## Contributing
 1. Fork the repository

@@ -40,9 +40,9 @@ def detect_gpu() -> dict[str, Any]:
             result["gpu_available"] = True
             result["gpu_name"] = torch.cuda.get_device_name(0)
 
-            vram_total = torch.cuda.get_device_properties(0).total_mem / (1024**3)
+            vram_total = torch.cuda.get_device_properties(0).total_memory / (1024**3)
             vram_free = (
-                torch.cuda.get_device_properties(0).total_mem
+                torch.cuda.get_device_properties(0).total_memory
                 - torch.cuda.memory_reserved(0)
             ) / (1024**3)
 

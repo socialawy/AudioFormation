@@ -400,8 +400,11 @@ def qc(project_id: str, report: bool) -> None:
         click.echo(f"  audioformation generate {project_id}")
         return
 
+    all_reports = []  # Collect all report data
+
     for report_path in reports:
         data = json.loads(report_path.read_text(encoding="utf-8"))
+        all_reports.append(data)
 
         click.secho(f"QC Report: {report_path.name}", bold=True)
         click.echo(f"  Chunks:  {data.get('total_chunks', 0)}")
@@ -460,10 +463,18 @@ def process_audio(project_id: str) -> None:
     processed_dir = project_path / "03_GENERATED" / "processed"
     processed_dir.mkdir(parents=True, exist_ok=True)
 
-    # Find stitched chapter WAVs (ch01.wav, ch02.wav — NOT ch01_000.wav chunks)
+    # Find stitched chapter WAVs (ch01.wav, ch01_intro.wav — NOT ch01_000.wav chunks)
+    # Chunk files have numeric suffix after underscore (ch01_000, ch01_001)
+    def _is_chunk_file(f: Path) -> bool:
+        """Check if file is a chunk file (has numeric suffix after underscore)."""
+        if "_" not in f.stem:
+            return False
+        parts = f.stem.rsplit("_", 1)
+        return len(parts) == 2 and parts[1].isdigit()
+
     chapter_wavs = sorted(
         f for f in raw_dir.glob("ch*.wav")
-        if "_" not in f.stem  # Exclude chunk files like ch01_000.wav
+        if not _is_chunk_file(f)  # Exclude chunk files only
     )
 
     if not chapter_wavs:
@@ -544,16 +555,24 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
         sys.exit(1)
 
     # Find stitched chapter files (not chunks)
+    # Chunk files have numeric suffix after underscore (ch01_000, ch01_001)
+    def _is_chunk_file(f: Path) -> bool:
+        """Check if file is a chunk file (has numeric suffix after underscore)."""
+        if "_" not in f.stem:
+            return False
+        parts = f.stem.rsplit("_", 1)
+        return len(parts) == 2 and parts[1].isdigit()
+
     chapter_files = sorted(
         f for f in source_dir.glob("ch*.wav")
-        if "_" not in f.stem
+        if not _is_chunk_file(f)  # Exclude chunk files only
     )
 
     if not chapter_files:
-        # Fallback: any WAV without underscore
+        # Fallback: any WAV file
         chapter_files = sorted(
             f for f in source_dir.glob("*.wav")
-            if "_" not in f.stem
+            if not _is_chunk_file(f)
         )
 
     if not chapter_files:

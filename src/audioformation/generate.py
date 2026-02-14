@@ -72,6 +72,7 @@ async def generate_project(
     update_node_status(
         project_id, "generate", "running",
         engine=engine_name or "per-character",
+    )
 
     raw_dir = project_path / "03_GENERATED" / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
@@ -159,6 +160,7 @@ async def generate_project(
 
     fail_threshold = gen_config.get(
         "fail_threshold_percent", DEFAULT_FAIL_THRESHOLD_PCT
+    )
     overall_fail_rate = (total_fail_chunks / max(total_chunks, 1)) * 100
 
     if overall_fail_rate > fail_threshold:
@@ -216,6 +218,7 @@ async def _generate_chapter(
     mode = chapter.get("mode", "single")
     char_id = chapter.get(
         "character", chapter.get("default_character", "narrator")
+    )
     char_data = characters.get(char_id, {})
     direction = chapter.get("direction", {})
     language = chapter.get("language", "ar")
@@ -239,6 +242,7 @@ async def _generate_chapter(
     # Parse segments
     segments = parse_chapter_segments(
         text, mode=mode, default_character=char_id
+    )
 
     # Determine engine
     engine_name = engine_override or char_data.get("engine", "edge")
@@ -261,8 +265,10 @@ async def _generate_chapter(
     crossfade_ms = _get_crossfade_ms(gen_config, engine_name)
     leading_silence_ms = gen_config.get(
         "leading_silence_ms", DEFAULT_LEADING_SILENCE_MS
+    )
     max_retries = gen_config.get(
         "max_retries_per_chunk", DEFAULT_MAX_RETRIES
+    )
 
     # Generate chunks for each segment
     chunk_paths: list[Path] = []
@@ -407,23 +413,29 @@ async def _generate_chapter(
     else:
         stitch_ok = False
 
-    # ── VRAM management (XTTS on GPU) ──
-    if hasattr(engine, "release_vram"):
+    # ── VRAM management (any XTTS engine used in this chapter) ──
+    for used_name in engines_used:
+        try:
+            used_engine = registry.get(used_name)
+        except KeyError:
+            continue
+        if not hasattr(used_engine, "release_vram"):
+            continue
+
         vram_strategy = gen_config.get(
             "xtts_vram_management", "empty_cache_per_chapter"
         )
         if vram_strategy == "conservative":
-            engine.unload_model()
+            used_engine.unload_model()
         elif vram_strategy == "reload_periodic":
             reload_n = int(gen_config.get("xtts_reload_every_n", 10))
-            count = getattr(engine, "_generation_count", 0)
+            count = getattr(used_engine, "_generation_count", 0)
             if reload_n > 0 and count % reload_n == 0:
-                engine.unload_model()
+                used_engine.unload_model()
             else:
-                engine.release_vram()
+                used_engine.release_vram()
         else:
-            # empty_cache_per_chapter (default)
-            engine.release_vram()
+            used_engine.release_vram()
 
     # Save QC report
     report_dir = project_path / "03_GENERATED"
@@ -440,6 +452,7 @@ async def _generate_chapter(
         engine_used=engine_name,
         crossfade_ms=crossfade_ms,
         output=str(chapter_output) if stitch_ok else None,
+    )
 
     return {
         "chapter_id": ch_id,
