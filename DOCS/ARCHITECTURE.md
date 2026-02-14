@@ -52,11 +52,12 @@ Providers (priority order):
 │ ├── Quality: Acceptable for emergencies, not primary
 │ └── No API key required, rate-limited
 │
-├── coqui-tts (XTTS-v2) # ⏳ PHASE 2: Local cloning
+├── coqui-tts (XTTS-v2) # ✅ Spike validated on 4GB GPU, integration approved
 │ ├── Install: pip install coqui-tts (Idiap community fork)
 │ ├── 17 languages including Arabic
 │ ├── 6-second voice clone from reference audio
-│ ├── GPU recommended (4GB VRAM minimum), CPU fallback viable
+│ ├── ✅ GPU validated: 1.5GB headroom on 4GB GTX 1650 Ti
+│ ├── ✅ Performance: 3.8s per 200-char chunk
 │ ├── ⚠️ CRITICAL: Long-form narration requires aggressive chunking
 │ │ ├── Split text into breath-groups (2-3 sentences, max ~200 chars)
 │ │ ├── Generate each chunk with SAME reference audio
@@ -119,30 +120,30 @@ giving edge-tts actual voice control beyond plain text.
 Direction Field → SSML Mapping:
 
 pace:
-├── "very slow" →
-├── "slow" →
+├── "very slow" → <prosody rate="slowest">
+├── "slow" → <prosody rate="slow">
 ├── "moderate" → (no tag)
-├── "fast" →
-└── "very fast" →
+├── "fast" → <prosody rate="fast">
+└── "very fast" → <prosody rate="fastest">
 
 energy:
-├── "whisper" →
-├── "quiet" →
+├── "whisper" → <prosody volume="x-soft">
+├── "quiet" → <prosody volume="soft">
 ├── "normal" → (no tag)
-├── "loud" →
-└── "intense" →
+├── "loud" → <prosody volume="loud">
+└── "intense" → <prosody volume="x-loud">
 
 emotion:
 ├── Mapped to emphasis + pitch combinations
-├── "wonder" →
-├── "sadness" →
-├── "tension" →
+├── "wonder" → <emphasis level="moderate"><prosody pitch="+10%">
+├── "sadness" → <emphasis level="reduced"><prosody pitch="-5%">
+├── "tension" → <emphasis level="strong"><prosody pitch="+15%">
 └── Custom values → logged as unsupported, no SSML applied
 
 Inline markers in text:
-├── ... (ellipsis) →
-├── — (em dash) →
-└── Paragraph break →
+├── ... (ellipsis) → <break time="500ms"/>
+├── — (em dash) → <break time="300ms"/>
+└── Paragraph break → <break time="1000ms"/>
 
 ```python
 # src/audioformation/engines/edge_tts.py
@@ -449,7 +450,7 @@ VideoFormation API:        localhost:3001
 ```
 
 ### Node Summary Table
-```text
+
 | Node | Status | Description |
 |---|---|---|
 | 0 | Bootstrap | ✅ BUILT | Create project structure, detect hardware, write hardware.json |
@@ -458,11 +459,10 @@ VideoFormation API:        localhost:3001
 | 3 | Generate | ✅ BUILT | TTS generation with chunking, crossfade, per-file LUFS measurement |
 | 3.5 | QC Scan | ✅ BUILT | Per-chunk quality check (SNR, pitch, duration, clipping, LUFS) |
 | 4 | Process | ✅ BUILT | Batch normalization (ffmpeg loudnorm), silence trimming |
-| 5 | Compose | ⏳ PHASE 2 | Optional: generate ambient pads, import music |
+| 5 | Compose | ✅ Core built | ⏳ CLI wiring | Optional: generate ambient pads, import music |
 | 6 | Mix | ⏳ PHASE 2 | Multi-track layering, VAD ducking, chapter assembly |
 | 7 | QC Final | ⏳ PHASE 2 | Final mix validation (LUFS, true-peak, gaps, clipping) |
 | 8 | Export | ✅ BUILT | Render MP3/WAV, embed metadata, generate manifest + checksums |
-```
 
 ## Tech Stack
 ```text
@@ -476,7 +476,7 @@ VideoFormation API:        localhost:3001
 | Audio I/O | pydub + ffmpeg | Universal format support | ✅ Industry standard |
 | TTS: Free | edge-tts (rany2/edge-tts) | ✅ BUILT v7 - Fixed 403 DRM errors |
 | TTS: Fallback | gTTS (Google TTS) | 🆕 ADDED - Emergency fallback engine |
-| TTS: Local | coqui-tts (idiap fork) | Voice cloning, offline, XTTS-v2 | ⚠️ Coqui AI shutdown late 2024. Community fork by Idiap (pip install coqui-tts ~0.27.x). Pin version. Still best local cloning option |
+| TTS: Local | coqui-tts (idiap fork) | Voice cloning, offline, XTTS-v2 | ⚠️ Coqui AI shutdown late 2024. Community fork by Idiap (pip install coqui-tts ~0.27.x). Pin version. Still best local cloning option. **transformers<5 (coqui-tts breaks with v5)** |
 | TTS: Cloud | httpx | Generic API client | ✅ Stable |
 | Synthesis | numpy + soundfile | Procedural audio generation | ✅ Stable |
 | LUFS Metering | pyloudnorm + ffmpeg loudnorm | Dual approach: in-process analysis (pyloudnorm) + batch normalization (ffmpeg loudnorm filter) | ✅ pyloudnorm v0.2.0 Jan 2026. For batch: ffmpeg loudnorm faster |
@@ -495,6 +495,8 @@ pip install click fastapi uvicorn pydub edge-tts coqui-tts httpx
 pip install numpy soundfile pyloudnorm silero-vad mutagen midiutil
 pip install pytest httpx[test]
 # System: ffmpeg must be on PATH
+# Added mishkal (Arabic diacritics)
+pip install click fastapi uvicorn pydub edge-tts coqui-tts httpx mishkal
 ```
 
 ## Version Pinning Strategy
@@ -502,8 +504,6 @@ Pin coqui-tts and silero-vad explicitly in pyproject.toml.
 These are community-maintained — treat as "stable but not guaranteed long-term."
 All other dependencies are mature ecosystem packages with standard semver.
 
-## CLI Design
-```bash
 ## CLI Design
 
 ```bash
@@ -558,7 +558,6 @@ audioformation serve
 # Full Pipeline
 audioformation run MY_NOVEL --all
 audioformation run MY_NOVEL --from generate
-```
 
 ### Command Details
 Command	Purpose
@@ -568,8 +567,6 @@ compare	A/B generate same text with different engines → outputs to 03_GENERATE
 echo ... | quick	Stdin support for scripting and quick tests
 
 ## project.json Schema (Core)
-```json
-## `project.json` Schema (Core)
 
 ```json
 {
@@ -611,9 +608,16 @@ echo ... | quick	Stdin support for scripting and quick tests
   },
 
   "generation": {
+    "fallback_scope": "chapter",  // ✅ Implemented (Item 2)
+    "fallback_chain": ["edge", "gtts"],
     "chunk_max_chars": 200,
     "chunk_strategy": "breath_group",
     "crossfade_ms": 120,
+    "crossfade_overrides": {      // ✅ Implemented (Item 4)
+      "edge": 120,
+      "xtts": 80,
+      "gtts": 150
+    },
     "crossfade_min_ms": 50,
     "leading_silence_ms": 100,
     "max_retries_per_chunk": 3,
@@ -842,54 +846,7 @@ src/audioformation/utils/text.py:
 files. Just [speaker_id] on its own line. Easy to write,
 easy to parse, easy to read in any text editor.*
 
-### 🔄 REPLACE: Generation Config in `project.json`
-
-```markdown
-#### Generation Config
-
-```json
-"generation": {
-  "chunk_max_chars": 200,
-  "chunk_strategy": "breath_group",
-  "crossfade_ms": 120,
-  "crossfade_min_ms": 50,
-  "leading_silence_ms": 100,
-  "max_retries_per_chunk": 3,
-  "fail_threshold_percent": 5,
-  "xtts_temperature": 0.7,
-  "xtts_repetition_penalty": 5.0,
-  "edge_tts_rate_limit_ms": 200,
-  "edge_tts_concurrency": 4,
-  "edge_tts_ssml": true,
-  "xtts_vram_management": "empty_cache_per_chapter"
-}
-```
-- Crossfade note: Default 120ms, not 50ms. Arabic connected speech
-has coarticulation patterns that shorter crossfades don't smooth.
-50ms is the minimum; QC flags boundary artifacts for per-project tuning.
-
-- Concurrency note: Edge-tts is async I/O-bound. Running 4 concurrent
-requests with a 200ms rate-limit semaphore significantly speeds up
-generation for long books. XTTS remains sequential (GPU-bound).
-
-- SNR methodology: Uses vad_noise_floor — silero-vad identifies
-non-speech segments, measures their RMS as noise floor, compares
-against speech segment RMS. Elegant reuse of existing silero-vad
-dependency. No reference signal needed for synthesized audio.
-
-Alternative wada_snr available but vad_noise_floor is preferred
-since silero-vad is already in the stack.
-
-Boundary artifact check: Analyzes energy discontinuity at
-crossfade points between chunks. Flags if energy jump > 6dB
-across a crossfade boundary. Helps catch bad XTTS chunk transitions.
-
-### 🔄 REPLACE: Pipeline Status Schema
-
-Replace the brief mention with explicit granularity:
-
-```markdown
-#### Pipeline Status Tracking (Chunk-Level Resumability)
+### Pipeline Status Tracking (Chunk-Level Resumability)
 
 `pipeline-status.json` tracks state at **chunk level** for Generate,
 not just node level. If generation crashes at chapter 22, chunk 15,
@@ -928,21 +885,10 @@ it resumes from exactly there.
 ```
 - Resume behavior:
 
-audioformation run MY_NOVEL --from generate checks pipeline-status.json
-Skips chapters with "complete" status
-Resumes partial chapters from chunks_done + 1
-Re-validates completed chapters' output files exist (in case of file deletion)
-
-### 🔄 NEW SECTION: XTTS VRAM Management
-
-Insert within VoxEngine section:
-
-```markdown
-#### XTTS VRAM Management (4GB GPU)
 
 Long audiobook runs (hundreds of chunks) cause PyTorch VRAM
 fragmentation. Explicit management strategy:
-```text
+
 Strategies (configurable in generation config):
 
 "empty_cache_per_chapter" (default, recommended):
@@ -969,9 +915,12 @@ Auto-detection:
 ├── 4-6GB → "empty_cache_per_chapter" (warn if < 4.5GB)
 ├── < 4GB → "conservative" + suggest CPU fallback
 └── Store recommendation in 00_CONFIG/hardware.json
-```
-🔄 REPLACE: Ducking Config in project.json
-markdown
+
+audioformation run MY_NOVEL --from generate checks pipeline-status.json
+Skips chapters with "complete" status
+Resumes partial chapters from chunks_done + 1
+Re-validates completed chapters' output files exist (in case of file deletion)
+
 #### Ducking Config
 
 ```json
@@ -998,12 +947,12 @@ music volume, apply a sidechain high-pass filter ducking only
 200Hz–4kHz (speech band). Bass/sub-bass of ambient pads continues
 at near-full volume. Set "frequency_aware": true to enable.
 v1.0 uses simple gain ducking. v1.1 adds the filter approach.
-Schema supports both now.
+Schema supports both now. Not using frequency-aware ducking by default.
 
 ## Implementation Phases
 
 ### Phase 1: Foundation + First Audio Output ✅ COMPLETE
-Status: ✅ BUILT - All deliverables implemented, 218/218 tests passing
+Status: ✅ BUILT - All deliverables implemented, 264/264 tests passing
 
 ├── ✅ Project scaffolding (CLI: new, list, status)
 ├── ✅ project.json schema + validation (jsonschema)
@@ -1024,17 +973,17 @@ Status: ✅ BUILT - All deliverables implemented, 218/218 tests passing
 ### Phase 2: XTTS + Characters + Processing
 Deliverable: Voice-cloned narration with consistent quality
 
-├── XTTS v2 integration (coqui-tts, Idiap fork)
-├── Aggressive chunking (breath-group strategy)
-├── Crossfade stitching between chunks
-├── Character profile system (JSON-driven)
-├── Voice cloning workflow (reference audio → XTTS)
-├── Engine fallback chain (GPU XTTS → CPU XTTS → edge-tts)
-├── Arabic diacritics preprocessing
-├── Batch normalization (ffmpeg loudnorm filter)
-├── Silence trimming + consistent gap insertion
-├── Cloud API adapter (httpx, abstract interface)
-└── Per-chunk retry logic on QC failure
+├── ⏳ XTTS v2 integration (coqui-tts, Idiap fork)
+├── ⏳ Aggressive chunking (breath-group strategy)
+├── ⏳ Character profile system (JSON-driven)
+├── ⏳ Voice cloning workflow (reference audio → XTTS)
+├── ⏳ Cloud API adapter (httpx, abstract interface)
+├── ✅ Crossfade stitching (Smart overrides: Edge 120ms, XTTS 80ms)
+├── ✅ Engine fallback scope (Per-chapter logic implemented)
+├── ✅ Arabic diacritics preprocessing (Mishkal integration)
+├── ✅ Ambient pad generator (Numpy synthesis, mood presets)
+├── ✅ Batch normalization (ffmpeg loudnorm filter)
+└── ✅ Per-chunk retry logic on QC failure
 
 ### Phase 3: Mix + Export + Dashboard
 Deliverable: Full audiobook with chapters, mixed and exported
@@ -1155,7 +1104,7 @@ audioformation/
 └── api.md
 ```
 
-### Future Engine Candidates (Monitor, Np Adopt Yet)
+### Future Engine Candidates (Monitor, Not Adopted Yet)
 
 | Engine | Promise | Status Feb 2026 | Action |
 |---|---|---|---|

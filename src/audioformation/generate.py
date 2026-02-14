@@ -298,12 +298,18 @@ async def _generate_chapter(
                     voice=char_data.get("voice"),
                     language=language,
                     reference_audio=(
-                        Path(char_data["reference_audio"])
+                        project_path / char_data["reference_audio"]
                         if char_data.get("reference_audio")
                         else None
                     ),
                     direction=direction if use_ssml else None,
-                    params={"ssml": use_ssml},
+                    params={
+                        "ssml": use_ssml,
+                        "temperature": gen_config.get("xtts_temperature", 0.7),
+                        "repetition_penalty": gen_config.get(
+                            "xtts_repetition_penalty", 5.0
+                        ),
+                    },
                 )
 
                 result = await engine.generate(request)
@@ -386,6 +392,24 @@ async def _generate_chapter(
             click.echo(f"    \u2717 Stitch failed for {ch_id}")
     else:
         stitch_ok = False
+
+    # ── VRAM management (XTTS on GPU) ──
+    if hasattr(engine, "release_vram"):
+        vram_strategy = gen_config.get(
+            "xtts_vram_management", "empty_cache_per_chapter"
+        )
+        if vram_strategy == "conservative":
+            engine.unload_model()
+        elif vram_strategy == "reload_periodic":
+            reload_n = int(gen_config.get("xtts_reload_every_n", 10))
+            count = getattr(engine, "_generation_count", 0)
+            if reload_n > 0 and count % reload_n == 0:
+                engine.unload_model()
+            else:
+                engine.release_vram()
+        else:
+            # empty_cache_per_chapter (default)
+            engine.release_vram()
 
     # Save QC report
     report_dir = project_path / "03_GENERATED"
