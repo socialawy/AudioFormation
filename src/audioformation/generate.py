@@ -72,7 +72,6 @@ async def generate_project(
     update_node_status(
         project_id, "generate", "running",
         engine=engine_name or "per-character",
-    )
 
     raw_dir = project_path / "03_GENERATED" / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
@@ -160,7 +159,6 @@ async def generate_project(
 
     fail_threshold = gen_config.get(
         "fail_threshold_percent", DEFAULT_FAIL_THRESHOLD_PCT
-    )
     overall_fail_rate = (total_fail_chunks / max(total_chunks, 1)) * 100
 
     if overall_fail_rate > fail_threshold:
@@ -218,7 +216,6 @@ async def _generate_chapter(
     mode = chapter.get("mode", "single")
     char_id = chapter.get(
         "character", chapter.get("default_character", "narrator")
-    )
     char_data = characters.get(char_id, {})
     direction = chapter.get("direction", {})
     language = chapter.get("language", "ar")
@@ -242,7 +239,6 @@ async def _generate_chapter(
     # Parse segments
     segments = parse_chapter_segments(
         text, mode=mode, default_character=char_id
-    )
 
     # Determine engine
     engine_name = engine_override or char_data.get("engine", "edge")
@@ -265,21 +261,43 @@ async def _generate_chapter(
     crossfade_ms = _get_crossfade_ms(gen_config, engine_name)
     leading_silence_ms = gen_config.get(
         "leading_silence_ms", DEFAULT_LEADING_SILENCE_MS
-    )
     max_retries = gen_config.get(
         "max_retries_per_chunk", DEFAULT_MAX_RETRIES
-    )
-    use_ssml = (
-        gen_config.get("edge_tts_ssml", True) and engine.supports_ssml
-    )
 
     # Generate chunks for each segment
     chunk_paths: list[Path] = []
     qc_report = QCReport(project_id=project_id, chapter_id=ch_id)
     chunk_index = 0
     failed_chunks = 0
+    engines_used: set[str] = set()
 
     for segment in segments:
+        # ── Per-segment character resolution ──
+        # In single mode, segment.character == char_id (chapter default).
+        # In multi mode, each segment carries its own speaker tag.
+        seg_char_id = segment.character
+        seg_char_data = characters.get(seg_char_id, char_data)
+
+        seg_engine_name = engine_override or seg_char_data.get("engine", engine_name)
+        try:
+            seg_engine = registry.get(seg_engine_name)
+        except KeyError:
+            # Unknown engine for this character — fall back to chapter engine
+            seg_engine = engine
+            seg_engine_name = engine_name
+
+        seg_voice = seg_char_data.get("voice")
+        seg_ref_audio = (
+            project_path / seg_char_data["reference_audio"]
+            if seg_char_data.get("reference_audio")
+            else None
+        )
+        seg_use_ssml = (
+            gen_config.get("edge_tts_ssml", True) and seg_engine.supports_ssml
+        )
+
+        engines_used.add(seg_engine_name)
+
         chunks = chunk_text(
             segment.text, max_chars=max_chars, strategy=strategy
         )
@@ -295,16 +313,12 @@ async def _generate_chapter(
                 request = GenerationRequest(
                     text=chunk_text_item,
                     output_path=chunk_path,
-                    voice=char_data.get("voice"),
+                    voice=seg_voice,
                     language=language,
-                    reference_audio=(
-                        project_path / char_data["reference_audio"]
-                        if char_data.get("reference_audio")
-                        else None
-                    ),
-                    direction=direction if use_ssml else None,
+                    reference_audio=seg_ref_audio,
+                    direction=direction if seg_use_ssml else None,
                     params={
-                        "ssml": use_ssml,
+                        "ssml": seg_use_ssml,
                         "temperature": gen_config.get("xtts_temperature", 0.7),
                         "repetition_penalty": gen_config.get(
                             "xtts_repetition_penalty", 5.0
@@ -312,7 +326,7 @@ async def _generate_chapter(
                     },
                 )
 
-                result = await engine.generate(request)
+                result = await seg_engine.generate(request)
 
                 if (
                     result.success
@@ -426,7 +440,6 @@ async def _generate_chapter(
         engine_used=engine_name,
         crossfade_ms=crossfade_ms,
         output=str(chapter_output) if stitch_ok else None,
-    )
 
     return {
         "chapter_id": ch_id,
