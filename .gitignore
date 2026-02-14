@@ -160,3 +160,5 @@ Thumbs.db
 # Local development files
 local-files/
 .windsurf/
+TOOLS/
+PROJECTS/MY_NOVEL/
