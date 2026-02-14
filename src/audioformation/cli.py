@@ -1258,7 +1258,7 @@ def _dry_run(project_id: str, engine_name: str | None) -> None:
     click.echo()
     click.echo("  Estimated cloud costs:")
     click.echo(f"    ElevenLabs: ~${eleven_cost:.2f}")
-    click.echo("    edge-tts:   \$0.00 (free)")
+    click.echo("    edge-tts:   $0.00 (free)")
 
 
 def _format_time(seconds: int) -> str:

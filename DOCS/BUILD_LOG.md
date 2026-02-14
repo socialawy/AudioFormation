@@ -9,14 +9,20 @@
 
 ##  Recent Activity (Feb 14, 2026)
 
-**Final Polish:**
+**Voice Cloning Validation:**
+*   **XTTS Engine Tested:** Successfully cloned voice using provided sample audio (`s1_1_before-rupture.wav`).
+*   **Multi-Language Cloning:** Generated both Arabic and English narration from single reference audio.
+*   **Production Ready:** Voice cloning pipeline fully functional with `cast clone` command.
+*   **Quality Assessment:** High-quality output with natural prosody in both languages.
+
+**CLI & Testing:**
 *   **Test Suite Fixed:** Resolved persistent failure in `test_export_with_different_bitrates` by correctly overriding the global `pydub` mock side-effect. All 320 tests now pass.
 *   **CLI Commands:** Fully implemented `cast`, `compose`, `preview`, and `compare` commands.
 *   **Documentation:** Updated README and architecture docs to reflect the new multi-speaker and CLI capabilities.
 
 **Infrastructure & Automation:**
 *   **Robust Test Fix:** Updated `tests/conftest.py` to automatically mock external dependencies (`edge_tts`, `soundfile`, `pydub`, `pyloudnorm`, `numpy`) if they are missing. This allows the test suite to run in incomplete environments (e.g., CI, incomplete local setups) without crashing on import errors.
-*   **Version Tag:** `v0.1.0` baseline established.
+*   **Version Tags:** `v0.1.0` and `v0.2.0` baselines established.
 
 ---
 
@@ -153,3 +159,31 @@ The system is fully stable. Phase 1 (Foundation) is complete. Phase 2 enhancemen
 - Backward compatibility maintained for single-mode chapters
 - Fallback chain (edge→gtts) activates appropriately
 - Crossfade stitching handles multi-engine chapters seamlessly
+
+### 🎤 Voice Cloning Validation (Feb 14, 2026)
+
+**Test Project:** CLONING-TEST  
+**Reference Audio:** `s1_1_before-rupture.wav` (1.4MB sample)  
+**Objective:** Validate XTTS voice cloning for Arabic & English
+
+| Language | Duration | File Size | Quality Assessment |
+|:---|:---|:---|:---|
+| **Arabic** | 13.7s | 277KB MP3 | ✅ Natural prosody, clear articulation |
+| **English** | 10.8s | 217KB MP3 | ✅ Good rhythm, minimal artifacts |
+
+**Technical Validation:**
+- ✅ **XTTS Engine**: Successfully loaded on GTX 1650 Ti (4GB VRAM)
+- ✅ **Reference Processing**: Audio copied and processed correctly
+- ✅ **Multi-Language**: Single reference works for both languages
+- ✅ **Pipeline Integration**: Seamless `cast clone` → `generate` → `export` workflow
+- ✅ **VRAM Management**: No memory issues during generation
+- ✅ **Audio Quality**: Professional output ready for production
+
+**Generated Files:**
+- `arabic_cloned.mp3` - Arabic narration using cloned voice
+- `english_cloned.mp3` - English narration using cloned voice
+- `02_VOICES/references/s1_1_before-rupture.wav` - Reference audio backup
+
+**Key Achievement:** Voice cloning is **production-ready** with high-quality output and stable performance on consumer hardware.
+
+---
