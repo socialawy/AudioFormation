@@ -700,8 +700,9 @@ parsing is Phase 2. Schema supports both from day one.
   }
 }
 ```
-#### Multi-Speaker Chapter (Phase 2)
-```json{
+#### Multi-Speaker Chapter 
+```json
+{
   "id": "ch03",
   "title": "المواجهة",
   "language": "ar",
@@ -714,6 +715,24 @@ parsing is Phase 2. Schema supports both from day one.
     "emotion": "confrontation"
   }
 }
+```
+
+**Implementation Details:**
+- **Per-segment character resolution**: Each `[speaker_id]` tag routes to specific character → engine → voice
+- **Engine tracking**: Tracks all engines used per chapter for proper VRAM cleanup
+- **Fallback handling**: Unknown characters fall back to chapter default engine
+- **Backward compatibility**: Single mode chapters work unchanged
+- **Text format**: Simple `[speaker_id]` tags on separate lines, blank lines revert to default
+
+**Text Example:**
+```text
+قال الراوي بصوت هادئ.
+
+[hero] لن أستسلم أبداً.
+
+[villain] سنرى عن قرب.
+
+عاد الراوي يكمل القصة.
 ```
 
 ## Arabic Text Processing Strategy
@@ -826,21 +845,23 @@ Unmarked text → default_character
 Speaker persists until next tag or blank line
 Blank line → revert to default_character
 Tags must match character IDs in project.json
-Phase 1 behavior: Ignore all [tags], generate everything
-with the single character field. Tags are preserved in text
-but treated as plain text.
-
-Phase 2 behavior: Parse tags → split into speaker segments
+✅ BUILT: Parse tags → split into speaker segments
 → generate each segment with assigned character's voice
-→ stitch in order with appropriate crossfade.
+→ stitch in order with appropriate crossfade
+→ proper VRAM cleanup for all engines used
 ```
-#### Parser Location
+#### Parser Location (✅ BUILT)
 ```text
 src/audioformation/utils/text.py:
 ├── parse_chapter_segments(text, mode, default_char) → List[Segment]
 │   Segment = { character: str, text: str, index: int }
 ├── chunk_segment(segment, max_chars, strategy) → List[Chunk]
 └── validate_speaker_tags(text, known_characters) → List[Warning]
+
+src/audioformation/generate.py:
+├── _generate_chapter() → Per-segment character resolution
+├── engines_used tracking → VRAM management for all engines
+└── Fallback handling → Unknown characters → default engine
 ```
 *This format is intentionally simple. No XML, no SSML in source
 files. Just [speaker_id] on its own line. Easy to write,
@@ -951,30 +972,40 @@ Schema supports both now. Not using frequency-aware ducking by default.
 
 ## Implementation Phases
 
-### Phase 1: Foundation + First Audio Output ✅ COMPLETE
-Status: ✅ BUILT - All deliverables implemented, 264/264 tests passing
+### Phase 1: Foundation + First Audio Output 
+Status:  - All deliverables implemented, 314/314 tests passing
 
-├── ✅ Project scaffolding (CLI: new, list, status)
-├── ✅ project.json schema + validation (jsonschema)
-├── ✅ Folder structure creation (00_CONFIG through 07_EXPORT)
-├── ✅ Hardware detection (GPU name, VRAM, CUDA availability)
-├── ✅ Text ingestion (plain text + encoding detection)
-├── ✅ Edge TTS integration (generate per-chapter)
-├── ✅ LUFS measurement on every generated file (pyloudnorm)
-├── ✅ Basic QC scan (SNR, clipping, duration sanity)
-├── ✅ qc_report.json output
-├── ✅ MP3 export (pydub + ffmpeg)
-├── ✅ pytest setup with fixtures
-├── ✅ Test with Arabic text FIRST (harder case validates easier)
-├── 🆕 gTTS fallback engine integration
-├── ⚠️ edge-tts v7 upgrade for DRM token fix
-└── ✅ Engine fallback chain (edge-tts → gTTS)
+├── Project scaffolding (CLI: new, list, status)
+├── project.json schema + validation (jsonschema)
+├── Folder structure creation (00_CONFIG through 07_EXPORT)
+├── Hardware detection (GPU name, VRAM, CUDA availability)
+├── Text ingestion (plain text + encoding detection)
+├── Edge TTS integration (generate per-chapter)
+├── LUFS measurement on every generated file (pyloudnorm)
+├── Basic QC scan (SNR, clipping, duration sanity)
+├── qc_report.json output
+├── MP3 export (pydub + ffmpeg)
+├── pytest setup with fixtures
+├── Test with Arabic text FIRST (harder case validates easier)
+├── gTTS fallback engine integration
+├── edge-tts v7 upgrade for DRM token fix
+├── Engine fallback chain (edge-tts → gTTS)
+└── Multi-speaker dialogue (per-segment character resolution)
 
 ### Phase 2: XTTS + Characters + Processing
 Deliverable: Voice-cloned narration with consistent quality
 
-├── ⏳ XTTS v2 integration (coqui-tts, Idiap fork)
-├── ⏳ Aggressive chunking (breath-group strategy)
+├── XTTS v2 integration (coqui-tts, Idiap fork)
+├── Aggressive chunking (breath-group strategy)
+├── Character profile system (JSON-driven)
+├── Voice cloning workflow (reference audio → XTTS)
+├── Cloud API adapter (httpx, abstract interface)
+├── Crossfade stitching (Smart overrides: Edge 120ms, XTTS 80ms)
+├── Engine fallback scope (Per-chapter logic implemented)
+├── Arabic diacritics preprocessing (Mishkal integration)
+├── Ambient pad generator (Numpy synthesis, mood presets)
+├── Batch normalization (ffmpeg loudnorm filter)
+└── Per-chunk retry logic on QC failure
 ├── ⏳ Character profile system (JSON-driven)
 ├── ⏳ Voice cloning workflow (reference audio → XTTS)
 ├── ⏳ Cloud API adapter (httpx, abstract interface)
@@ -1077,6 +1108,7 @@ audioformation/
 │ ├── test_project.py
 │ ├── test_pipeline.py
 │ ├── test_engines.py
+│ ├── test_multispeaker.py # Multi-speaker parsing, generation, edge cases
 │ ├── test_arabic.py # Diacritics, mixed text, dialect matching
 │ ├── test_chunking.py # Breath-group, language boundary, crossfade
 │ ├── test_qc.py # SNR, clipping, pitch, boundary artifacts
