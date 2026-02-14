@@ -48,7 +48,7 @@ vad = [
     "silero-vad>=6.0,<7",     # Pin: community-maintained
 ]
 dev = [
-    "pytest>=8.0,<9",
+    "pytest>=8.0,<10",
     "pytest-asyncio>=0.23,<2",
     "httpx[test]",
     "pre-commit>=3.6,<5",
