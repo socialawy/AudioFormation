@@ -94,8 +94,19 @@ The system is fully stable. Phase 1 (Foundation) is complete. Phase 2 enhancemen
 
 ## 🔮 Roadmap (Immediate Next Steps)
 
-1.  **Mixer Implementation:** Build `audio/mixer.py` using `pydub` + `scipy` for ducking.
-2.  **CLI Finalization:** Expose `compose` and `mix` commands to the user.
+### Phase 2 (In Progress)
+- ⏳ Cast CLI commands (`cast list`, `cast add`, `cast clone`)
+- ⏳ Wire `compose` CLI command to existing generator
+- ⏳ Cloud TTS adapters (OpenAI, Gemini — ElevenLabs ✅ done)
+- ⏳ `preview` and `compare` commands for audio comparison
+- ⏳ Decouple `click.echo()` from library code (blocks Phase 3 server)
+
+### Phase 3 (Planned)
+- Multi-track mixer with VAD-based ducking (`audio/mixer.py`)
+- QC Final gate (depends on mixer output)
+- M4B audiobook export with chapter markers
+- FastAPI server + web dashboard with wavesurfer.js timeline
+- FXForge (SFX domain — procedural + sample import)
 
 ### 🎯 Recent Completion: Multi-Speaker Integration (Feb 14, 2026)
 

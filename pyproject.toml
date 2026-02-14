@@ -13,29 +13,16 @@ license = {text = "MIT"}
 dependencies = [
     # CLI + API
     "click>=8.1,<9",
-    "fastapi>=0.109,<1",
-    "uvicorn[standard]>=0.27,<1",
-
     # Audio I/O
     "pydub>=0.25,<1",
     "audioop-lts>=0.2; python_version>='3.13'",
     "numpy>=1.26,<3",
     "soundfile>=0.12,<1",
-
     # TTS engines
     "edge-tts>=7.0",   # v7 fixed DRM token 403s
-    "httpx>=0.27,<1",
     "transformers>=4.44,<5",  # Pin to prevent breakage
-
     # Audio analysis
     "pyloudnorm>=0.2,<1",
-
-    # Music
-    "midiutil>=1.2,<2",
-
-    # Export metadata
-    "mutagen>=1.47,<2",
-
     # Schema validation
     "jsonschema>=4.21,<5",
 ]
@@ -46,6 +33,20 @@ xtts = [
 ]
 vad = [
     "silero-vad>=6.0,<7",     # Pin: community-maintained
+]
+cloud = [
+    "httpx>=0.27,<1",
+    "python-dotenv>=1.0,<1",
+]
+server = [
+    "fastapi>=0.109,<1",
+    "uvicorn[standard]>=0.27,<1",
+]
+m4b = [
+    "mutagen>=1.47,<2",
+]
+midi = [
+    "midiutil>=1.2,<2",
 ]
 dev = [
     "pytest>=8.0,<10",

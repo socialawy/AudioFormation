@@ -74,13 +74,14 @@ echo "مرحبا" | audioformation quick --voice ar-SA-HamedNeural
 ## Requirements
 Python 3.11+
 ffmpeg on PATH
-Optional: NVIDIA GPU with 4GB+ VRAM for XTTS voice cloning (Phase 2)
+Optional: NVIDIA GPU with 4GB+ VRAM for XTTS voice cloning
 
 ## Engine Support
 - **edge-tts**: Free, excellent Arabic voices, upgraded to v7 for DRM compatibility
 - **gTTS**: Emergency fallback, activates automatically on edge-tts failures
-- **XTTS**: Local voice cloning (Phase 2, requires GPU)
-- **Cloud engines**: ElevenLabs, OpenAI TTS (Phase 2, API keys required)
+- **XTTS v2**: Local voice cloning, engine adapter built (requires GPU, `pip install -e ".[xtts]"`)
+- **ElevenLabs**: Cloud TTS adapter built (requires API key, `pip install -e ".[cloud]"`)
+- **Cloud engines**: OpenAI TTS, Gemini TTS (Phase 3, API keys required)
 
 ## Features
 Feature | Status
@@ -94,23 +95,41 @@ MP3 export with manifest | ✅ BUILT
 Arabic diacritics detection | ✅ BUILT
 Engine fallback chain (edge-tts → gTTS) | ✅ BUILT
 gTTS emergency fallback | ✅ BUILT
-XTTS voice cloning | ⏳ PHASE 2
+XTTS v2 engine adapter | ✅ BUILT (CLI workflow ⏳ Phase 2)
+ElevenLabs engine adapter | ✅ BUILT (requires API key)
 Multi-speaker dialogue | ✅ BUILT
 Ambient pad generation | ✅ BUILT
-VAD-based ducking | ⏳ PHASE 2
-M4B audiobook export | ⏳ PHASE 2
-Web dashboard | ⏳ PHASE 2
+VAD-based ducking | ⏳ PHASE 3
+M4B audiobook export | ⏳ PHASE 3
+Web dashboard | ⏳ PHASE 3
 
 ## Architecture
-```text
-audioformation CLI → FastAPI Server → Five Engines
-                                      ├── VoxEngine (TTS)
-                                      ├── FXForge (SFX)
-                                      ├── ComposeEngine (Music)
-                                      ├── MixBus (Mixing)
-                                      └── ShipIt (Export)
+
+AudioFormation follows a modular pipeline architecture with five core domains:
+
 ```
-- See ARCHITECTURE.md for the full planning document.
+audioformation CLI → Pipeline State Machine
+├── TTS Engines (edge, gtts, xtts, elevenlabs) ✅ IMPLEMENTED
+├── Audio Processor (normalize, trim, stitch) ✅ IMPLEMENTED  
+├── Ambient Composer (pad generation) ✅ IMPLEMENTED
+├── QC Scanner (per-chunk quality) ✅ IMPLEMENTED
+└── Exporter (MP3 + manifest) ✅ IMPLEMENTED
+```
+
+### Implementation Status
+
+- ✅ **Phase 1 Complete**: Core TTS pipeline, QC, audio processing
+- 🟡 **Phase 2 In Progress**: Cloud TTS, voice cloning, preview tools
+- ⏳ **Phase 3 Planned**: Mixer with ducking, M4B export, web interface
+- ⏳ **Phase 4 Future**: Algorithmic composition, advanced features
+
+### Current Capabilities
+
+- ✅ Multi-engine TTS with automatic fallback
+- ✅ Arabic text processing and chunking
+- ✅ Audio quality control and normalization
+- ✅ Multi-speaker chapter generation
+- ✅ Project validation and error reporting
 
 ## Pipeline
 
@@ -159,7 +178,10 @@ pytest -v
 - ✅ **Engine Fallback**: edge-tts → gTTS automatic fallback for robust generation
 - ✅ **Arabic Support**: Full Arabic text processing with diacritics detection
 - ✅ **Multi-Speaker**: Per-segment character resolution with engine-specific routing
-- ⏳ **Phase 2**: XTTS voice cloning, advanced mixing, M4B audiobook export
+- ✅ **XTTS Engine**: Adapter built with VRAM management (cast CLI workflow pending)
+- ✅ **ElevenLabs Engine**: Cloud adapter built (API key required)
+- ⏳ **Phase 2 In Progress**: Cast CLI commands, compose CLI wiring, preview tools
+- ⏳ **Phase 3 Planned**: Mixer with ducking, M4B export, QC Final, web interface
 
 ## Known Issues & Limitations
 
@@ -169,24 +191,28 @@ pytest -v
 | **Mishkal Quality** | Some Arabic words incorrectly diacritized, causing mispronunciation | Manual review of `.diacritized.txt` files | Evaluate CAMeL Tools or hybrid approach |
 | **Robotic Tone** | Edge-tts Arabic voices lack narrative expressiveness | Use direction config with non-Arabic voices, or XTTS | Research: Fine-tuned XTTS for Arabic narration |
 | **Session Length** | Tonal drift possible in very long generation sessions (>100 chunks) | Break into sessions: ≤50 chunks optimal, ≤100 chunks acceptable | Phase 3: Session management + quality gates |
+| **click.echo coupling** | Library code (`generate.py`) uses `click.echo()` directly — will block Phase 3 server | Use CLI only (no server yet) | Decouple to callback/logging pattern before server work |
 
 ## Roadmap
 
 ### Phase 2 (In Progress)
-- ⏳ XTTS voice cloning with reference audio
-- ⏳ Cloud API adapters (ElevenLabs, OpenAI)
-- ⏳ Advanced mixing with VAD-based ducking
-- ⏳ M4B audiobook export with chapters
+- ⏳ Cast CLI commands (`cast list`, `cast add`, `cast clone`)
+- ⏳ Wire `compose` CLI command to existing generator
+- ⏳ Cloud TTS adapters (OpenAI, Gemini — ElevenLabs ✅ done)
+- ⏳ `preview` and `compare` commands
+- ⏳ Decouple `click.echo()` from library code
 
 ### Phase 3 (Planned)
-- Narrative control: Words Per Minute (WPM) specification
-- Tone profiles: dramatic, documentary, intimate presets
-- Web dashboard with timeline visualization
-- Session management with quality consistency checks
+- Multi-track mixer with VAD-based ducking (`audio/mixer.py`)
+- QC Final gate (depends on mixer output)
+- M4B audiobook export with chapter markers
+- FastAPI server + web dashboard with wavesurfer.js timeline
+- FXForge (SFX domain — procedural + sample import)
 
 ### Phase 4 (Future)
-- FishAudio-S1 / IndexTTS evaluation
+- Algorithmic composition (ComposeEngine Tier 3)
 - PyInstaller packaging for standalone distribution
+- FishAudio-S1 / IndexTTS evaluation
 - VideoFormation integration
 
 ## Contributing

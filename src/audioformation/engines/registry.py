@@ -65,5 +65,12 @@ def _register_defaults() -> None:
     except ImportError:
         pass
 
+    # ElevenLabs registered only if httpx is installed
+    try:
+        from audioformation.engines.elevenlabs import ElevenLabsEngine
+        registry.register("elevenlabs", ElevenLabsEngine)
+    except ImportError:
+        pass
+
 
 _register_defaults()

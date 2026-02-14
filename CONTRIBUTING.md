@@ -67,13 +67,18 @@ src/audioformation/
 ## Adding New TTS Engines
 
 1. Create engine class in `src/audioformation/engines/`
-2. Inherit from `BaseEngine` in `base.py`
-3. Implement required methods:
-   - `generate()`
-   - `get_voices()`
-   - `test_availability()`
-4. Register engine in `registry.py`
+2. Inherit from `TTSEngine` in `base.py`
+3. Implement required properties and methods:
+   - `name` (property)
+   - `supports_cloning` (property)
+   - `supports_ssml` (property)
+   - `requires_gpu` (property)
+   - `generate(request: GenerationRequest) -> GenerationResult`
+   - `list_voices(language: str | None) -> list[dict]`
+   - `test_connection() -> bool`
+4. Register engine in `registry.py` (`_register_defaults()`)
 5. Add tests in `tests/test_engines.py`
+6. See `engines/elevenlabs.py` for a complete cloud adapter example
 
 ## Submitting Changes
 
@@ -101,8 +106,9 @@ src/audioformation/
 
 ## Current Development Status
 
-- ✅ **Phase 1**: Core pipeline, edge-tts, gTTS fallback, Arabic support
-- ⏳ **Phase 2**: XTTS voice cloning, multi-speaker dialogue
-- ⏳ **Phase 3**: Advanced mixing, ambient pads, M4B export
+- ✅ **Phase 1 Complete**: Core pipeline, edge-tts, gTTS fallback, Arabic support
+- ✅ **Phase 2 Partial**: XTTS engine, ElevenLabs adapter, multi-speaker, ambient composer
+- ⏳ **Phase 2 Remaining**: Cast CLI, compose CLI wiring, preview/compare commands
+- ⏳ **Phase 3 Planned**: Mixer with ducking, M4B export, QC Final, web dashboard
 
-Focus contributions on Phase 2 features or bug fixes in Phase 1 functionality.
+Focus contributions on Phase 2 remaining items or bug fixes in existing functionality.

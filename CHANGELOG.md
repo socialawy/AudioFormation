@@ -34,9 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - File selection fixes in CLI process/export commands
 - Ambient pad generation with mood presets
 - Pipeline wiring for Items 1-8 complete
+- ElevenLabs cloud TTS engine adapter (`engines/elevenlabs.py`)
+- ElevenLabs auto-registration in engine registry (requires httpx)
 
 ### Changed
 - **Dependencies:** pytest 8.0→<10, pytest-asyncio <1→<2, pre-commit <4→<5
+- **Dependencies:** Moved `fastapi`, `uvicorn`, `midiutil` to optional dependency groups (`server`, `midi`)
+- **Dependencies:** `mutagen` available in both core (export) and optional `m4b` group
+- **Dependencies:** Added `cloud`, `server`, `m4b`, `midi` optional dependency groups
 - Improved speaker tag parsing with per-segment character resolution
 - Enhanced error reporting in generation
 - Updated documentation to reflect multi-speaker implementation status
@@ -57,6 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - File selection logic excluding chunk files
 - Type checking for malformed chapter entries
 
+### Removed
+- **Duplicate `text.py`**: Removed root-level `src/audioformation/text.py` (duplicate of `utils/text.py`, not in architecture)
+
 ## [0.1.0] - 2026-02-13
 
 ### Added
@@ -70,7 +78,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic QC scanning and reporting
 - Arabic text processing foundation
 - CLI interface with all pipeline commands
-- FastAPI server foundation
 - Comprehensive test suite (218/218 passing)
 
 ### Features
@@ -82,21 +89,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Testing**: Comprehensive test coverage with fixtures
 
 ### Architecture
-- Five-engine architecture: VoxEngine, FXForge, ComposeEngine, MixBus, ShipIt
+- Five-domain architecture: VoxEngine (TTS), FXForge (SFX), ComposeEngine (Music), MixBus (Mixing), ShipIt (Export)
 - JSON schema validation for project configuration
 - Chunk-level resumability for long-running operations
 - Security utilities for path validation and sanitization
 - Modular design for easy engine extension
 
-## [Upcoming - Phase 2]
+## Roadmap (Not Changelog Entries)
 
-### Planned
-- Advanced mixing with VAD-based ducking
+### Phase 2 — In Progress
+- Cast CLI commands (`cast list`, `cast add`, `cast clone`)
+- Wire `compose` CLI command to existing generator
+- Cloud TTS adapters (OpenAI, Gemini — ElevenLabs ✅ done)
+- `preview` and `compare` commands
+- Decouple `click.echo()` from library code
+
+### Phase 3 — Planned
+- Multi-track mixer with VAD-based ducking
 - M4B audiobook export with chapter markers
-- Web dashboard for project management
-- Cloud engine support (ElevenLabs, OpenAI TTS)
+- QC Final gate (depends on mixer)
+- FastAPI server + web dashboard
+- FXForge (SFX domain)
 
-### Completed
-- XTTS v2 integration for local voice cloning ✅
+### Phase 2 Completed
+- XTTS v2 engine adapter with VRAM management ✅
+- ElevenLabs cloud TTS adapter ✅
 - Multi-speaker dialogue parsing and generation ✅
-- Character profile system with voice assignments ✅
+- Character profile routing via project.json ◐ (CLI workflow pending)
