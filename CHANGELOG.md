@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pipeline wiring for Items 1-8 complete
 
 ### Changed
-- Upgraded edge-tts to v7 to resolve 403 DRM token errors
+- **Dependencies:** pytest 8.0→<10, pytest-asyncio <1→<2, pre-commit <4→<5
 - Improved speaker tag parsing with per-segment character resolution
 - Enhanced error reporting in generation
 - Updated documentation to reflect multi-speaker implementation status
