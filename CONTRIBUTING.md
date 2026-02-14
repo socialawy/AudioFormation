@@ -21,7 +21,12 @@ Thank you for your interest in contributing to AudioFormation! This document pro
    pip install -e ".[dev]"
    ```
 
-4. **Verify installation**
+4. **Set up pre-commit hooks**
+   ```bash
+   pre-commit install
+   ```
+
+5. **Verify installation**
    ```bash
    audioformation --version
    pytest -v

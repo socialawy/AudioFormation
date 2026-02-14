@@ -23,6 +23,9 @@ Bilingual First	| Arabic + English as primary languages
 # Install
 pip install -e ".[dev]"
 
+# Set up pre-commit hooks (recommended)
+pre-commit install
+
 # Verify
 audioformation --version
 audioformation hardware
