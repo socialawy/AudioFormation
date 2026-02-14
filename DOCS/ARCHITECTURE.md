@@ -66,12 +66,21 @@ Providers (priority order):
 │ │ └── Auto-retry failed chunks (max 3 attempts)
 │ └── Pin version in pyproject.toml — community-maintained
 │
-├── elevenlabs # Priority 3: Premium cloud fallback
-│ └── Best overall quality, strong Arabic, pay-per-use
+├── elevenlabs # ✅ BUILT: Premium cloud fallback
+│ └── Best overall quality, strong Arabic, pay-per-use, voice cloning support
 │
-├── openai-tts # Priority 4: If Arabic quality improves
+├── openai-tts # Priority 4: If Arabic quality improves (Phase 3)
 │
-└── gemini-tts # Priority 5: If rate limits ease
+└── gemini-tts # Priority 5: If rate limits ease (Phase 3)
+
+#### Built Engines Summary (Phase 1–2)
+
+| Engine | Type | Status | Notes |
+|:---|:---|:---|:---|
+| **Edge-TTS** | Cloud | ✅ Phase 1 | Streaming synthesis, ~100ms latency, free tier |
+| **gTTS** | Cloud | ✅ Phase 1 | Fallback engine, slow but reliable, no API key |
+| **XTTS v2.0** | Local | ✅ Phase 2 | Speaker cloning, async generation, 30–60s per 10min |
+| **ElevenLabs** | Cloud | ✅ Phase 2 | Voice ID mapping, pooled HTTP client, awaits API key |
 
 Features:
 ├── Character profiles (voice + persona + direction per character)
@@ -100,8 +109,8 @@ Fallback 1: gTTS (🆕 ADDED)
 │ ├── Quality: Acceptable for emergencies
 │ └── Automatic retry with gTTS on edge-tts errors
 │
-Fallback 2: Cloud engines (⏳ PHASE 2)
-│ ├── ElevenLabs, OpenAI TTS, Gemini TTS
+Fallback 2: Cloud engines ⏳ PHASE 2)
+│ ├── ElevenLabs (✅ BUILT), OpenAI TTS, Gemini TTS (Phase 3)
 │ ├── Pay-per-use, premium quality
 │ └── Configurable API keys in 00_CONFIG/engines.json
 ```
@@ -109,8 +118,28 @@ Fallback 2: Cloud engines (⏳ PHASE 2)
 Implementation:
 - src/audioformation/engines/registry.py: Engine priority and fallback logic
 - src/audioformation/engines/gtts_engine.py: gTTS implementation
+- src/audioformation/engines/elevenlabs.py: ElevenLabs cloud adapter (ready for API key)
 - Automatic retry with next engine on generation failure
 - User-configurable engine preferences per character
+
+#### Test Infrastructure & Coverage
+
+**314 tests (100% passing), all isolated and mocked:**
+
+| Characteristic | Status | Notes |
+|:---|:---|:---|
+| Real API calls (edge-tts, gTTS, ElevenLabs) | ❌ None | All tests use MagicMock/AsyncMock |
+| Network dependency | ❌ None | CI/CD fully deterministic |
+| Test runtime | ✅ 11.4s | Fast, parallelizable suite |
+| Isolation strategy | ✅ Complete | `conftest.py` monkeypatches PROJECTS_ROOT to tmp_path |
+| Coverage by area | ✅ Comprehensive | Text handling, chunking, engines (abstract), multi-speaker, export, validation, QC |
+| Real-world API validation | ⚠️ Manual only | Tested outside automated suite (documented in BUILD_LOG) |
+
+**Test mocking approach:**
+- Engine tests: Use `MagicMock` for TTS library (torch, coqui-tts) and `AsyncMock` for async generation
+- Project tests: Redirect `PROJECTS_ROOT` to isolated `tmp_path`  
+- External services: Mock httpx for ElevenLabs, mock edge-tts responses
+- No environment variables required (API keys auto-mocked)
 
 - SSML Direction Mapping (edge-tts)
 

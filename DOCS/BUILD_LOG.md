@@ -57,8 +57,7 @@ The system is fully stable. Phase 1 (Foundation) is complete. Phase 2 enhancemen
 | **6** | **Ambient Composer** | ✅ Done | Pure Numpy generator. 5 presets (Zen, Tense, Dark, etc.). |
 | **7** | **XTTS v2 Integration** | ✅ Done | Full engine with VRAM management, generation params, and comprehensive tests. |
 | **8** | **Multi-Speaker Wiring** | ✅ Done | Per-segment character resolution with engine-specific routing. |
-| **9** | **Mixer + Ducking** | ⏳ Pending | Merge Voice + Ambient Pads with VAD-based ducking. |
-| **10** | **CLI Finalization** | ⏳ Pending | Expose `compose` and `mix` commands to the user. |
+| **9** | **CLI Finalization** | ⏳ Pending | Expose `compose` and `mix` commands to the user. |
 
 ### 🔬 Decision Record: XTTS Feasibility Spike
 *Run Date: Feb 2026 | Hardware: GTX 1650 Ti (4GB)*
@@ -94,18 +93,32 @@ The system is fully stable. Phase 1 (Foundation) is complete. Phase 2 enhancemen
 
 ## 🔮 Roadmap (Immediate Next Steps)
 
-### Phase 2 (In Progress)
-- ⏳ Cast CLI commands (`cast list`, `cast add`, `cast clone`)
-- ⏳ Wire `compose` CLI command to existing generator
-- ⏳ Cloud TTS adapters (OpenAI, Gemini — ElevenLabs ✅ done)
-- ⏳ `preview` and `compare` commands for audio comparison
-- ⏳ Decouple `click.echo()` from library code (blocks Phase 3 server)
+### Phase 2: CLI Commands & Cloud Adapters (⏳ In Progress)
 
-### Phase 3 (Planned)
-- Multi-track mixer with VAD-based ducking (`audio/mixer.py`)
+**Completed:**
+- ✅ XTTS v2.0 engine (full speaker cloning, async generation)
+- ✅ ElevenLabs cloud adapter (TTSEngine subclass, voice mapping, pooled HTTP client)
+- ✅ Multi-speaker support (character routing + voice assignment)
+
+**Pending (Ordered by Priority):**
+1. **Cast CLI** — Character management commands (cast list, cast add, cast clone, cast voices)
+   - Requires: Click command group scaffolding, character validation, voice preview
+2. **Compose CLI** — Project composition wiring (compose list, compose add, compose test)
+   - Requires: Composition config merging, preview/compare tooling
+3. **Cloud Adapters (OpenAI/Gemini)** — Text→Speech via cloud APIs (Note: ElevenLabs ✅ complete)
+   - Requires: API credential handling, fallback routing
+4. **Preview/Compare Tooling** — Side-by-side audio comparison (web or CLI playback)
+   - Requires: Audio diffing, quality metrics, playback server
+5. **click.echo() Decoupling** — Refactor generate.py to use callbacks/logging instead of CLI prints
+   - **Scope:** ~8 calls in generate.py only (isolated, not spread across engines/utils)
+   - **Why:** Required before FastAPI server work (Phase 3) to avoid hardcoded CLI output in library code
+   - **Risk Level:** Medium—touches core generation pipeline
+
+### Phase 3: Server & Advanced Audio (Planned)
+- Multi-track mixer with VAD-based ducking (`audio/mixer.py`) — core audio/ducking work
 - QC Final gate (depends on mixer output)
 - M4B audiobook export with chapter markers
-- FastAPI server + web dashboard with wavesurfer.js timeline
+- FastAPI server + web dashboard with wavesurfer.js timeline (blocked by click.echo() refactor)
 - FXForge (SFX domain — procedural + sample import)
 
 ### 🎯 Recent Completion: Multi-Speaker Integration (Feb 14, 2026)

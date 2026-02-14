@@ -80,6 +80,42 @@ src/audioformation/
 5. Add tests in `tests/test_engines.py`
 6. See `engines/elevenlabs.py` for a complete cloud adapter example
 
+## Decoupling Library Code from CLI
+
+The `generate.py` module currently uses `click.echo()` for progress reporting. Before Phase 3 
+(server work), this must be refactored to use standard logging or callbacks.
+
+**Current Pattern (❌ Don't do this):**
+```python
+from click import echo
+def generate_project(project_id: str):
+    echo(f"Generating {project_id}...")  # Hardcoded CLI output
+```
+
+**Target Pattern (✅ Do this):**
+```python
+import logging
+logger = logging.getLogger(__name__)
+
+def generate_project(project_id: str, progress_callback=None):
+    logger.info(f"Generating {project_id}...")
+    if progress_callback:
+        progress_callback(f"Generating {project_id}...")  # Optional, injectable
+```
+
+**Files to Update:**
+- `src/audioformation/generate.py` — ~8 click.echo() calls (lines 131, 137, 145, 365, 372, 383, 391, 414, 419)
+
+**Why This Matters:**
+Allows the library to be used as a pure Python module in FastAPI servers, Jupyter notebooks, 
+and other non-CLI contexts without hardcoded terminal output.
+
+**Review Checklist:**
+- [ ] No `from click import *` in library code (only in `cli.py`)
+- [ ] Core functions use `logging.info()` or optional callbacks
+- [ ] Tests mock progress callbacks, not `click.echo()`
+- [ ] CLI layer in `cli.py` can add pretty formatting (colors, progress bars) on top
+
 ## Submitting Changes
 
 1. Fork the repository
