@@ -13,6 +13,13 @@ VRAM strategies (set in generation.xtts_vram_management):
   empty_cache_per_chapter — keep model, clear cache (default)
   conservative            — unload model after every chapter
   reload_periodic         — unload/reload every N chapters
+
+TODO(Phase 2): Voice cloning workflow enhancements
+  - [ ] Batch reference audio validation (format, duration, quality)
+  - [ ] Speaker similarity scoring against reference
+  - [ ] Voice blending (multiple references → single voice)
+  - [ ] Fine-tuning hooks for custom voice adaptation
+  - [ ] Emotional tone control (happy, sad, neutral)
 """
 
 import gc

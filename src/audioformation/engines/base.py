@@ -4,6 +4,13 @@ Abstract base class for TTS engines.
 All engines implement this interface. Pipeline code calls engines
 through this contract — never directly. Swapping engines requires
 zero changes to pipeline logic.
+
+TODO(Phase 2): Cloud engine integration
+  - [ ] ElevenLabs engine adapter (high quality, API key required)
+  - [ ] OpenAI TTS engine adapter (GPT-4o voice, API key required)
+  - [ ] Cloud engine fallback (rate limiting, quota management)
+  - [ ] Async batching for cloud API efficiency
+  - [ ] Voice preview/download caching
 """
 
 from abc import ABC, abstractmethod

@@ -3,6 +3,13 @@ Generation pipeline — run TTS per chapter with chunking, crossfade,
 QC scanning, retry logic, and per-chapter engine fallback.
 
 Pipeline Node 3: Generate.
+
+TODO(Phase 2): Session length monitoring
+  - [ ] Track generation count per session
+  - [ ] Warn when approaching tonal drift threshold (>50 chunks)
+  - [ ] Recommend session break at 100 chunks
+  - [ ] Quality gate: pause and alert on detected tonal drift
+  - [ ] Auto-save checkpoint every N chunks for long sessions
 """
 
 import asyncio

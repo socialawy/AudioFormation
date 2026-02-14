@@ -113,10 +113,25 @@ audioformation CLI → FastAPI Server → Five Engines
 - See ARCHITECTURE.md for the full planning document.
 
 ## Pipeline
-```text
-Bootstrap → Ingest → Validate → Generate → QC → Process → Compose → Mix → QC Final → Export
-                      [GATE]                [AUTO]                          [GATE]
+
+```mermaid
+flowchart LR
+    A[Bootstrap] --> B[Ingest]
+    B --> C[Validate]
+    C --> D[Generate]
+    D --> E[QC]
+    E --> F[Process]
+    F --> G[Compose]
+    G --> H[Mix]
+    H --> I[QC Final]
+    I --> J[Export]
+    
+    style C fill:#ff6b6b,stroke:#333
+    style I fill:#ff6b6b,stroke:#333
 ```
+
+- **[GATE]** = Hard validation gates (must pass)
+- **[AUTO]** = Automatic retry on failure (engine fallback)
 ## Project Structure
 - Each project lives under PROJECTS/ with a standard directory layout:
 ```text
