@@ -14,7 +14,7 @@ The following versions of AudioFormation are currently supported with security u
 If you discover a security vulnerability in AudioFormation, please report it responsibly:
 
 **Where to report:**
-- **Email:** security@audioformation.dev (preferred for sensitive issues)
+- **Email:** ahmed.itc@gmail.com (ahmed.itc@gmail.com)
 - **GitHub Issues:** For non-sensitive security concerns, open a [GitHub Issue](https://github.com/socialawy/AudioFormation/issues) with the `security` label
 
 **What to include:**

@@ -7,7 +7,25 @@
 
 ---
 
-## 🚀 Current Status: Phase 2 Multi-Speaker Integration Complete
+## � Recent Activity (Feb 14, 2026)
+
+**Infrastructure & Automation:**
+*   Merged 3 Dependabot PRs (pytest, pytest-asyncio, pre-commit)
+*   Skipped transformers v5 PR (breaking changes, needs XTTS compatibility testing)
+*   Created release tag `v0.1.0` marking Phase 1 completion
+*   Added Mermaid pipeline diagram to README
+*   Added Phase 2 TODO comments throughout codebase
+
+**GitHub Setup Complete:**
+*   CI/CD workflows (CI, lint, security)
+*   Dependabot configuration
+*   Pre-commit hooks
+*   Pull request template
+*   Security policy, Code of Conduct, LICENSE
+
+---
+
+## �🚀 Current Status: Phase 2 Multi-Speaker Integration Complete
 
 The system is fully stable. Phase 1 (Foundation) is complete. Phase 2 enhancements (Items 1–8) are implemented and tested.
 
@@ -17,6 +35,10 @@ The system is fully stable. Phase 1 (Foundation) is complete. Phase 2 enhancemen
 *   **Arabic:** Full diacritization pipeline (Mishkal) and intelligent sentence splitting implemented.
 *   **Creativity:** Ambient pad generator (Composer) is live with 5 mood presets.
 *   **Voice Cloning:** XTTS v2 engine fully integrated with VRAM management and generation parameters.
+    
+	Note: The XTTS runtime (model, VRAM management and per-chunk generation) is integrated and tested. Higher-level
+	voice-cloning workflow pieces — automated reference ingestion/validation, character-profile management (CLI/UI),
+	and cloud TTS adapters — remain in-progress and are not yet fully implemented.
 *   **Multi-Speaker:** Per-segment character resolution with engine-specific routing.
 
 ---
