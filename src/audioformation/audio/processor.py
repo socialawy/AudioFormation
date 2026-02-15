@@ -317,3 +317,59 @@ def _format_from_path(path: Path) -> str:
         ".m4a": "ipod",
     }
     return formats.get(ext, "wav")
+
+
+def batch_process_project(project_id: str) -> dict[str, Any]:
+    """
+    Batch process all generated audio files in a project.
+    
+    Applies normalization and silence trimming to all chunks.
+    Returns processing statistics.
+    """
+    from audioformation.project import get_project_path
+    
+    project_path = get_project_path(project_id)
+    gen_dir = project_path / "03_GENERATED"
+    processed_dir = project_path / "03_GENERATED" / "processed"
+    processed_dir.mkdir(exist_ok=True)
+    
+    stats = {
+        "total_files": 0,
+        "processed": 0,
+        "failed": 0,
+        "errors": []
+    }
+    
+    # Find all audio chunks
+    audio_files = list(gen_dir.glob("*.wav"))
+    stats["total_files"] = len(audio_files)
+    
+    for audio_file in audio_files:
+        try:
+            # Skip if already processed
+            processed_file = processed_dir / audio_file.name
+            if processed_file.exists():
+                stats["processed"] += 1
+                continue
+            
+            # Apply normalization
+            temp_file = processed_file.with_suffix(".temp.wav")
+            if normalize_lufs(audio_file, temp_file):
+                # Apply silence trimming
+                if trim_silence(temp_file, processed_file):
+                    stats["processed"] += 1
+                else:
+                    stats["failed"] += 1
+                    stats["errors"].append(f"Silence trimming failed: {audio_file.name}")
+                
+                # Clean up temp file
+                temp_file.unlink(missing_ok=True)
+            else:
+                stats["failed"] += 1
+                stats["errors"].append(f"Normalization failed: {audio_file.name}")
+                
+        except Exception as e:
+            stats["failed"] += 1
+            stats["errors"].append(f"Processing error {audio_file.name}: {str(e)}")
+    
+    return stats

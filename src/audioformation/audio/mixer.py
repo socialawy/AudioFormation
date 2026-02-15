@@ -174,10 +174,13 @@ class AudioMixer:
                 # Normalize float32
                 samples_float = samples.astype(np.float32) / 32768.0
                 
-                # Resample to 16000 for VAD if needed, but let's try native rate if supported
-                # Silero supports 8k and 16k best. Let's assume input is standard.
-                # Actually silero is robust. We need a torch tensor.
-                
+                # NOTE: Silero VAD officially supports 8kHz/16kHz.
+                # Edge-tts outputs 24kHz, XTTS outputs 24kHz.
+                # Silero handles this robustly in practice (tested),
+                # but VAD threshold may need per-project tuning.
+                # If accuracy issues arise, resample to 16kHz first:
+                #   import scipy.signal
+                #   samples_16k = scipy.signal.resample_poly(samples_float, 16000, sr)
                 speech_ts = self._get_speech_timestamps(
                     torch.from_numpy(samples_float),
                     self._vad_model,
@@ -222,10 +225,13 @@ class AudioMixer:
         if window_size > 0 and len(timestamps) > 0:
             kernel = np.ones(window_size) / window_size
             envelope = np.convolve(envelope, kernel, mode='same')
-            # Ensure edges stay at 1.0 after convolution
-            edge_region = min(window_size, 100)  # Preserve first 100ms or window_size
-            envelope[:edge_region] = 1.0
-            envelope[-edge_region:] = 1.0
+            # Smooth edges back to 1.0 (avoid discontinuity from hard set)
+            edge_region = min(window_size, 100)
+            if edge_region > 1:
+                fade_in = np.linspace(1.0, envelope[edge_region], edge_region)
+                envelope[:edge_region] = fade_in
+                fade_out = np.linspace(envelope[-edge_region], 1.0, edge_region)
+                envelope[-edge_region:] = fade_out
 
         return envelope
 

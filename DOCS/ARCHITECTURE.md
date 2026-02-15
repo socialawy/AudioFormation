@@ -1,3 +1,4 @@
+
 # 🏭 AudioFormation — Planning/ARCHITECTURE Document
 
 
@@ -124,13 +125,13 @@ Implementation:
 
 #### Test Infrastructure & Coverage
 
-**320 tests (100% passing), all isolated and mocked:**
+**360 tests (100% passing), all isolated and mocked:**
 
 | Characteristic | Status | Notes |
 |:---|:---|:---|
 | Real API calls (edge-tts, gTTS, ElevenLabs) | ❌ None | All tests use MagicMock/AsyncMock |
 | Network dependency | ❌ None | CI/CD fully deterministic |
-| Test runtime | ✅ 11.4s | Fast, parallelizable suite |
+| Test runtime | ✅ 10.7s | Fast, parallelizable suite |
 | Isolation strategy | ✅ Complete | `conftest.py` monkeypatches PROJECTS_ROOT to tmp_path |
 | Coverage by area | ✅ Comprehensive | Text handling, chunking, engines (abstract), multi-speaker, export, validation, QC |
 | Real-world API validation | ⚠️ Manual only | Tested outside automated suite (documented in BUILD_LOG) |
@@ -489,8 +490,8 @@ VideoFormation API:        localhost:3001
 | 3.5 | QC Scan | ✅ BUILT | Per-chunk quality check (SNR, pitch, duration, clipping, LUFS) |
 | 4 | Process | ✅ BUILT | Batch normalization (ffmpeg loudnorm), silence trimming |
 | 5 | Compose | ✅ BUILT | Optional: generate ambient pads with `compose` CLI |
-| 6 | Mix | ⏳ PHASE 3 | Multi-track layering, VAD ducking, chapter assembly |
-| 7 | QC Final | ⏳ PHASE 3 | Final mix validation (LUFS, true-peak, gaps, clipping) |
+| 6 | Mix | ✅ BUILT | Multi-track layering, VAD ducking, chapter assembly |
+| 7 | QC Final | ✅ BUILT | Final mix validation (LUFS, true-peak, gaps, clipping) |
 | 8 | Export | ✅ BUILT | Render MP3/WAV, embed metadata, generate manifest + checksums |
 
 ## Tech Stack
@@ -1038,22 +1039,23 @@ Deliverable: Voice-cloned narration with consistent quality
 └── ✅ Per-chunk retry logic on QC failure
 
 ### Phase 3: Mix + Export + Dashboard
+Status: **Completed**
 Deliverable: Full audiobook with chapters, mixed and exported
 
-├── Ambient pad generator (numpy synthesis, mood presets)
-├── Music/SFX import + catalog
-├── Multi-track mixer (voice + music layers)
-├── VAD-based ducking (silero-vad trigger + gain envelope)
-├── Chapter assembly (ordered concatenation)
-├── QC Final gate (LUFS, true-peak, gaps, clipping)
-├── M4B export (ffmpeg + ffmetadata chapters)
-├── Cover art + ID3 metadata (mutagen)
-├── Manifest with SHA256 checksums
-├── FastAPI server + REST endpoints
-├── Web dashboard (vanilla HTML/JS, project browser + timeline)
-└── Full test suite + documentation
+├── ✅ Ambient pad generator (numpy synthesis, mood presets)
+├── ✅ Music/SFX import + catalog
+├── ✅ Multi-track mixer (voice + music layers)
+├── ✅ VAD-based ducking (silero-vad trigger + gain envelope)
+├── ✅ Chapter assembly (ordered concatenation)
+├── ✅ QC Final gate (LUFS, true-peak, gaps, clipping)
+├── ✅ M4B export (ffmpeg + ffmetadata chapters)
+├── ✅ Cover art + ID3 metadata (mutagen)
+├── ✅ Manifest with SHA256 checksums
+├── ✅ FastAPI server + REST endpoints
+├── ✅ Web dashboard (vanilla HTML/JS, project browser + timeline)
+└── ✅ Full test suite + documentation
 **Dashboard: Timeline View**
-Consider integrating `wavesurfer.js` for the mix timeline.
+Integrated `wavesurfer.js` for the mix timeline.
 Single dependency, gives interactive waveform display, makes the
 mix step dramatically more intuitive than abstract timeline blocks.
 Dashboard tabs:

@@ -71,12 +71,15 @@ def mix_project(
             bg_music_path = None
     else:
         # Auto-detect latest music
-        candidates = sorted(music_dir.glob("*.wav"), key=lambda f: f.stat().st_mtime, reverse=True)
-        if candidates:
-            bg_music_path = candidates[0]
-            _notify(f"  Using background music: {bg_music_path.name}")
+        if music_dir.exists():
+            candidates = sorted(music_dir.glob("*.wav"), key=lambda f: f.stat().st_mtime, reverse=True)
+            if candidates:
+                bg_music_path = candidates[0]
+                _notify(f"  Using background music: {bg_music_path.name}")
+            else:
+                _notify("  No background music found. Mixing voice only.")
         else:
-            _notify("  No background music found. Mixing voice only.")
+             _notify("  No music directory found. Mixing voice only.")
 
     # Find processed chapters
     def _is_chunk_file(f: Path) -> bool:
@@ -85,18 +88,22 @@ def mix_project(
         parts = f.stem.rsplit("_", 1)
         return len(parts) == 2 and parts[1].isdigit()
 
-    chapter_files = sorted(
-        f for f in processed_dir.glob("ch*.wav")
-        if not _is_chunk_file(f)
-    )
+    chapter_files = []
+    if processed_dir.exists():
+        chapter_files = sorted(
+            f for f in processed_dir.glob("ch*.wav")
+            if not _is_chunk_file(f)
+        )
 
     if not chapter_files:
         # Fallback to raw if processed missing
         raw_dir = project_path / "03_GENERATED" / "raw"
-        chapter_files = sorted(
-            f for f in raw_dir.glob("ch*.wav")
-            if not _is_chunk_file(f)
-        )
+        if raw_dir.exists():
+            chapter_files = sorted(
+                f for f in raw_dir.glob("ch*.wav")
+                if not _is_chunk_file(f)
+            )
+        
         if chapter_files:
             _notify("⚠ Using RAW audio (process step skipped?)", "warning")
         else:

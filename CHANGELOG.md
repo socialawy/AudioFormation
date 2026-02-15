@@ -8,15 +8,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-14
+
 ### Added
+- **Mixer engine** (`audio/mixer.py`): Multi-track mixing with VAD-based ducking (Silero) and energy fallback
+- **Mix pipeline node** (`mix.py`): Orchestrator with auto-detect background music, processed→raw fallback
+- **QC Final gate** (`qc/final.py`): LUFS ±1, true peak, clipping validation on mixed output
+- **XTTS v2 engine** (`engines/xtts.py`): Local voice cloning with VRAM management (empty_cache, conservative, reload_periodic)
+- **Multi-speaker generation**: Per-segment character→voice→engine routing with `[speaker_id]` tags
+- **ElevenLabs engine** (`engines/elevenlabs.py`): Cloud TTS adapter
+- **SFX generator** (`audio/sfx.py`): Procedural whoosh, impact, UI click, drone
+- **Audio synthesis** (`audio/synthesis.py`): Low-level oscillator/noise primitives
+- **M4B export** (`export/m4b.py`): Audiobook with chapter markers, ffmetadata, cover art
+- **Web dashboard**: Projects, Editor (config tabs + generation control), Mix & Review (wavesurfer.js)
+- **6 new API endpoints**: validate, process, compose, export, qc, qc-final
+- **Per-engine crossfade overrides**: edge 120ms, xtts 80ms, gtts 150ms
+- **Per-chapter engine fallback**: Chapter-scope and project-scope strategies
+- **Ambient pad generator**: 5 mood presets, pure numpy, loopable
+- **Arabic diacritics pipeline**: Mishkal integration with auto-detect and store-both-versions
 - **Web Dashboard:** Minimal HTML/JS interface for project management.
   - Project list view with status indicators.
   - New project creation UI.
   - Static file serving via FastAPI (requires `aiofiles`).
+  - **Timeline:** Waveform visualization (`wavesurfer.js`) and audio playback.
+  - **Editor:** Chapter configuration, text ingest, and generation controls.
+  - **Mix View:** Trigger mix pipeline, view status, listen to results.
 - **M4B Export:** Full audiobook export with chapter markers, metadata, and cover art (`audioformation export --format m4b`).
 - **QC Final:** Hard gate for mixed audio validation (LUFS, True Peak, Clipping) (`audioformation qc-final`).
 - **Mixing:** VAD-based ducking for background music (`audioformation mix`).
+- **API Endpoints:**
+  - `POST /api/projects/{id}/mix`
+  - `POST /api/projects/{id}/generate`
+  - `PUT /api/projects/{id}`
 - **CLI Commands:**
+  - `mix`: Run the mixing pipeline.
   - `cast`: Manage characters (`list`, `add`, `clone`).
   - `compose`: Generate ambient music pads using procedural synthesis.
   - `preview`: Generate short samples of chapters for rapid voice iteration.
@@ -52,34 +77,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ElevenLabs auto-registration in engine registry (requires httpx)
 
 ### Changed
+- **Project schema:** updated with all Phase 2/3 fields (fallback, crossfade, ducking, VRAM, multi-speaker)
+- **Pipeline:** status tracking now at chunk level with resume support
+- **Server:** routes expanded from 4 to 13 endpoints
+
 - **Dependencies:** Added `aiofiles` to `[server]` group.
-- **Refactor:** Decoupled `generate.py` from CLI `click` functions. Now uses `logging` and callbacks, enabling future API server integration.
-- **Testing:** Increased coverage to 349 tests (100% passing). Added robust dependency mocking in `conftest.py` for CI stability.
+- **Refactor:** Decoupled `generate.py` and `mix.py` from CLI `click` functions. Now uses `logging` and callbacks.
+- **Testing:** Increased coverage to 360 tests (100% passing). Added robust dependency mocking in `conftest.py`.
 - **Dependencies:** pytest 8.0→<10, pytest-asyncio <1→<2, pre-commit <4→<5
 - **Dependencies:** Moved `fastapi`, `uvicorn`, `midiutil` to optional dependency groups (`server`, `midi`)
 - **Dependencies:** `mutagen` available in both core (export) and optional `m4b` group
 - **Dependencies:** Added `cloud`, `server`, `m4b`, `midi` optional dependency groups
-- Improved speaker tag parsing with per-segment character resolution
-- Enhanced error reporting in generation
-- Updated documentation to reflect multi-speaker implementation status
-- Reference audio resolution now uses project_path instead of bare Path
-- Generation pipeline now supports XTTS-specific parameters
-- Added VRAM management hooks after chapter stitching
-- Enhanced VRAM management to iterate over all engines used per chapter
-- Updated generation requests to use segment-specific voice and reference audio
+- **Improved speaker tag parsing:** with per-segment character resolution
+- **Enhanced error reporting:** in generation
+- **Updated documentation:** to reflect multi-speaker implementation status
+- **Reference audio resolution:** now uses project_path instead of bare Path
+- **Generation pipeline:** now supports XTTS-specific parameters
+- **Added VRAM management:** hooks after chapter stitching
+- **Enhanced VRAM management:** to iterate over all engines used per chapter
+- **Updated generation requests:** to use segment-specific voice and reference audio
 
 ### Fixed
+- **Server import error:** (`scan_project_chunks` removed — dead import)
+- **Schema validation:** now covers generation, mix, export, and QC sections
+- **Envelope edge artifacts:** in mixer (smooth fade vs hard set)
+- **Mix Logic:** Decoupled from CLI for server compatibility.
 - **QC Command:** Fixed `NameError: name 'all_reports' is not defined` in `qc` command
 - **Chapter File Detection:** Fixed underscore filtering to properly distinguish chapter files from chunk files using numeric suffix check
 - **SSML for Arabic:** Disabled SSML for edge-tts Arabic voices to prevent tags being read as text
 - **torch CUDA Property:** Fixed `AttributeError` by using `total_memory` instead of `total_mem`
-- FileExistsError in tests (added exist_ok=True)
-- Invalid escape sequence warning in CLI
-- File selection logic excluding chunk files
-- Type checking for malformed chapter entries
+- **FileExistsError in tests:** (added exist_ok=True)
+- **Invalid escape sequence warning:** in CLI
+- **File selection logic:** excluding chunk files
+- **Type checking for malformed chapter entries**
 
 ### Removed
 - **Duplicate `text.py`**: Removed root-level `src/audioformation/text.py` (duplicate of `utils/text.py`, not in architecture)
+
+### Tests
+- **371 tests passing** (up from 264 in v0.2)
+- New test suites: test_mix_unit, test_multispeaker, test_xtts, test_qc_final, test_sfx, test_composer, test_server
 
 ## [0.1.0] - 2026-02-13
 
@@ -110,19 +147,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Chunk-level resumability for long-running operations
 - Security utilities for path validation and sanitization
 - Modular design for easy engine extension
-
-## Roadmap (Not Changelog Entries)
-
-### Phase 3 — In Progress
-- Web dashboard with editor and timeline
-- FXForge (SFX domain)
-
-### Phase 2 Completed
-- XTTS v2 engine adapter with VRAM management ✅
-- ElevenLabs cloud TTS adapter ✅
-- Multi-speaker dialogue parsing and generation ✅
-- Character profile routing via project.json ✅
-- Cast CLI commands (`cast list`, `cast add`, `cast clone`) ✅
-- Compose CLI wiring (`audioformation compose`) ✅
-- Preview & Compare CLI commands ✅
-- QC Final & M4B Export ✅
