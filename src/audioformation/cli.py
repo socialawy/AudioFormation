@@ -8,7 +8,7 @@ generate, qc, export, quick, engines, run.
 Phase 2 commands: cast (manage characters), compose (ambient music),
                   preview (fast check), compare (A/B testing).
 
-Phase 3 commands: mix.
+Phase 3 commands: mix, qc-final.
 """
 
 import asyncio
@@ -757,6 +757,50 @@ def mix(project_id: str, music_file: str | None) -> None:
         sys.exit(1)
 
 
+@main.command("qc-final")
+@click.argument("project_id")
+def qc_final(project_id: str) -> None:
+    """Run Final QC on mixed audio (Node 7)."""
+    from audioformation.qc.final import scan_final_mix
+    from audioformation.pipeline import can_proceed_to
+
+    if not _project_guard(project_id):
+        return
+
+    # Gates check
+    can, reason = can_proceed_to(project_id, "qc_final")
+    if not can:
+        click.secho(f"✗ Cannot run QC Final: {reason}", fg="red")
+        sys.exit(1)
+
+    click.echo(f"Running QC Final for: {project_id}")
+    
+    report = scan_final_mix(project_id)
+    
+    click.echo()
+    click.secho(f"QC Final Report", bold=True)
+    click.echo(f"  Target LUFS: {report.target_lufs} (±1.0)")
+    click.echo(f"  Limit True Peak: {report.true_peak_limit} dBTP")
+    click.echo("-" * 60)
+    
+    for res in report.results:
+        status_icon = click.style("✓", fg="green") if res.status == "pass" else click.style("✗", fg="red")
+        click.echo(f"  {status_icon} {res.filename:<25} "
+                   f"LUFS: {res.lufs:>5.1f}  TP: {res.true_peak:>5.1f}")
+        
+        if res.status == "fail":
+            for msg in res.messages:
+                click.echo(f"      └─ {msg}")
+
+    click.echo("-" * 60)
+    
+    if report.passed:
+        click.secho("✓ QC Final PASSED. Ready for export.", fg="green", bold=True)
+    else:
+        click.secho("✗ QC Final FAILED. Adjust mix settings and retry.", fg="red", bold=True)
+        sys.exit(1)
+
+
 @main.command("export")
 @click.argument("project_id")
 @click.option("--format", "fmt", type=click.Choice(["mp3", "wav", "m4b"]), default="mp3",
@@ -768,52 +812,31 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
     from audioformation.project import get_project_path, load_project_json
     from audioformation.export.mp3 import export_mp3, export_wav
     from audioformation.export.metadata import generate_manifest
-    from audioformation.pipeline import update_node_status
+    from audioformation.pipeline import update_node_status, can_proceed_to
 
     if not _project_guard(project_id):
         return
+
+    # Verify gates (including QC Final)
+    can, reason = can_proceed_to(project_id, "export")
+    if not can:
+        click.secho(f"✗ Cannot export: {reason}", fg="red")
+        click.echo("  Run: audioformation qc-final " + project_id)
+        sys.exit(1)
 
     project_path = get_project_path(project_id)
     pj = load_project_json(project_id)
     export_config = pj.get("export", {})
 
-    # Source: processed files if available, otherwise raw
-    processed_dir = project_path / "03_GENERATED" / "processed"
-    raw_dir = project_path / "03_GENERATED" / "raw"
-
-    if processed_dir.exists() and list(processed_dir.glob("*.wav")):
-        source_dir = processed_dir
-    elif raw_dir.exists() and list(raw_dir.glob("*.wav")):
-        source_dir = raw_dir
-        click.secho("⚠ Using raw files (not processed). Run 'process' first for best quality.", fg="yellow")
-    else:
-        click.secho("✗ No audio files to export.", fg="red")
+    # Source: Mixed files from 06_MIX/renders
+    mix_dir = project_path / "06_MIX" / "renders"
+    
+    if not mix_dir.exists() or not list(mix_dir.glob("*.wav")):
+        click.secho("✗ No mixed audio files found in 06_MIX/renders/.", fg="red")
+        click.echo("  Run: audioformation mix " + project_id)
         sys.exit(1)
 
-    # Find stitched chapter files (not chunks)
-    # Chunk files have numeric suffix after underscore (ch01_000, ch01_001)
-    def _is_chunk_file(f: Path) -> bool:
-        """Check if file is a chunk file (has numeric suffix after underscore)."""
-        if "_" not in f.stem:
-            return False
-        parts = f.stem.rsplit("_", 1)
-        return len(parts) == 2 and parts[1].isdigit()
-
-    chapter_files = sorted(
-        f for f in source_dir.glob("ch*.wav")
-        if not _is_chunk_file(f)  # Exclude chunk files only
-    )
-
-    if not chapter_files:
-        # Fallback: any WAV file
-        chapter_files = sorted(
-            f for f in source_dir.glob("*.wav")
-            if not _is_chunk_file(f)
-        )
-
-    if not chapter_files:
-        click.secho("✗ No chapter files found.", fg="red")
-        sys.exit(1)
+    chapter_files = sorted(mix_dir.glob("*.wav"))
 
     export_dir = project_path / "07_EXPORT"
     chapters_dir = export_dir / "chapters"
@@ -836,7 +859,7 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
             ok = export_wav(wav_path, out_path)
         else:
             # M4B is Phase 3 — for now, export as MP3
-            click.secho("⚠ M4B export is Phase 3. Exporting as MP3 instead.", fg="yellow")
+            click.secho("⚠ M4B export is pending. Exporting as MP3 instead.", fg="yellow")
             out_path = chapters_dir / f"{wav_path.stem}.mp3"
             ok = export_mp3(wav_path, out_path, bitrate=mp3_bitrate)
 
@@ -1215,9 +1238,7 @@ def run(project_id: str, run_all: bool, from_node: str | None, dry_run: bool, en
             ctx.invoke(mix, project_id=project_id, music_file=None)
 
         elif node == "qc_final":
-            click.echo("  QC Final: skipping (Phase 3).")
-            from audioformation.pipeline import update_node_status
-            update_node_status(project_id, "qc_final", "complete")
+            ctx.invoke(qc_final, project_id=project_id)
 
         elif node == "export":
             ctx.invoke(export_audio, project_id=project_id, fmt="mp3", bitrate=None)
