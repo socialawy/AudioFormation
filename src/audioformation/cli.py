@@ -8,7 +8,7 @@ generate, qc, export, quick, engines, run.
 Phase 2 commands: cast (manage characters), compose (ambient music),
                   preview (fast check), compare (A/B testing).
 
-Phase 3 commands: mix, qc-final.
+Phase 3 commands: mix, qc-final, serve (API).
 """
 
 import asyncio
@@ -21,7 +21,7 @@ from pathlib import Path
 import click
 
 from audioformation import __version__
-from audioformation.config import PROJECTS_ROOT, PIPELINE_NODES, HARD_GATES, AUTO_GATES
+from audioformation.config import PROJECTS_ROOT, PIPELINE_NODES, HARD_GATES, AUTO_GATES, API_PORT
 from audioformation.pipeline import mark_node
 
 
@@ -499,12 +499,16 @@ def generate(project_id: str, engine: str | None, device: str | None, chapters: 
         click.echo(f"  Chapters: {', '.join(chapter_list)}")
     click.echo()
 
+    def _cli_progress(msg: str):
+        click.echo(msg)
+
     try:
         result = _run_async(generate_project(
             project_id,
             engine_name=engine,
             device=device,
             chapters=chapter_list,
+            progress_callback=_cli_progress,
         ))
     except Exception as e:
         click.secho(f"✗ Generation error: {e}", fg="red")
@@ -811,6 +815,7 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
     """Export final audio files (Node 8)."""
     from audioformation.project import get_project_path, load_project_json
     from audioformation.export.mp3 import export_mp3, export_wav
+    from audioformation.export.m4b import export_project_m4b
     from audioformation.export.metadata import generate_manifest
     from audioformation.pipeline import update_node_status, can_proceed_to
 
@@ -828,6 +833,33 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
     pj = load_project_json(project_id)
     export_config = pj.get("export", {})
 
+    export_dir = project_path / "07_EXPORT"
+    
+    # ── M4B / Audiobook Export ──
+    if fmt == "m4b":
+        click.echo(f"Exporting full audiobook as M4B...")
+        audiobook_dir = export_dir / "audiobook"
+        audiobook_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Determine filename
+        filename = f"{project_id}.m4b"
+        out_path = audiobook_dir / filename
+        
+        # Run export
+        update_node_status(project_id, "export", "running", mode="m4b")
+        ok = export_project_m4b(project_id, out_path, bitrate=export_config.get("m4b_aac_bitrate", 128))
+        
+        if ok:
+            click.secho(f"✓ Created: {out_path}", fg="green", bold=True)
+            update_node_status(project_id, "export", "complete", mode="m4b")
+        else:
+            click.secho("✗ M4B export failed.", fg="red")
+            update_node_status(project_id, "export", "failed")
+            
+        return
+
+    # ── Chapter-based Export (MP3/WAV) ──
+    
     # Source: Mixed files from 06_MIX/renders
     mix_dir = project_path / "06_MIX" / "renders"
     
@@ -838,7 +870,6 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
 
     chapter_files = sorted(mix_dir.glob("*.wav"))
 
-    export_dir = project_path / "07_EXPORT"
     chapters_dir = export_dir / "chapters"
     chapters_dir.mkdir(parents=True, exist_ok=True)
 
@@ -858,10 +889,7 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
             out_path = chapters_dir / f"{wav_path.stem}.wav"
             ok = export_wav(wav_path, out_path)
         else:
-            # M4B is Phase 3 — for now, export as MP3
-            click.secho("⚠ M4B export is pending. Exporting as MP3 instead.", fg="yellow")
-            out_path = chapters_dir / f"{wav_path.stem}.mp3"
-            ok = export_mp3(wav_path, out_path, bitrate=mp3_bitrate)
+            ok = False
 
         if ok:
             click.echo(f"  {click.style('✓', fg='green')} {out_path.name}")
@@ -1305,7 +1333,7 @@ def _dry_run(project_id: str, engine_name: str | None) -> None:
     click.echo()
     click.echo("  Estimated cloud costs:")
     click.echo(f"    ElevenLabs: ~${eleven_cost:.2f}")
-    click.echo("    edge-tts:   \$0.00 (free)")
+    click.echo("    edge-tts:   $0.00 (free)")
 
 
 def _format_time(seconds: int) -> str:
@@ -1318,6 +1346,30 @@ def _format_time(seconds: int) -> str:
         h = seconds // 3600
         m = (seconds % 3600) // 60
         return f"{h}h {m}m"
+
+
+# ──────────────────────────────────────────────
+# Server
+# ──────────────────────────────────────────────
+
+
+@main.command()
+@click.option("--port", type=int, default=API_PORT, help="Port to bind.")
+@click.option("--host", type=str, default="0.0.0.0", help="Host to bind.")
+def serve(port: int, host: str) -> None:
+    """Start the AudioFormation API server."""
+    try:
+        import uvicorn
+        from audioformation.server.app import app
+    except ImportError:
+        click.secho("✗ Server dependencies not installed.", fg="red")
+        click.echo("  Run: pip install \"audioformation[server]\"")
+        sys.exit(1)
+
+    click.secho(f"🚀 Starting API server on http://{host}:{port}", fg="green", bold=True)
+    click.echo(f"   Docs: http://{host}:{port}/docs")
+    
+    uvicorn.run("audioformation.server.app:app", host=host, port=port, reload=True)
 
 
 # ──────────────────────────────────────────────

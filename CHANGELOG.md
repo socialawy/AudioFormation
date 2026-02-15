@@ -1,3 +1,4 @@
+
 # Changelog
 
 All notable changes to AudioFormation will be documented in this file.
@@ -8,11 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Web Dashboard:** Minimal HTML/JS interface for project management.
+  - Project list view with status indicators.
+  - New project creation UI.
+  - Static file serving via FastAPI (requires `aiofiles`).
+- **M4B Export:** Full audiobook export with chapter markers, metadata, and cover art (`audioformation export --format m4b`).
+- **QC Final:** Hard gate for mixed audio validation (LUFS, True Peak, Clipping) (`audioformation qc-final`).
+- **Mixing:** VAD-based ducking for background music (`audioformation mix`).
 - **CLI Commands:**
   - `cast`: Manage characters (`list`, `add`, `clone`).
   - `compose`: Generate ambient music pads using procedural synthesis.
   - `preview`: Generate short samples of chapters for rapid voice iteration.
   - `compare`: A/B test multiple engines/voices on the same text.
+  - `serve`: Launch API server and dashboard.
 - Multi-speaker dialogue support with per-segment character resolution
 - Per-segment engine routing and voice assignment
 - Engine tracking for VRAM management across multiple engines per chapter
@@ -43,7 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ElevenLabs auto-registration in engine registry (requires httpx)
 
 ### Changed
-- **Testing:** Increased coverage to 320 tests (100% passing). Added robust dependency mocking in `conftest.py` for CI stability.
+- **Dependencies:** Added `aiofiles` to `[server]` group.
+- **Refactor:** Decoupled `generate.py` from CLI `click` functions. Now uses `logging` and callbacks, enabling future API server integration.
+- **Testing:** Increased coverage to 349 tests (100% passing). Added robust dependency mocking in `conftest.py` for CI stability.
 - **Dependencies:** pytest 8.0→<10, pytest-asyncio <1→<2, pre-commit <4→<5
 - **Dependencies:** Moved `fastapi`, `uvicorn`, `midiutil` to optional dependency groups (`server`, `midi`)
 - **Dependencies:** `mutagen` available in both core (export) and optional `m4b` group
@@ -102,11 +113,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Roadmap (Not Changelog Entries)
 
-### Phase 3 — Planned
-- Multi-track mixer with VAD-based ducking
-- M4B audiobook export with chapter markers
-- QC Final gate (depends on mixer)
-- FastAPI server + web dashboard
+### Phase 3 — In Progress
+- Web dashboard with editor and timeline
 - FXForge (SFX domain)
 
 ### Phase 2 Completed
@@ -117,3 +125,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cast CLI commands (`cast list`, `cast add`, `cast clone`) ✅
 - Compose CLI wiring (`audioformation compose`) ✅
 - Preview & Compare CLI commands ✅
+- QC Final & M4B Export ✅

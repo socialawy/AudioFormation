@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudioFormation Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏭</text></svg>">
+</head>
+<body>
+    <div class="app-container">
+        <header class="navbar">
+            <div class="brand">
+                <span class="icon">🏭</span>
+                <span class="text">AudioFormation</span>
+            </div>
+            <nav class="nav-links">
+                <a href="#" onclick="app.showProjects()" class="active" id="nav-projects">Projects</a>
+                <a href="#" class="disabled" id="nav-editor">Editor</a>
+            </nav>
+            <div class="status-bar">
+                <span id="system-status" class="online">● System Ready</span>
+            </div>
+        </header>
+
+        <main class="content">
+            <!-- Projects Grid View -->
+            <div id="projects-view" class="view">
+                <div class="view-header">
+                    <h1>Projects</h1>
+                    <button class="btn primary" onclick="app.refreshProjects()">↻ Refresh</button>
+                </div>
+                
+                <div id="project-grid" class="project-grid">
+                    <div class="card loading">Loading projects...</div>
+                </div>
+            </div>
+
+            <!-- Project Editor View -->
+            <div id="editor-view" class="view hidden">
+                <div class="view-header">
+                    <h1><span id="editor-project-id">Project</span></h1>
+                    <div class="actions">
+                        <button class="btn" onclick="app.showProjects()">← Back</button>
+                        <button class="btn primary" onclick="app.saveProject()">Save Changes</button>
+                    </div>
+                </div>
+                
+                <div class="editor-layout">
+                    <aside class="sidebar">
+                        <div class="nav-item active" onclick="app.switchTab('config')" id="tab-btn-config">Configuration</div>
+                        <div class="nav-item" onclick="app.switchTab('chapters')" id="tab-btn-chapters">Chapters</div>
+                        <div class="nav-item" onclick="app.switchTab('json')" id="tab-btn-json">Raw JSON</div>
+                    </aside>
+                    
+                    <div class="main-panel">
+                        <!-- Config Tab -->
+                        <div id="tab-config" class="tab-content">
+                            <h2>Generation Settings</h2>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Chunk Max Chars</label>
+                                    <input type="number" id="conf-chunk-chars">
+                                </div>
+                                <div class="form-group">
+                                    <label>Crossfade (ms)</label>
+                                    <input type="number" id="conf-crossfade">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Chunk Strategy</label>
+                                    <select id="conf-strategy">
+                                        <option value="breath_group">Breath Group</option>
+                                        <option value="sentence">Sentence</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Fail Threshold %</label>
+                                    <input type="number" id="conf-fail-thresh">
+                                </div>
+                            </div>
+                            
+                            <h2>Mix Settings</h2>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Target LUFS</label>
+                                    <input type="number" id="conf-lufs" step="0.1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Master Volume</label>
+                                    <input type="number" id="conf-vol" step="0.1" max="1.0" min="0.0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chapters Tab -->
+                        <div id="tab-chapters" class="tab-content hidden">
+                            <div class="list-header">
+                                <span>ID</span>
+                                <span>Title</span>
+                                <span>Language</span>
+                                <span>Mode</span>
+                            </div>
+                            <div id="chapter-list" class="list-group"></div>
+                        </div>
+
+                        <!-- JSON Tab -->
+                        <div id="tab-json" class="tab-content hidden">
+                            <textarea id="json-editor" spellcheck="false"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

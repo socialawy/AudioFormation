@@ -1,0 +1,301 @@
+
+/* Reset & Base */
+:root {
+    --bg-dark: #121212;
+    --bg-card: #1e1e1e;
+    --bg-hover: #2a2a2a;
+    --bg-input: #2d2d2d;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --accent: #10b981; /* Emerald green */
+    --accent-hover: #059669;
+    --border: #333;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Layout */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    height: 60px;
+    border-bottom: 1px solid var(--border);
+    background-color: var(--bg-card);
+}
+
+.brand {
+    font-weight: 700;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    margin: 0 1rem;
+    padding: 0.5rem 0;
+    font-weight: 500;
+    transition: color 0.2s;
+    cursor: pointer;
+}
+
+.nav-links a:hover, .nav-links a.active {
+    color: var(--accent);
+    border-bottom: 2px solid var(--accent);
+}
+
+.nav-links a.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-bottom: none;
+}
+
+/* Content */
+.content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    position: relative;
+}
+
+.view {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+h1 { margin: 0; font-size: 2rem; }
+h2 { font-size: 1.2rem; margin-bottom: 1rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+
+/* Grid */
+.project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Cards */
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 160px;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.card h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card .meta {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.status-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    background: #333;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.status-badge.complete { color: var(--accent); background: rgba(16, 185, 129, 0.1); }
+.status-badge.partial { color: var(--warning); background: rgba(245, 158, 11, 0.1); }
+.status-badge.failed { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+
+.card.new-project {
+    border: 2px dashed var(--border);
+    background: transparent;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+
+.card.new-project:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.card.new-project span {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+/* Editor Layout */
+.editor-layout {
+    display: flex;
+    gap: 2rem;
+    height: calc(100vh - 180px);
+}
+
+.sidebar {
+    width: 200px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 0;
+}
+
+.nav-item {
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.nav-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.nav-item.active {
+    background: var(--bg-hover);
+    color: var(--accent);
+    border-left: 3px solid var(--accent);
+}
+
+.main-panel {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+/* Forms */
+.form-row {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+input, select, textarea {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 0.6rem;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+textarea#json-editor {
+    width: 100%;
+    height: 100%;
+    font-family: monospace;
+    font-size: 0.9rem;
+    resize: none;
+    border: none;
+    background: transparent;
+}
+
+/* List Group (Chapters) */
+.list-header {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr 1fr;
+    padding: 0.5rem 1rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+}
+
+.list-item {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr 1fr;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.list-item:hover {
+    background: var(--bg-hover);
+}
+
+/* Buttons */
+.btn {
+    background: var(--bg-hover);
+    border: none;
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+    text-decoration: none;
+}
+
+.btn:hover { background: #333; }
+
+.btn.primary {
+    background: var(--accent);
+    color: #fff;
+}
+
+.btn.primary:hover { background: var(--accent-hover); }

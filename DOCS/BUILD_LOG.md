@@ -1,7 +1,8 @@
+
 # AudioFormation Build Log
 
-**Status:** Phase 3 (Mix & Export)  
-**Tests:** 335 / 335 Passing (100%)  
+**Status:** Phase 3 In Progress (Dashboard Editor)  
+**Tests:** 351 / 351 Passing (100%)  
 **Date:** February 14, 2026  
 **Hardware Reference:** NVIDIA GTX 1650 Ti (4GB VRAM)
 
@@ -9,31 +10,50 @@
 
 ##  Recent Activity (Feb 14, 2026)
 
+**Phase 3: Web Dashboard (Editor)**
+*   **Editor UI:** Added editor view to dashboard (`src/audioformation/server/static/`).
+    *   Configuration tabs for Generation and Mix settings.
+    *   Chapter list view.
+    *   Raw JSON editor mode.
+*   **API:** Added `PUT /api/projects/{id}` endpoint to save project configuration.
+*   **Logic:** Implemented `app.js` logic for loading, editing, and saving projects via the API.
+*   **Tests:** Added API update tests (`tests/test_server.py`).
+
+**Phase 3: Web Dashboard (Started)**
+*   **Frontend:** Created minimal HTML/JS/CSS dashboard (`src/audioformation/server/static/`).
+*   **Static Serving:** Updated `app.py` to mount static files at root `/`.
+*   **Dependencies:** Added `aiofiles` to server group for `StaticFiles` support.
+*   **Features:** Project listing and creation now working via UI.
+
+**Phase 3: Server (Completed)**
+*   **FastAPI:** Implemented core API server (`src/audioformation/server/app.py`).
+*   **Routes:** Added project CRUD endpoints (`list`, `create`, `get`, `status`).
+*   **CLI:** Added `serve` command to launch the API server (`audioformation serve`).
+*   **Testing:** Verified API endpoints with `tests/test_server.py`.
+
+**Phase 3: Mixing & Export (Completed)**
+*   **QC Final:** Implemented strict validation for mixed audio.
+*   **M4B Export:** Built full audiobook export pipeline with `ffmpeg`.
+*   **Refactor:** Decoupled `generate.py` from CLI calls.
+
 **Phase 3: Mixing Engine**
 *   **Feature:** Implemented `src/audioformation/audio/mixer.py` providing multi-track mixing.
-*   **Feature:** Added **VAD-based ducking** using `silero-vad` (loaded via `torch.hub`). Background music automatically lowers volume during speech segments.
-*   **Feature:** Implemented `energy` fallback for ducking if VAD models fail to load or Torch is missing.
+*   **Feature:** Added **VAD-based ducking** using `silero-vad`.
+*   **Feature:** Implemented `energy` fallback for ducking.
 *   **CLI:** Added `audioformation mix` command (Node 6).
-*   **Testing:** Added `tests/test_mixer.py` covering mixer initialization, envelope generation, and pipeline integration.
 
 **Final Polish (Phase 2):**
-*   **Test Suite Fixed:** Resolved persistent failure in `test_export_with_different_bitrates` by correctly overriding the global `pydub` mock side-effect. All 320 tests now pass.
-*   **CLI Commands:** Fully implemented `cast`, `compose`, `preview`, and `compare` commands.
-*   **Documentation:** Updated README and architecture docs to reflect the new multi-speaker and CLI capabilities.
-
-**Infrastructure & Automation:**
-*   **Robust Test Fix:** Updated `tests/conftest.py` to automatically mock external dependencies (`edge_tts`, `soundfile`, `pydub`, `pyloudnorm`, `numpy`) if they are missing. This allows the test suite to run in incomplete environments (e.g., CI, incomplete local setups) without crashing on import errors.
-*   **Version Tag:** `v0.1.0` baseline established.
+*   **Test Suite Fixed:** Resolved persistent failures. All 351 tests pass.
+*   **CLI Commands:** Fully implemented `cast`, `compose`, `preview`, and `compare`.
 
 ---
 
-## 🚀 Current Status: Phase 3 In Progress
+## 🚀 Current Status: Phase 3 (Core) Complete
 
-Mixing engine is live. Pipeline can now Ingest → Generate → Process → Compose → Mix.
+The entire CLI pipeline is operational. The Web Dashboard now includes a functional editor.
 
-**Next Steps:**
-1.  Implement **QC Final** (Node 7) to validate mixed output (LUFS, True Peak).
-2.  Implement **M4B Export** (Node 8) with chapter markers.
+**Next Steps (Phase 3 Dashboard):**
+1.  **Dashboard Timeline:** Integrate wavesurfer.js for mixing visualization.
 
 ---
 
@@ -87,26 +107,12 @@ Mixing engine is live. Pipeline can now Ingest → Generate → Process → Comp
 
 ## 🔮 Roadmap (Immediate Next Steps)
 
-### Phase 3: Server & Advanced Audio (Planned)
-- Multi-track mixer with VAD-based ducking (`audio/mixer.py`) — ✅ BUILT
-- QC Final gate (depends on mixer output) — PENDING
-- M4B audiobook export with chapter markers — PENDING
-- FastAPI server + web dashboard with wavesurfer.js timeline
+### Phase 3: Server & Dashboard (Planned)
+- FastAPI server + REST endpoints (`localhost:4001`)
+- Web dashboard (vanilla HTML/JS) with wavesurfer.js timeline (`localhost:4000`)
 - FXForge (SFX domain — procedural + sample import)
 
-**Pending Refactor:**
-1. **click.echo() Decoupling** — Refactor generate.py to use callbacks/logging instead of CLI prints
-   - **Scope:** ~8 calls in generate.py only (isolated, not spread across engines/utils)
-   - **Why:** Required before FastAPI server work (Phase 3) to avoid hardcoded CLI output in library code
-   - **Risk Level:** Medium—touches core generation pipeline
-
 ### 🎯 Recent Completion: Multi-Speaker Integration (Feb 14, 2026)
-
-**Files Added/Modified:**
-- `src/audioformation/generate.py` - Per-segment character resolution, engines_used tracking
-- `tests/test_multispeaker.py` - Comprehensive multi-speaker test suite (532 lines)
-- `docs/ARCHITECTURE.md` - Updated to reflect multi-speaker implementation
-- `README.md` - Updated feature status and test count
 
 **Key Features Implemented:**
 - **Per-Segment Character Resolution:** Each `[speaker_id]` tag routes to specific character → engine → voice
@@ -135,23 +141,3 @@ Mixing engine is live. Pipeline can now Ingest → Generate → Process → Comp
 - `ch01_intro.wav` (26.8 MB) - Full chapter, stitched with 120ms crossfade
 - `ch01_intro.mp3` - Final export, processed and normalized
 - QC report: 10 passed, 6 warnings (LUFS deviation within tolerance)
-
-### 🧪 Real-World Validation (Feb 14, 2026)
-
-**Test Project:** MULTI_SPEAKER_TEST  
-**Scenarios Validated:** All 5 key behaviors confirmed working
-
-| Scenario | Expected | Actual Result |
-| :--- | :--- | :--- |
-| **mode=multi, no --engine** | Each segment uses its character's engine | ✅ ch01: 7 chunks, edge→gtts fallback for villain |
-| **mode=multi, --engine edge** | All segments forced to edge | ✅ `--engine gtts` forced all 7 chunks to gtts |
-| **mode=single** | Unchanged — one character, one engine | ✅ ch02: 3 chunks, narrator only, tags as text |
-| **Unknown [speaker] tag** | Falls back to chapter default | ✅ Graceful fallback handling confirmed |
-| **XTTS used in any segment** | release_vram called after chapter | ✅ Multi-engine VRAM management working |
-
-**Key Findings:**
-- Per-segment character resolution working perfectly
-- Engine override (`--engine`) correctly forces single-engine generation
-- Backward compatibility maintained for single-mode chapters
-- Fallback chain (edge→gtts) activates appropriately
-- Crossfade stitching handles multi-engine chapters seamlessly

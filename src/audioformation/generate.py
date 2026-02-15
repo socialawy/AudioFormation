@@ -1,22 +1,18 @@
+
 """
 Generation pipeline — run TTS per chapter with chunking, crossfade,
 QC scanning, retry logic, and per-chapter engine fallback.
 
 Pipeline Node 3: Generate.
 
-TODO(Phase 2): Session length monitoring
-  - [ ] Track generation count per session
-  - [ ] Warn when approaching tonal drift threshold (>50 chunks)
-  - [ ] Recommend session break at 100 chunks
-  - [ ] Quality gate: pause and alert on detected tonal drift
-  - [ ] Auto-save checkpoint every N chunks for long sessions
+Refactored to be UI-agnostic (no click dependency). Use `progress_callback`
+to stream status updates to CLI or WebSocket.
 """
 
 import asyncio
+import logging
 from pathlib import Path
-from typing import Any
-
-import click
+from typing import Any, Callable
 
 from audioformation.config import (
     DEFAULT_CROSSFADE_MS,
@@ -41,12 +37,15 @@ from audioformation.audio.processor import crossfade_stitch
 from audioformation.qc.scanner import scan_chunk, QCReport
 from audioformation.qc.report import save_report
 
+logger = logging.getLogger(__name__)
+
 
 async def generate_project(
     project_id: str,
     engine_name: str | None = None,
     device: str | None = None,
     chapters: list[str] | None = None,
+    progress_callback: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
     """
     Run TTS generation for a project.
@@ -56,9 +55,15 @@ async def generate_project(
         engine_name: Override engine (None = use character's engine).
         device: Device hint ('gpu', 'cpu') for XTTS.
         chapters: Specific chapter IDs to generate (None = all).
+        progress_callback: Optional function to receive human-readable status updates.
 
     Returns generation results dict.
     """
+    def _notify(msg: str) -> None:
+        logger.info(msg)
+        if progress_callback:
+            progress_callback(msg)
+
     project_path = get_project_path(project_id)
     pj = load_project_json(project_id)
     gen_config = pj.get("generation", {})
@@ -124,17 +129,18 @@ async def generate_project(
                 target_lufs=target_lufs,
                 raw_dir=raw_dir,
                 engine_override=attempt_engine,
+                progress_callback=progress_callback,
             )
 
             if ch_result.get("status") == "complete":
                 if attempt_engine != primary_engine:
-                    click.echo(
+                    _notify(
                         f"    \u26a0 {ch_id}: fell back from "
                         f"{primary_engine} to {attempt_engine}"
                     )
                     if fallback_scope == "project":
                         project_engine_failed = True
-                        click.echo(
+                        _notify(
                             f"    \u26a0 Project-scope fallback activated: "
                             f"switching to {attempt_engine} for remaining chapters"
                         )
@@ -142,7 +148,7 @@ async def generate_project(
             else:
                 # Clean up partial output before trying next engine
                 _cleanup_chapter_chunks(ch_id, raw_dir)
-                click.echo(
+                _notify(
                     f"    \u2717 {ch_id}: {attempt_engine} failed "
                     f"({ch_result.get('error', 'unknown')}), "
                     f"trying next engine..."
@@ -219,8 +225,15 @@ async def _generate_chapter(
     target_lufs: float,
     raw_dir: Path,
     engine_override: str | None = None,
+    progress_callback: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
     """Generate audio for a single chapter with a single engine."""
+    
+    def _notify(msg: str) -> None:
+        logger.info(msg)
+        if progress_callback:
+            progress_callback(msg)
+
     ch_id = chapter["id"]
     mode = chapter.get("mode", "single")
     char_id = chapter.get(
@@ -362,14 +375,14 @@ async def _generate_chapter(
                         last_error = (
                             f"QC failed: {_qc_failure_summary(qc_result)}"
                         )
-                        click.echo(
+                        _notify(
                             f"    \u26a0 {chunk_id}: QC fail, "
                             f"retry {attempt + 1}/{max_retries}"
                         )
                         continue
                     elif qc_result.status == "fail":
                         failed_chunks += 1
-                        click.echo(
+                        _notify(
                             f"    \u2717 {chunk_id}: QC fail after "
                             f"{max_retries} retries"
                         )
@@ -380,7 +393,7 @@ async def _generate_chapter(
                 else:
                     last_error = result.error or "Unknown generation error"
                     if attempt < max_retries:
-                        click.echo(
+                        _notify(
                             f"    \u26a0 {chunk_id}: attempt "
                             f"{attempt + 1} failed — {last_error}"
                         )
@@ -388,7 +401,7 @@ async def _generate_chapter(
 
             if not success:
                 failed_chunks += 1
-                click.echo(
+                _notify(
                     f"    \u2717 {chunk_id}: FAILED — {last_error}"
                 )
                 qc_report.chunks.append(
@@ -411,12 +424,12 @@ async def _generate_chapter(
             leading_silence_ms=leading_silence_ms,
         )
         if stitch_ok:
-            click.echo(
+            _notify(
                 f"    \u2713 Stitched {len(chunk_paths)} chunks "
                 f"\u2192 {ch_id}.wav (crossfade: {crossfade_ms}ms)"
             )
         else:
-            click.echo(f"    \u2717 Stitch failed for {ch_id}")
+            _notify(f"    \u2717 Stitch failed for {ch_id}")
     else:
         stitch_ok = False
 
