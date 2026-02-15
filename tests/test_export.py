@@ -39,47 +39,40 @@ class TestMP3Export:
         out_128 = tmp_path / "out_128.mp3"
         out_320 = tmp_path / "out_320.mp3"
 
-        import sys
-        # Get the globally mocked class from sys.modules
-        AudioSegment = sys.modules["pydub"].AudioSegment
-        
-        # Save original side effect to restore later
-        original_side_effect = AudioSegment.from_file.side_effect
-
-        # Create a fresh mock instance for this specific test
-        test_segment = MagicMock()
-        
-        # Mock export to modify file size based on bitrate arg
-        def _export_side_effect(path, format=None, bitrate=None, **kwargs):
-            p = Path(path)
-            # In export_mp3 it's passed as kwarg 'bitrate'="128k"
-            val = bitrate or kwargs.get("bitrate", "128k")
+        # Use patch to temporarily override the export behavior
+        with patch("audioformation.export.mp3.AudioSegment") as MockAudioSegment:
+            # Create a fresh mock instance for this specific test
+            test_segment = MagicMock()
             
-            # Parse "128k" -> 128
-            if isinstance(val, str):
-                val = val.lower().replace("k", "")
+            # Mock export to modify file size based on bitrate arg
+            def _export_side_effect(path, format=None, bitrate=None, **kwargs):
+                p = Path(path)
+                # In export_mp3 it's passed as bitrate="128k" (string)
+                val = bitrate
+                
+                # Parse "128k" -> 128
+                if isinstance(val, str):
+                    val = val.lower().replace("k", "")
+                
+                try:
+                    kbps = int(val)
+                except (ValueError, TypeError):
+                    kbps = 128
+
+                # Write fake bytes proportional to bitrate
+                # 128 -> 1280 bytes, 320 -> 3200 bytes
+                p.write_bytes(b"0" * kbps * 10)
+
+            test_segment.export.side_effect = _export_side_effect
+
+            # Override from_file to return our custom test_segment
+            def _from_file_override(path, **kwargs):
+                if not Path(path).exists():
+                    raise FileNotFoundError(f"File not found: {path}")
+                return test_segment
+
+            MockAudioSegment.from_file.side_effect = _from_file_override
             
-            try:
-                kbps = int(val)
-            except (ValueError, TypeError):
-                kbps = 128
-
-            # Write fake bytes proportional to bitrate
-            # 128 -> 1280 bytes, 320 -> 3200 bytes
-            p.write_bytes(b"0" * kbps * 10)
-
-        test_segment.export.side_effect = _export_side_effect
-
-        # Override from_file to return our custom test_segment
-        def _from_file_override(path, **kwargs):
-            if not Path(path).exists():
-                raise FileNotFoundError(f"File not found: {path}")
-            return test_segment
-
-        # Apply override
-        AudioSegment.from_file.side_effect = _from_file_override
-
-        try:
             export_mp3(sample_wav, out_128, bitrate=128)
             export_mp3(sample_wav, out_320, bitrate=320)
 
@@ -87,9 +80,6 @@ class TestMP3Export:
             assert out_320.exists()
             assert out_128.exists()
             assert out_320.stat().st_size > out_128.stat().st_size
-        finally:
-            # Restore original behavior
-            AudioSegment.from_file.side_effect = original_side_effect
 
     def test_export_nonexistent_source_returns_false(self, tmp_path: Path) -> None:
         fake = tmp_path / "nonexistent.wav"

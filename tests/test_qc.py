@@ -19,9 +19,16 @@ from audioformation.qc.scanner import (
 @pytest.fixture
 def clean_wav(tmp_path: Path) -> Path:
     """Generate a clean sine wave WAV for testing."""
+    import numpy as np
+    import soundfile as sf
+    
     path = tmp_path / "clean.wav"
-    path.touch()
-    path.write_bytes(b"MOCK_BYTES")
+    sr = 24000
+    duration = 2.0  # 2 seconds
+    t = np.linspace(0, duration, int(sr * duration), False)
+    # Generate clean 440Hz sine wave at moderate volume
+    tone = 0.5 * np.sin(2 * np.pi * 440 * t)
+    sf.write(str(path), tone, sr)
     return path
 
 

@@ -1,3 +1,4 @@
+
 """
 AudioFormation CLI — Click command groups.
 
@@ -6,6 +7,8 @@ generate, qc, export, quick, engines, run.
 
 Phase 2 commands: cast (manage characters), compose (ambient music),
                   preview (fast check), compare (A/B testing).
+
+Phase 3 commands: mix.
 """
 
 import asyncio
@@ -729,6 +732,31 @@ def compose(project_id: str, preset: str, duration: float, output_filename: str 
     mark_node(project_path, "compose", "complete", preset=preset, duration=duration)
 
 
+@main.command("mix")
+@click.argument("project_id")
+@click.option("--music", "music_file", default=None, help="Optional: Background music file (in 05_MUSIC/generated).")
+def mix(project_id: str, music_file: str | None) -> None:
+    """Mix voice and music with ducking (Node 6)."""
+    from audioformation.mix import mix_project
+    from audioformation.pipeline import can_proceed_to
+
+    if not _project_guard(project_id):
+        return
+
+    # Check gates
+    can, reason = can_proceed_to(project_id, "mix")
+    if not can:
+        click.secho(f"✗ Cannot start mixing: {reason}", fg="red")
+        sys.exit(1)
+
+    click.echo(f"Starting mix for project: {project_id}")
+    
+    success = mix_project(project_id, music_file)
+    
+    if not success:
+        sys.exit(1)
+
+
 @main.command("export")
 @click.argument("project_id")
 @click.option("--format", "fmt", type=click.Choice(["mp3", "wav", "m4b"]), default="mp3",
@@ -1184,9 +1212,7 @@ def run(project_id: str, run_all: bool, from_node: str | None, dry_run: bool, en
             ctx.invoke(compose, project_id=project_id, preset="contemplative", duration=60.0, output_filename=None, list_only=False)
 
         elif node == "mix":
-            click.echo("  Mix: skipping (Phase 3).")
-            from audioformation.pipeline import update_node_status
-            update_node_status(project_id, "mix", "skipped")
+            ctx.invoke(mix, project_id=project_id, music_file=None)
 
         elif node == "qc_final":
             click.echo("  QC Final: skipping (Phase 3).")
@@ -1258,7 +1284,7 @@ def _dry_run(project_id: str, engine_name: str | None) -> None:
     click.echo()
     click.echo("  Estimated cloud costs:")
     click.echo(f"    ElevenLabs: ~${eleven_cost:.2f}")
-    click.echo("    edge-tts:   $0.00 (free)")
+    click.echo("    edge-tts:   \$0.00 (free)")
 
 
 def _format_time(seconds: int) -> str:

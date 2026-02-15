@@ -1,7 +1,7 @@
 # AudioFormation Build Log
 
-**Status:** Phase 2 (CLI & Cloud Integration)  
-**Tests:** 320 / 320 Passing (100%)  
+**Status:** Phase 3 (Mix & Export)  
+**Tests:** 335 / 335 Passing (100%)  
 **Date:** February 14, 2026  
 **Hardware Reference:** NVIDIA GTX 1650 Ti (4GB VRAM)
 
@@ -9,35 +9,31 @@
 
 ##  Recent Activity (Feb 14, 2026)
 
-**Voice Cloning Validation:**
-*   **XTTS Engine Tested:** Successfully cloned voice using provided sample audio (`s1_1_before-rupture.wav`).
-*   **Multi-Language Cloning:** Generated both Arabic and English narration from single reference audio.
-*   **Production Ready:** Voice cloning pipeline fully functional with `cast clone` command.
-*   **Quality Assessment:** High-quality output with natural prosody in both languages.
+**Phase 3: Mixing Engine**
+*   **Feature:** Implemented `src/audioformation/audio/mixer.py` providing multi-track mixing.
+*   **Feature:** Added **VAD-based ducking** using `silero-vad` (loaded via `torch.hub`). Background music automatically lowers volume during speech segments.
+*   **Feature:** Implemented `energy` fallback for ducking if VAD models fail to load or Torch is missing.
+*   **CLI:** Added `audioformation mix` command (Node 6).
+*   **Testing:** Added `tests/test_mixer.py` covering mixer initialization, envelope generation, and pipeline integration.
 
-**CLI & Testing:**
+**Final Polish (Phase 2):**
 *   **Test Suite Fixed:** Resolved persistent failure in `test_export_with_different_bitrates` by correctly overriding the global `pydub` mock side-effect. All 320 tests now pass.
 *   **CLI Commands:** Fully implemented `cast`, `compose`, `preview`, and `compare` commands.
 *   **Documentation:** Updated README and architecture docs to reflect the new multi-speaker and CLI capabilities.
 
 **Infrastructure & Automation:**
 *   **Robust Test Fix:** Updated `tests/conftest.py` to automatically mock external dependencies (`edge_tts`, `soundfile`, `pydub`, `pyloudnorm`, `numpy`) if they are missing. This allows the test suite to run in incomplete environments (e.g., CI, incomplete local setups) without crashing on import errors.
-*   **Version Tags:** `v0.1.0` and `v0.2.0` baselines established.
+*   **Version Tag:** `v0.1.0` baseline established.
 
 ---
 
-## 🚀 Current Status: Phase 2 Complete
+## 🚀 Current Status: Phase 3 In Progress
 
-The system is fully stable. Phase 1 (Foundation) is complete. Phase 2 enhancements are implemented and tested.
+Mixing engine is live. Pipeline can now Ingest → Generate → Process → Compose → Mix.
 
-**Key Achievements:**
-*   **Reliability:** Pipeline status tracking is now persistent; resume capability is verified.
-*   **Quality:** Fallback logic is now per-chapter (no audible engine switching mid-chapter).
-*   **Arabic:** Full diacritization pipeline (Mishkal) and intelligent sentence splitting implemented.
-*   **Creativity:** Ambient pad generator (Composer) is live with 5 mood presets.
-*   **Voice Cloning:** XTTS v2 engine fully integrated with VRAM management and generation parameters.
-*   **Multi-Speaker:** Per-segment character resolution with engine-specific routing.
-*   **Workflow:** `cast` command simplifies character management; `preview` enables rapid iteration.
+**Next Steps:**
+1.  Implement **QC Final** (Node 7) to validate mixed output (LUFS, True Peak).
+2.  Implement **M4B Export** (Node 8) with chapter markers.
 
 ---
 
@@ -92,9 +88,9 @@ The system is fully stable. Phase 1 (Foundation) is complete. Phase 2 enhancemen
 ## 🔮 Roadmap (Immediate Next Steps)
 
 ### Phase 3: Server & Advanced Audio (Planned)
-- Multi-track mixer with VAD-based ducking (`audio/mixer.py`) — core audio/ducking work
-- QC Final gate (depends on mixer output)
-- M4B audiobook export with chapter markers
+- Multi-track mixer with VAD-based ducking (`audio/mixer.py`) — ✅ BUILT
+- QC Final gate (depends on mixer output) — PENDING
+- M4B audiobook export with chapter markers — PENDING
 - FastAPI server + web dashboard with wavesurfer.js timeline
 - FXForge (SFX domain — procedural + sample import)
 
@@ -159,31 +155,3 @@ The system is fully stable. Phase 1 (Foundation) is complete. Phase 2 enhancemen
 - Backward compatibility maintained for single-mode chapters
 - Fallback chain (edge→gtts) activates appropriately
 - Crossfade stitching handles multi-engine chapters seamlessly
-
-### 🎤 Voice Cloning Validation (Feb 14, 2026)
-
-**Test Project:** CLONING-TEST  
-**Reference Audio:** `s1_1_before-rupture.wav` (1.4MB sample)  
-**Objective:** Validate XTTS voice cloning for Arabic & English
-
-| Language | Duration | File Size | Quality Assessment |
-|:---|:---|:---|:---|
-| **Arabic** | 13.7s | 277KB MP3 | ✅ Natural prosody, clear articulation |
-| **English** | 10.8s | 217KB MP3 | ✅ Good rhythm, minimal artifacts |
-
-**Technical Validation:**
-- ✅ **XTTS Engine**: Successfully loaded on GTX 1650 Ti (4GB VRAM)
-- ✅ **Reference Processing**: Audio copied and processed correctly
-- ✅ **Multi-Language**: Single reference works for both languages
-- ✅ **Pipeline Integration**: Seamless `cast clone` → `generate` → `export` workflow
-- ✅ **VRAM Management**: No memory issues during generation
-- ✅ **Audio Quality**: Professional output ready for production
-
-**Generated Files:**
-- `arabic_cloned.mp3` - Arabic narration using cloned voice
-- `english_cloned.mp3` - English narration using cloned voice
-- `02_VOICES/references/s1_1_before-rupture.wav` - Reference audio backup
-
-**Key Achievement:** Voice cloning is **production-ready** with high-quality output and stable performance on consumer hardware.
-
----

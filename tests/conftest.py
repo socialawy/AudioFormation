@@ -50,43 +50,58 @@ for mod_name in MODULES_TO_MOCK:
             mock_mod.list_voices = MagicMock(return_value=[])
 
         elif mod_name == "soundfile":
-            # Check for real numpy to avoid __array__ errors
-            real_numpy = None
+            # Check if real soundfile is available
+            real_soundfile = None
             try:
-                import numpy as np
-                if not isinstance(np, MagicMock):
-                    real_numpy = np
+                import soundfile as real_sf
+                if not isinstance(real_sf, MagicMock):
+                    real_soundfile = real_sf
             except ImportError:
                 pass
 
-            if real_numpy:
-                # Return real array to satisfy real numpy functions
-                def _mock_read_real(*args, **kwargs):
-                    # Default: 1 second of silence
-                    return real_numpy.zeros(24000, dtype=real_numpy.float32), 24000
-                mock_mod.read = MagicMock(side_effect=_mock_read_real)
+            if real_soundfile:
+                # Use real soundfile functions
+                mock_mod.read = real_soundfile.read
+                mock_mod.write = real_soundfile.write
+                mock_mod.info = real_soundfile.info
             else:
-                # Return mock array
-                mock_data = MagicMock()
-                mock_data.ndim = 1
-                mock_data.shape = (24000,)
-                mock_data.__len__.return_value = 24000
-                mock_data.__array__ = lambda *args: [0.0] * 24000
-                mock_mod.read = MagicMock(return_value=(mock_data, 24000))
-            
-            # sf.write -> create file with content
-            def _write(file, data, samplerate, **kwargs):
-                p = Path(file)
-                p.parent.mkdir(parents=True, exist_ok=True)
-                # Write enough bytes to pass checks > 1000 bytes
-                p.write_bytes(b"MOCK_WAV_DATA" * 100) 
-            mock_mod.write = MagicMock(side_effect=_write)
-            
-            # sf.info -> duration
-            mock_info = MagicMock()
-            mock_info.duration = 5.0
-            mock_info.samplerate = 24000
-            mock_mod.info.return_value = mock_info
+                # Check for real numpy to avoid __array__ errors
+                real_numpy = None
+                try:
+                    import numpy as np
+                    if not isinstance(np, MagicMock):
+                        real_numpy = np
+                except ImportError:
+                    pass
+
+                if real_numpy:
+                    # Return real array to satisfy real numpy functions
+                    def _mock_read_real(*args, **kwargs):
+                        # Default: 1 second of silence
+                        return real_numpy.zeros(24000, dtype=real_numpy.float32), 24000
+                    mock_mod.read = MagicMock(side_effect=_mock_read_real)
+                else:
+                    # Return mock array
+                    mock_data = MagicMock()
+                    mock_data.ndim = 1
+                    mock_data.shape = (24000,)
+                    mock_data.__len__.return_value = 24000
+                    mock_data.__array__ = lambda *args: [0.0] * 24000
+                    mock_mod.read = MagicMock(return_value=(mock_data, 24000))
+                
+                # sf.write -> create file with content
+                def _write(file, data, samplerate, **kwargs):
+                    p = Path(file)
+                    p.parent.mkdir(parents=True, exist_ok=True)
+                    # Write enough bytes to pass checks > 1000 bytes
+                    p.write_bytes(b"MOCK_WAV_DATA" * 100) 
+                mock_mod.write = MagicMock(side_effect=_write)
+                
+                # sf.info -> duration
+                mock_info = MagicMock()
+                mock_info.duration = 5.0
+                mock_info.samplerate = 24000
+                mock_mod.info.return_value = mock_info
 
         elif mod_name == "pyloudnorm":
             # pyln.Meter().integrated_loudness() -> float
