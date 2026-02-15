@@ -78,8 +78,11 @@ body {
 }
 
 .view {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .hidden {
@@ -91,10 +94,12 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
+    flex-shrink: 0;
 }
 
 h1 { margin: 0; font-size: 2rem; }
 h2 { font-size: 1.2rem; margin-bottom: 1rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+h3 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-primary); }
 
 /* Grid */
 .project-grid {
@@ -176,7 +181,8 @@ h2 { font-size: 1.2rem; margin-bottom: 1rem; color: var(--accent); border-bottom
 .editor-layout {
     display: flex;
     gap: 2rem;
-    height: calc(100vh - 180px);
+    height: 100%;
+    overflow: hidden;
 }
 
 .sidebar {
@@ -185,6 +191,8 @@ h2 { font-size: 1.2rem; margin-bottom: 1rem; color: var(--accent); border-bottom
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 1rem 0;
+    overflow-y: auto;
+    flex-shrink: 0;
 }
 
 .nav-item {
@@ -212,6 +220,36 @@ h2 { font-size: 1.2rem; margin-bottom: 1rem; color: var(--accent); border-bottom
     border-radius: 8px;
     padding: 2rem;
     overflow-y: auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.tab-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.tab-content:not(#tab-json) {
+    overflow-y: auto;
+}
+
+#tab-json {
+    padding: 0;
+}
+
+textarea#json-editor {
+    width: 100%;
+    height: 100%;
+    font-family: monospace;
+    font-size: 0.9rem;
+    resize: none;
+    border: none;
+    background: transparent;
+    padding: 2rem;
+    box-sizing: border-box;
 }
 
 /* Forms */
@@ -247,16 +285,6 @@ input:focus, select:focus, textarea:focus {
     border-color: var(--accent);
 }
 
-textarea#json-editor {
-    width: 100%;
-    height: 100%;
-    font-family: monospace;
-    font-size: 0.9rem;
-    resize: none;
-    border: none;
-    background: transparent;
-}
-
 /* List Group (Chapters) */
 .list-header {
     display: grid;
@@ -272,10 +300,17 @@ textarea#json-editor {
     grid-template-columns: 1fr 2fr 1fr 1fr;
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border);
+    cursor: pointer;
 }
 
 .list-item:hover {
     background: var(--bg-hover);
+}
+
+.list-item.active {
+    background: var(--bg-hover);
+    border-left: 3px solid var(--accent);
+    color: var(--accent);
 }
 
 /* Buttons */
@@ -299,3 +334,64 @@ textarea#json-editor {
 }
 
 .btn.primary:hover { background: var(--accent-hover); }
+
+.btn.small {
+    padding: 0.3rem 0.8rem;
+    font-size: 0.85rem;
+}
+
+.btn.big {
+    font-size: 1.1rem;
+    padding: 0.75rem 2rem;
+}
+
+/* Mix View Specifics */
+.file-list-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.file-list-item:hover {
+    background: var(--bg-hover);
+}
+
+.file-list-item.active {
+    background: var(--bg-hover);
+    border-left: 3px solid var(--accent);
+    color: var(--accent);
+}
+
+#waveform-container {
+    background: #000;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 1.5rem;
+    min-height: 150px;
+}
+
+.transport-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-input);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+#time-display {
+    font-family: monospace;
+    font-size: 1.1rem;
+}
+
+.info-panel {
+    background: var(--bg-input);
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.flex-row {
+    display: flex;
+}

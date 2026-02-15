@@ -7,6 +7,8 @@
     <title>AudioFormation Dashboard</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏭</text></svg>">
+    <!-- WaveSurfer.js -->
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
 </head>
 <body>
     <div class="app-container">
@@ -17,7 +19,8 @@
             </div>
             <nav class="nav-links">
                 <a href="#" onclick="app.showProjects()" class="active" id="nav-projects">Projects</a>
-                <a href="#" class="disabled" id="nav-editor">Editor</a>
+                <a href="#" class="disabled" id="nav-editor" onclick="app.showEditor()">Editor</a>
+                <a href="#" class="disabled" id="nav-mix" onclick="app.showMix()">Mix & Review</a>
             </nav>
             <div class="status-bar">
                 <span id="system-status" class="online">● System Ready</span>
@@ -40,9 +43,9 @@
             <!-- Project Editor View -->
             <div id="editor-view" class="view hidden">
                 <div class="view-header">
-                    <h1><span id="editor-project-id">Project</span></h1>
+                    <h1><span id="editor-project-id">Project</span> <span style="font-weight:400; opacity:0.5;">Editor</span></h1>
                     <div class="actions">
-                        <button class="btn" onclick="app.showProjects()">← Back</button>
+                        <button class="btn" onclick="app.showProjects()">Close</button>
                         <button class="btn primary" onclick="app.saveProject()">Save Changes</button>
                     </div>
                 </div>
@@ -97,6 +100,12 @@
 
                         <!-- Chapters Tab -->
                         <div id="tab-chapters" class="tab-content hidden">
+                            <div class="flex-row" style="justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                <h2>Chapters</h2>
+                                <button class="btn primary small" onclick="app.triggerIngest()">+ Ingest Text Files</button>
+                                <input type="file" id="ingest-file-input" multiple accept=".txt" style="display:none" onchange="app.handleIngestFiles(this)">
+                            </div>
+
                             <div class="list-header">
                                 <span>ID</span>
                                 <span>Title</span>
@@ -104,6 +113,51 @@
                                 <span>Mode</span>
                             </div>
                             <div id="chapter-list" class="list-group"></div>
+
+                            <!-- Chapter Detail Editor (Hidden by default) -->
+                            <div id="chapter-detail" class="detail-panel hidden" style="margin-top:2rem; border-top:1px solid var(--border); padding-top:1rem;">
+                                <div class="flex-row" style="justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                    <div style="display:flex; gap:1rem; align-items:center;">
+                                        <h3 id="chap-detail-title" style="margin:0">Edit Chapter</h3>
+                                        <span id="chap-status-badge" class="status-badge" style="display:none;">PENDING</span>
+                                    </div>
+                                    <button id="btn-generate-chap" class="btn primary small" onclick="app.generateCurrentChapter()">⚡ Generate Audio</button>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Title</label>
+                                        <input type="text" id="chap-title">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Character</label>
+                                        <select id="chap-character"></select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Mode</label>
+                                        <select id="chap-mode">
+                                            <option value="single">Single (Narrator)</option>
+                                            <option value="multi">Multi-Speaker</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Energy (Direction)</label>
+                                        <input type="text" id="chap-energy" placeholder="normal">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Pace</label>
+                                        <input type="text" id="chap-pace" placeholder="moderate">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Emotion</label>
+                                        <input type="text" id="chap-emotion" placeholder="neutral">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- JSON Tab -->
@@ -113,6 +167,56 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Mix/Review View -->
+            <div id="mix-view" class="view hidden">
+                <div class="view-header">
+                    <h1><span id="mix-project-id">Project</span> <span style="font-weight:400; opacity:0.5;">Timeline</span></h1>
+                    <div class="actions">
+                        <button class="btn" onclick="app.showProjects()">Close</button>
+                    </div>
+                </div>
+
+                <div class="editor-layout">
+                    <aside class="sidebar" style="width: 250px;">
+                        <div style="padding: 1rem; border-bottom: 1px solid var(--border); font-weight: bold; color: var(--accent);">
+                            Audio Files
+                        </div>
+                        <div id="mix-file-list" class="file-list">
+                            <!-- Populated via JS -->
+                        </div>
+                    </aside>
+
+                    <div class="main-panel" style="display:flex; flex-direction:column;">
+                        <!-- Mix Toolbar -->
+                        <div class="mix-toolbar" style="margin-bottom:1.5rem; display:flex; gap:1rem; align-items:center; padding-bottom:1rem; border-bottom:1px solid var(--border);">
+                            <button id="btn-mix" class="btn primary" onclick="app.runMix()">☊ Run Mix</button>
+                            <span id="mix-status-badge" class="status-badge" style="display:none;">PENDING</span>
+                            <div style="flex:1"></div>
+                            <span style="font-size:0.9rem; color:var(--text-secondary);">VAD Ducking: On</span>
+                        </div>
+
+                        <div id="waveform-container">
+                            <div id="waveform"></div>
+                            <div id="wave-timeline"></div>
+                        </div>
+                        
+                        <div class="transport-controls">
+                            <button id="play-btn" class="btn primary big">▶ Play</button>
+                            <span id="time-display">00:00 / 00:00</span>
+                            <div style="flex:1"></div>
+                            <label>Zoom</label>
+                            <input type="range" id="zoom-slider" min="10" max="200" value="50">
+                        </div>
+
+                        <div class="info-panel" id="track-info">
+                            <h3>Select a track to review</h3>
+                            <p>Files are loaded from <code>03_GENERATED/processed</code> or <code>06_MIX/renders</code>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 

@@ -1,0 +1,20 @@
+# AudioFormation — Auto-generated .gitignore
+
+# API keys — NEVER commit
+00_CONFIG/engines.json
+
+# Generated audio (large files)
+03_GENERATED/**/*.wav
+03_GENERATED/**/*.mp3
+04_SFX/procedural/**/*.wav
+05_MUSIC/generated/**/*.wav
+06_MIX/renders/**/*.wav
+
+# Exports
+07_EXPORT/**/*.mp3
+07_EXPORT/**/*.m4b
+07_EXPORT/**/*.wav
+07_EXPORT/**/*.flac
+
+# Keep directory structure
+!**/.gitkeep

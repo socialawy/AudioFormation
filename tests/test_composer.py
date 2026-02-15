@@ -10,10 +10,12 @@ from audioformation.audio.composer import (
     get_preset,
     PadPreset,
     MOOD_PRESETS,
-    _oscillator,
-    _cents_to_ratio,
-    _generate_noise,
-    _apply_envelope,
+)
+from audioformation.audio.synthesis import (
+    oscillator,
+    cents_to_ratio,
+    generate_noise,
+    apply_envelope,
 )
 
 
@@ -49,33 +51,33 @@ class TestOscillators:
     """Tests for waveform generation."""
 
     def test_sine_output_shape(self) -> None:
-        sig = _oscillator(440.0, 1.0, 44100, "sine")
+        sig = oscillator(440.0, 1.0, 44100, "sine")
         assert sig.shape == (44100,)
 
     def test_sine_range(self) -> None:
-        sig = _oscillator(440.0, 1.0, 44100, "sine")
+        sig = oscillator(440.0, 1.0, 44100, "sine")
         assert np.max(sig) <= 1.0001
         assert np.min(sig) >= -1.0001
 
     def test_triangle_range(self) -> None:
-        sig = _oscillator(440.0, 1.0, 44100, "triangle")
+        sig = oscillator(440.0, 1.0, 44100, "triangle")
         assert np.max(sig) <= 1.01
         assert np.min(sig) >= -1.01
 
     def test_saw_range(self) -> None:
-        sig = _oscillator(440.0, 1.0, 44100, "saw")
+        sig = oscillator(440.0, 1.0, 44100, "saw")
         assert np.max(sig) <= 1.01
         assert np.min(sig) >= -1.01
 
     def test_unknown_type_defaults_to_sine(self) -> None:
-        sig = _oscillator(440.0, 0.1, 44100, "unknown")
-        sine = _oscillator(440.0, 0.1, 44100, "sine")
+        sig = oscillator(440.0, 0.1, 44100, "unknown")
+        sine = oscillator(440.0, 0.1, 44100, "sine")
         np.testing.assert_array_almost_equal(sig, sine)
 
     def test_cents_to_ratio(self) -> None:
-        assert _cents_to_ratio(0) == pytest.approx(1.0)
-        assert _cents_to_ratio(1200) == pytest.approx(2.0)
-        assert _cents_to_ratio(-1200) == pytest.approx(0.5)
+        assert cents_to_ratio(0) == pytest.approx(1.0)
+        assert cents_to_ratio(1200) == pytest.approx(2.0)
+        assert cents_to_ratio(-1200) == pytest.approx(0.5)
 
 
 class TestNoise:
@@ -83,23 +85,23 @@ class TestNoise:
 
     def test_white_noise_shape(self) -> None:
         rng = np.random.default_rng(42)
-        noise = _generate_noise(44100, "white", rng)
+        noise = generate_noise(44100, "white", rng)
         assert noise.shape == (44100,)
 
     def test_pink_noise_shape(self) -> None:
         rng = np.random.default_rng(42)
-        noise = _generate_noise(44100, "pink", rng)
+        noise = generate_noise(44100, "pink", rng)
         assert noise.shape == (44100,)
 
     def test_brown_noise_shape(self) -> None:
         rng = np.random.default_rng(42)
-        noise = _generate_noise(44100, "brown", rng)
+        noise = generate_noise(44100, "brown", rng)
         assert noise.shape == (44100,)
 
     def test_noise_is_normalized(self) -> None:
         rng = np.random.default_rng(42)
         for color in ["white", "pink", "brown"]:
-            noise = _generate_noise(44100, color, rng)
+            noise = generate_noise(44100, color, rng)
             assert np.max(np.abs(noise)) <= 1.01
 
 
@@ -108,17 +110,17 @@ class TestEnvelope:
 
     def test_fade_in_starts_at_zero(self) -> None:
         sig = np.ones(44100)
-        result = _apply_envelope(sig, 44100, fade_in_sec=1.0, fade_out_sec=0.0)
+        result = apply_envelope(sig, 44100, fade_in_sec=1.0, fade_out_sec=0.0)
         assert result[0] == pytest.approx(0.0, abs=0.001)
 
     def test_fade_out_ends_at_zero(self) -> None:
         sig = np.ones(44100)
-        result = _apply_envelope(sig, 44100, fade_in_sec=0.0, fade_out_sec=1.0)
+        result = apply_envelope(sig, 44100, fade_in_sec=0.0, fade_out_sec=1.0)
         assert result[-1] == pytest.approx(0.0, abs=0.001)
 
     def test_middle_is_unaffected(self) -> None:
         sig = np.ones(44100 * 10)  # 10 seconds
-        result = _apply_envelope(sig, 44100, fade_in_sec=1.0, fade_out_sec=1.0)
+        result = apply_envelope(sig, 44100, fade_in_sec=1.0, fade_out_sec=1.0)
         # Middle should be ~1.0
         mid = len(result) // 2
         assert result[mid] == pytest.approx(1.0, abs=0.001)

@@ -9,6 +9,7 @@ Phase 2 commands: cast (manage characters), compose (ambient music),
                   preview (fast check), compare (A/B testing).
 
 Phase 3 commands: mix, qc-final, serve (API).
+                  sfx (FXForge).
 """
 
 import asyncio
@@ -369,6 +370,48 @@ def cast_clone(project_id: str, char_id: str, reference: Path, name: str | None)
 
     click.secho(f"✓ Copied reference to: {rel_path}", fg="green")
     click.secho(f"✓ {action} character '{char_id}' using XTTS engine.", fg="green")
+
+
+# ──────────────────────────────────────────────
+# SFX Management (FXForge)
+# ──────────────────────────────────────────────
+
+
+@main.group()
+def sfx() -> None:
+    """FXForge: Procedural sound effects."""
+    pass
+
+
+@sfx.command("generate")
+@click.argument("project_id")
+@click.option("--type", "sfx_type", type=click.Choice(["whoosh", "impact", "ui_click", "static", "drone"]), required=True)
+@click.option("--duration", type=float, default=1.0, help="Duration in seconds.")
+@click.option("--name", "filename", default=None, help="Output filename (optional).")
+def sfx_generate(project_id: str, sfx_type: str, duration: float, filename: str | None) -> None:
+    """Generate a procedural sound effect."""
+    from audioformation.project import get_project_path
+    from audioformation.audio.sfx import generate_sfx
+
+    if not _project_guard(project_id):
+        return
+
+    project_path = get_project_path(project_id)
+    sfx_dir = project_path / "04_SFX" / "procedural"
+    sfx_dir.mkdir(parents=True, exist_ok=True)
+
+    if not filename:
+        timestamp = str(int(time.time()))
+        filename = f"{sfx_type}_{timestamp}.wav"
+    
+    output_path = sfx_dir / filename
+
+    try:
+        generate_sfx(sfx_type, output_path=output_path, duration=duration)
+        click.secho(f"✓ Generated {sfx_type}: {output_path.name}", fg="green")
+    except Exception as e:
+        click.secho(f"✗ Failed: {e}", fg="red")
+        sys.exit(1)
 
 
 # ──────────────────────────────────────────────
@@ -755,7 +798,18 @@ def mix(project_id: str, music_file: str | None) -> None:
 
     click.echo(f"Starting mix for project: {project_id}")
     
-    success = mix_project(project_id, music_file)
+    def _cli_progress(msg: str):
+        # Naive color mapping
+        if "✗" in msg:
+            click.secho(msg, fg="red")
+        elif "✓" in msg:
+            click.secho(msg, fg="green", bold=True)
+        elif "⚠" in msg:
+            click.secho(msg, fg="yellow")
+        else:
+            click.echo(msg)
+
+    success = mix_project(project_id, music_file, progress_callback=_cli_progress)
     
     if not success:
         sys.exit(1)

@@ -1,3 +1,4 @@
+
 """
 Ambient pad generator — mood-based background audio for audiobooks.
 
@@ -13,6 +14,15 @@ import soundfile as sf
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
+
+from audioformation.audio.synthesis import (
+    oscillator,
+    cents_to_ratio,
+    generate_noise,
+    simple_lowpass,
+    simple_highpass,
+    apply_envelope,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -146,137 +156,6 @@ MOOD_PRESETS: dict[str, PadPreset] = {
 
 
 # ---------------------------------------------------------------------------
-# Oscillator functions
-# ---------------------------------------------------------------------------
-
-def _oscillator(freq: float, duration_sec: float, sr: int, wave_type: str = "sine") -> np.ndarray:
-    """Generate a basic waveform."""
-    t = np.linspace(0, duration_sec, int(sr * duration_sec), endpoint=False)
-    phase = 2 * np.pi * freq * t
-
-    if wave_type == "sine":
-        return np.sin(phase)
-    elif wave_type == "triangle":
-        return 2 * np.abs(2 * (t * freq - np.floor(t * freq + 0.5))) - 1
-    elif wave_type == "saw":
-        return 2 * (t * freq - np.floor(t * freq + 0.5))
-    else:
-        return np.sin(phase)
-
-
-def _cents_to_ratio(cents: float) -> float:
-    """Convert cents detune to frequency ratio."""
-    return 2 ** (cents / 1200)
-
-
-# ---------------------------------------------------------------------------
-# Noise generators
-# ---------------------------------------------------------------------------
-
-def _white_noise(n_samples: int, rng: np.random.Generator) -> np.ndarray:
-    """Generate white noise."""
-    return rng.standard_normal(n_samples)
-
-
-def _pink_noise(n_samples: int, rng: np.random.Generator) -> np.ndarray:
-    """Generate pink noise using Voss-McCartney algorithm."""
-    # Simplified: filter white noise
-    white = rng.standard_normal(n_samples)
-    # Apply rolling average for pinkening
-    kernel_size = 64
-    kernel = np.ones(kernel_size) / kernel_size
-    pink = np.convolve(white, kernel, mode='same')
-    # Normalize
-    peak = np.max(np.abs(pink))
-    if peak > 0:
-        pink = pink / peak
-    return pink
-
-
-def _brown_noise(n_samples: int, rng: np.random.Generator) -> np.ndarray:
-    """Generate brown (Brownian) noise via cumulative sum."""
-    white = rng.standard_normal(n_samples)
-    brown = np.cumsum(white)
-    # High-pass to remove DC drift
-    brown = brown - np.linspace(brown[0], brown[-1], n_samples)
-    # Normalize
-    peak = np.max(np.abs(brown))
-    if peak > 0:
-        brown = brown / peak
-    return brown
-
-
-def _generate_noise(n_samples: int, color: str, rng: np.random.Generator) -> np.ndarray:
-    """Generate colored noise."""
-    if color == "pink":
-        return _pink_noise(n_samples, rng)
-    elif color == "brown":
-        return _brown_noise(n_samples, rng)
-    else:
-        noise = _white_noise(n_samples, rng)
-        peak = np.max(np.abs(noise))
-        if peak > 0:
-            noise = noise / peak
-        return noise
-
-
-# ---------------------------------------------------------------------------
-# Filters (simple IIR)
-# ---------------------------------------------------------------------------
-
-def _simple_lowpass(signal: np.ndarray, cutoff_hz: float, sr: int) -> np.ndarray:
-    """Apply a simple first-order IIR lowpass filter."""
-    rc = 1.0 / (2 * np.pi * cutoff_hz)
-    dt = 1.0 / sr
-    alpha = dt / (rc + dt)
-
-    out = np.zeros_like(signal)
-    out[0] = alpha * signal[0]
-    for i in range(1, len(signal)):
-        out[i] = out[i - 1] + alpha * (signal[i] - out[i - 1])
-    return out
-
-
-def _simple_highpass(signal: np.ndarray, cutoff_hz: float, sr: int) -> np.ndarray:
-    """Apply a simple first-order IIR highpass filter."""
-    rc = 1.0 / (2 * np.pi * cutoff_hz)
-    dt = 1.0 / sr
-    alpha = rc / (rc + dt)
-
-    out = np.zeros_like(signal)
-    out[0] = signal[0]
-    for i in range(1, len(signal)):
-        out[i] = alpha * (out[i - 1] + signal[i] - signal[i - 1])
-    return out
-
-
-# ---------------------------------------------------------------------------
-# Envelope
-# ---------------------------------------------------------------------------
-
-def _apply_envelope(
-    signal: np.ndarray, sr: int,
-    fade_in_sec: float, fade_out_sec: float,
-) -> np.ndarray:
-    """Apply fade-in and fade-out envelope."""
-    n = len(signal)
-    envelope = np.ones(n)
-
-    fade_in_samples = int(fade_in_sec * sr)
-    fade_out_samples = int(fade_out_sec * sr)
-
-    if fade_in_samples > 0:
-        fade_in_samples = min(fade_in_samples, n)
-        envelope[:fade_in_samples] = np.linspace(0, 1, fade_in_samples)
-
-    if fade_out_samples > 0:
-        fade_out_samples = min(fade_out_samples, n)
-        envelope[-fade_out_samples:] = np.linspace(1, 0, fade_out_samples)
-
-    return signal * envelope
-
-
-# ---------------------------------------------------------------------------
 # Main generator
 # ---------------------------------------------------------------------------
 
@@ -317,29 +196,29 @@ def generate_pad(
 
     # Base oscillator
     if p.base_amplitude > 0:
-        base = _oscillator(p.base_freq, duration_sec, sr, p.base_type)
+        base = oscillator(p.base_freq, duration_sec, sr, p.base_type)
         mix += base * p.base_amplitude
 
     # Detuned oscillator for richness
     if p.detune_amplitude > 0:
-        detune_freq = p.base_freq * _cents_to_ratio(p.detune_cents)
-        detuned = _oscillator(detune_freq, duration_sec, sr, p.base_type)
+        detune_freq = p.base_freq * cents_to_ratio(p.detune_cents)
+        detuned = oscillator(detune_freq, duration_sec, sr, p.base_type)
         mix += detuned * p.detune_amplitude
 
     # Sub bass
     if p.sub_amplitude > 0:
         sub_freq = p.base_freq * p.sub_freq_ratio
-        sub = _oscillator(sub_freq, duration_sec, sr, "sine")
+        sub = oscillator(sub_freq, duration_sec, sr, "sine")
         mix += sub * p.sub_amplitude
 
     # Noise layer
     if p.noise_amplitude > 0:
-        noise = _generate_noise(n_samples, p.noise_color, rng)
+        noise = generate_noise(n_samples, p.noise_color, rng)
         mix += noise * p.noise_amplitude
 
     # LFO modulation
     if p.lfo_depth > 0:
-        lfo = _oscillator(p.lfo_rate, duration_sec, sr, "sine")
+        lfo = oscillator(p.lfo_rate, duration_sec, sr, "sine")
         lfo = 1.0 - p.lfo_depth * 0.5 * (1.0 + lfo)  # range: [1-depth, 1]
 
         if p.lfo_target == "amplitude":
@@ -350,12 +229,12 @@ def generate_pad(
 
     # Filtering
     if p.lowpass_hz < sr / 2:
-        mix = _simple_lowpass(mix, p.lowpass_hz, sr)
+        mix = simple_lowpass(mix, p.lowpass_hz, sr)
     if p.highpass_hz > 0:
-        mix = _simple_highpass(mix, p.highpass_hz, sr)
+        mix = simple_highpass(mix, p.highpass_hz, sr)
 
     # Envelope
-    mix = _apply_envelope(mix, sr, p.fade_in_sec, p.fade_out_sec)
+    mix = apply_envelope(mix, sr, p.fade_in_sec, p.fade_out_sec)
 
     # Normalize to prevent clipping
     peak = np.max(np.abs(mix))

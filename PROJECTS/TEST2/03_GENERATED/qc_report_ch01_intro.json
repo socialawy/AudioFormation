@@ -1,0 +1,181 @@
+{
+  "project_id": "TEST2",
+  "chapter_id": "ch01_intro",
+  "total_chunks": 8,
+  "passed": 6,
+  "warnings": 2,
+  "failures": 0,
+  "fail_rate_percent": 0.0,
+  "chunks": [
+    {
+      "chunk_id": "ch01_intro_000",
+      "file": "PROJECTS\\TEST2\\03_GENERATED\\raw\\ch01_intro_000.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 21.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.86
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -18.5,
+          "target": -16,
+          "deviation": 2.5
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_intro_001",
+      "file": "PROJECTS\\TEST2\\03_GENERATED\\raw\\ch01_intro_001.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 30.4
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.94
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -18.2,
+          "target": -16,
+          "deviation": 2.2
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_intro_002",
+      "file": "PROJECTS\\TEST2\\03_GENERATED\\raw\\ch01_intro_002.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 29.8
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.73
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -19.0,
+          "target": -16,
+          "deviation": 3.0,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_intro_003",
+      "file": "PROJECTS\\TEST2\\03_GENERATED\\raw\\ch01_intro_003.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 23.0
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.0
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -19.1,
+          "target": -16,
+          "deviation": 3.1,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_intro_004",
+      "file": "PROJECTS\\TEST2\\03_GENERATED\\raw\\ch01_intro_004.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 24.5
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -5.23
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -18.9,
+          "target": -16,
+          "deviation": 2.9
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_intro_005",
+      "file": "PROJECTS\\TEST2\\03_GENERATED\\raw\\ch01_intro_005.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 21.9
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.88
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -18.9,
+          "target": -16,
+          "deviation": 2.9
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_intro_006",
+      "file": "PROJECTS\\TEST2\\03_GENERATED\\raw\\ch01_intro_006.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 25.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -5.42
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -18.5,
+          "target": -16,
+          "deviation": 2.5
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_intro_007",
+      "file": "PROJECTS\\TEST2\\03_GENERATED\\raw\\ch01_intro_007.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 28.8
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.8
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -16.7,
+          "target": -16,
+          "deviation": 0.7
+        }
+      }
+    }
+  ]
+}

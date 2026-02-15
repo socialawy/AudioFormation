@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 from audioformation import __version__
 from audioformation.server.routes import router
+from audioformation.config import PROJECTS_ROOT
 
 app = FastAPI(
     title="AudioFormation API",
@@ -35,6 +36,11 @@ app.include_router(router, prefix="/api")
 async def health_check():
     """Health check endpoint."""
     return {"status": "ok", "version": __version__}
+
+# Mount projects directory for audio streaming (e.g., /projects/MY_NOVEL/...)
+# Ensure directory exists so mount doesn't fail or get skipped
+PROJECTS_ROOT.mkdir(parents=True, exist_ok=True)
+app.mount("/projects", StaticFiles(directory=PROJECTS_ROOT), name="projects")
 
 # Mount static files (Dashboard)
 # Must be mounted AFTER API routes to avoid capturing /api calls
