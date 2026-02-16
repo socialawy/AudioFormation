@@ -6,6 +6,7 @@ Handles project CRUD and status retrieval.
 """
 
 import asyncio
+import json
 import logging
 import shutil
 import tempfile
@@ -32,7 +33,7 @@ from audioformation.validation import validate_project
 from audioformation.audio.processor import batch_process_project
 from audioformation.audio.composer import generate_pad
 from audioformation.export.mp3 import export_project_mp3
-from audioformation.export.m4b import export_project_m4b
+from audioformation.export.m4b import export_project_m4b_auto
 from audioformation.qc.final import scan_final_mix
 
 router = APIRouter()
@@ -132,30 +133,44 @@ async def update_project(project_id: str, project_data: dict[str, Any]):
 
 
 @router.post("/projects/{project_id}/ingest")
-async def ingest_files(project_id: str, files: List[UploadFile] = File(...)):
+async def ingest_files(project_id: str, background_tasks: BackgroundTasks, files: List[UploadFile] = File(...)):
     """Upload text files and run ingest."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
+    # Read uploads NOW (within request lifecycle) — UploadFile handles
+    # will be closed after response returns, before background task runs.
+    tmp_dir = tempfile.mkdtemp()
+    tmp_path = Path(tmp_dir)
     try:
-        # Create a temporary directory to receive uploads
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_path = Path(tmp_dir)
-            
-            for file in files:
-                dest = tmp_path / file.filename
-                with open(dest, "wb") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-            
-            # Run ingest logic
-            result = ingest_text(project_id, tmp_path)
-            
-            return {
-                "message": f"Ingested {result['ingested']} files.",
-                "details": result
-            }
+        for file in files:
+            dest = tmp_path / file.filename
+            with open(dest, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ingest failed: {str(e)}")
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
+
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: _ingest_files_sync(project_id, tmp_path),
+        project_id,
+        "ingest",
+    )
+
+    return {"message": "Ingest started", "status": "running"}
+
+
+def _ingest_files_sync(project_id: str, tmp_path: Path) -> dict:
+    """Synchronous ingest logic for background task."""
+    try:
+        result = ingest_text(project_id, tmp_path)
+        return {
+            "message": f"Ingested {result['ingested']} files.",
+            "details": result
+        }
+    finally:
+        shutil.rmtree(tmp_path, ignore_errors=True)
 
 
 @router.post("/projects/{project_id}/generate")
@@ -167,9 +182,6 @@ async def trigger_generation(
     """Trigger TTS generation in the background."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
-    path = get_project_path(project_id)
-    mark_node(path, "generate", "running")
     
     background_tasks.add_task(
         _run_with_status,
@@ -191,9 +203,6 @@ async def trigger_mix(project_id: str, background_tasks: BackgroundTasks):
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
     
-    path = get_project_path(project_id)
-    mark_node(path, "mix", "running")
-    
     background_tasks.add_task(
         _run_with_status,
         lambda: mix_project(project_id=project_id),
@@ -205,16 +214,19 @@ async def trigger_mix(project_id: str, background_tasks: BackgroundTasks):
 
 
 @router.post("/projects/{project_id}/validate")
-async def trigger_validate(project_id: str):
+async def trigger_validate(project_id: str, background_tasks: BackgroundTasks):
     """Run validation gate (Node 2)."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    try:
-        result = validate_project(project_id)
-        # ValidationResult has a summary() method that returns a dict
-        return result.summary() if hasattr(result, 'summary') else result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: validate_project(project_id),
+        project_id,
+        "validate",
+    )
+    
+    return {"message": "Validation started", "status": "running"}
 
 
 @router.post("/projects/{project_id}/process")
@@ -222,9 +234,6 @@ async def trigger_process(project_id: str, background_tasks: BackgroundTasks):
     """Run audio processing/normalization (Node 4)."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
-    path = get_project_path(project_id)
-    mark_node(path, "process", "running")
     
     background_tasks.add_task(
         _run_with_status,
@@ -251,7 +260,6 @@ async def trigger_compose(
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"pad_{request.preset}.wav"
 
-    mark_node(project_path, "compose", "running")
 
     background_tasks.add_task(
         _run_with_status,
@@ -280,14 +288,11 @@ async def trigger_export(
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
-    path = get_project_path(project_id)
-    mark_node(path, "export", "running")
-
-    export_func = export_project_m4b if request.format == "m4b" else export_project_mp3
+    export_func = export_project_m4b_auto if request.format == "m4b" else export_project_mp3
 
     background_tasks.add_task(
         _run_with_status,
-        lambda: export_func(project_id),
+        lambda: export_func(project_id, bitrate=request.bitrate),
         project_id,
         "export",
     )
@@ -298,14 +303,87 @@ async def trigger_export(
     }
 
 
+@router.post("/projects/{project_id}/qc-scan")
+async def trigger_qc_scan(project_id: str, background_tasks: BackgroundTasks):
+    """Run QC scan on generated audio (Node 3.5)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: _qc_scan_sync(project_id),
+        project_id,
+        "qc_scan",
+    )
+    
+    return {"message": "QC scan started", "status": "running"}
+
+
+def _qc_scan_sync(project_id: str) -> dict:
+    """Synchronous QC scan logic for background task."""
+    from audioformation.qc.scanner import scan_chunk, QCReport, ChunkQCResult
+    from audioformation.qc.report import save_report
+
+    project_path = get_project_path(project_id)
+    project_data = load_project_json(project_id)
+    qc_config = project_data.get("qc", {})
+
+    raw_dir = project_path / "03_GENERATED" / "raw"
+
+    if not raw_dir.exists():
+        raise FileNotFoundError(f"Generated audio directory not found: {raw_dir}")
+
+    audio_files = sorted(raw_dir.glob("*.wav")) + sorted(raw_dir.glob("*.mp3"))
+
+    if not audio_files:
+        return {"message": "No audio files found to scan", "scanned": 0}
+
+    target_lufs = project_data.get("mix", {}).get("target_lufs", -16.0)
+    chunk_results: list[ChunkQCResult] = []
+
+    for audio_file in audio_files:
+        chunk_id = audio_file.stem
+        try:
+            result = scan_chunk(
+                audio_path=audio_file,
+                chunk_id=chunk_id,
+                config=qc_config,
+                target_lufs=target_lufs,
+            )
+            chunk_results.append(result)
+        except Exception as e:
+            # Create a failed ChunkQCResult for files that error
+            chunk_results.append(ChunkQCResult(
+                chunk_id=chunk_id,
+                status="fail",
+                checks={"scan_error": {"status": "fail", "message": str(e)}},
+            ))
+
+    report = QCReport(
+        project_id=project_id,
+        chapter_id=None,
+        chunks=chunk_results,
+    )
+
+    gen_dir = project_path / "03_GENERATED"
+    report_path = save_report(report, gen_dir)
+
+    return {
+        "message": "QC scan completed",
+        "scanned": len(chunk_results),
+        "passed": report.pass_count,
+        "warned": report.warn_count,
+        "failed": report.fail_count,
+        "fail_rate": report.fail_rate,
+        "report_path": str(report_path.relative_to(project_path)),
+    }
+
+
 @router.get("/projects/{project_id}/qc")
 async def get_qc_reports(project_id: str):
     """Get QC scan and final mix reports."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-
-    from audioformation.project import get_project_path
-    import json
 
     project_path = get_project_path(project_id)
     reports = {}
@@ -333,29 +411,39 @@ async def get_qc_reports(project_id: str):
 
 
 @router.post("/projects/{project_id}/qc-final")
-async def trigger_qc_final(project_id: str):
+async def trigger_qc_final(project_id: str, background_tasks: BackgroundTasks):
     """Run QC Final gate on mixed output (Node 7)."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    try:
-        report = scan_final_mix(project_id)
-        return {
-            "passed": report.passed,
-            "total_files": report.total_files,
-            "failed_files": report.failed_files,
-            "results": [
-                {
-                    "filename": r.filename,
-                    "status": r.status,
-                    "lufs": r.lufs,
-                    "true_peak": r.true_peak,
-                    "messages": r.messages,
-                }
-                for r in report.results
-            ],
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: _qc_final_sync(project_id),
+        project_id,
+        "qc_final",
+    )
+    
+    return {"message": "QC Final started", "status": "running"}
+
+
+def _qc_final_sync(project_id: str) -> dict:
+    """Synchronous QC final logic for background task."""
+    report = scan_final_mix(project_id)
+    return {
+        "passed": report.passed,
+        "total_files": report.total_files,
+        "failed_files": report.failed_files,
+        "results": [
+            {
+                "filename": r.filename,
+                "status": r.status,
+                "lufs": r.lufs,
+                "true_peak": r.true_peak,
+                "messages": r.messages,
+            }
+            for r in report.results
+        ],
+    }
 
 
 @router.get("/projects/{project_id}/status")

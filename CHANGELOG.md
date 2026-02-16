@@ -8,6 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added 2026-02-16 (Session 3)
+- **QC Scan API**: New endpoint for quality control scanning
+  - POST /api/projects/{id}/qc-scan (Node 3.5)
+  - Scans generated audio for SNR, clipping, duration, LUFS, pitch, boundary artifacts
+  - Background task with proper status tracking
+  - Frontend integration in "Run All Pipeline"
+
+- **Pipeline Status Fixes**: Robust status file handling
+  - update_node_status handles missing pipeline-status.json (bootstrap)
+  - mark_node consolidated to delegate to update_node_status
+  - Eliminates duplicate JSON I/O logic
+  - Tests updated to use isolate_projects fixture
+
+- **Architecture Synchronization**: Documentation alignment
+  - API docs updated: 16 endpoints (added qc-scan)
+  - Dashboard port corrected: localhost:4001 (was 4000)
+  - Test count updated: 26 test files (was 24)
+  - Endpoint count updated: 15 endpoints (was 13)
+
+- **Code Quality**: UTF-8 encoding and cleanup
+  - Fixed UTF-8 artifacts in pipeline.py (— → --, → → ->)
+  - Removed dead code: DASHBOARD_PORT = 4000
+  - Enhanced test coverage: 63.40% (60% minimum met)
+
 ### Added 2026-02-16 (Session 2)
 - **Pipeline Status Tracking Wrapper**: Comprehensive background task monitoring
   - Async-aware `_run_with_status()` wrapper for all pipeline functions

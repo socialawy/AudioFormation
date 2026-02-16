@@ -694,6 +694,7 @@ const app = {
         const steps = [
             { name: 'Validate', endpoint: 'validate', method: 'POST' },
             { name: 'Generate', endpoint: 'generate', method: 'POST', body: { chapters: null, engine: null } },
+            { name: 'QC Scan', endpoint: 'qc-scan', method: 'POST' },
             { name: 'Process', endpoint: 'process', method: 'POST' },
             { name: 'Compose', endpoint: 'compose', method: 'POST', body: { preset: 'contemplative', duration: 60 } },
             { name: 'Mix', endpoint: 'mix', method: 'POST' },
@@ -774,6 +775,7 @@ const app = {
         // Map endpoint to pipeline node name
         const nodeMap = {
             'generate': 'generate',
+            'qc-scan': 'qc_scan',
             'process': 'process',
             'compose': 'compose',
             'mix': 'mix',

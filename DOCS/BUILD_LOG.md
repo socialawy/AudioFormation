@@ -8,9 +8,42 @@
 
 ---
 
-##  Recent Activity (Feb 16, 2026)
+## Recent Activity (Feb 16, 2026)
 
-**Phase 3: Web Dashboard (Mixing)**
+**Session 4: Arabic + QC + Edge-TTS Fixes**
+*   **Arabic SSML Disable (edge-tts)**
+    *   Fixed generation default: Arabic (`ar*`) now forces SSML off to prevent SSML tags being read as text.
+    *   Change: `src/audioformation/generate.py`.
+*   **QC Scan API Endpoint Cleanup**
+    *   Removed duplicated `QCReport` / `save_report` block in `_qc_scan_sync`.
+    *   Change: `src/audioformation/server/routes.py`.
+*   **Edge-TTS Temp File Uniqueness (WinError 32 fix)**
+    *   Replaced fragile `Path.with_suffix(...)` temp naming with unique temp MP3 naming:
+        *   `{output_path.stem}_tmp_{uuid8}.mp3`
+    *   Change: `src/audioformation/engines/edge_tts.py`.
+*   **Verification**
+    *   pytest: `362 passed, 9 skipped` (e2e tests excluded).
+    *   Snyk Code scan: 0 issues (severity >= medium).
+
+**Session 3: Architecture & Quality Fixes**
+*   **QC Scan Integration**: Complete end-to-end QC scanning
+    *   Added POST /api/projects/{id}/qc-scan API endpoint (Node 3.5)
+    *   Frontend: QC Scan step in "Run All Pipeline" workflow
+    *   API docs updated: 16 total endpoints
+*   **Pipeline Status Robustness**: Better error handling
+    *   update_node_status handles missing status files (bootstrap)
+    *   mark_node consolidated to delegate to update_node_status
+    *   Tests updated to use isolate_projects fixture
+*   **Architecture Alignment**: Documentation synchronization
+    *   Dashboard port: localhost:4001 (was 4000)
+    *   Test count: 26 files (was 24)
+    *   Endpoint count: 15 (was 13)
+*   **Code Quality**: Encoding and cleanup
+    *   Fixed UTF-8 artifacts in pipeline.py
+    *   Removed dead DASHBOARD_PORT = 4000
+    *   Test coverage: 63.40% (60% minimum met)
+
+**Session 2: Web Dashboard (Mixing)**
 *   **Mix UI:** Added "Mix & Review" view to the dashboard.
     *   Integrated `wavesurfer.js` for waveform visualization.
     *   Track loading logic: prioritizes Final Mix > Processed > Raw.
@@ -61,6 +94,7 @@ The core pipeline is now accessible via both CLI and Web Dashboard.
 - **Code Quality Infrastructure**: Ruff linting, pytest-cov reporting, MyPy type checking
 - **Snyk Integration**: Security scanning with 0 remaining issues
 - **Coverage Enhancement**: HTML/XML reports with 65% current coverage
+- **Code Cleanup**: Fixed parameter ordering in routes.py, removed redundant imports, added node validation
 
 ### **Multi-Engine Achievement**
 - **100% Engine Coverage**: Edge-TTS, gTTS, XTTS, ElevenLabs all operational
@@ -103,15 +137,20 @@ The core pipeline is now accessible via both CLI and Web Dashboard.
 ## 🔮 Roadmap (Next Steps)
 
 ### Phase 4: Final Polish & Export UI
+0. **New Final Dashboard design** Allow advanced controsl from UI
 1.  **Dashboard Export Tab:** Allow users to trigger M4B/MP3 export and download files.
 2.  **FXForge UI:** Add SFX generation tools to the dashboard.
 3.  **Real-time Progress:** Replace status polling with WebSockets for smoother UI updates.
 4.  **Exception Handling:** Add granular exception handling for ffmpeg in processor.py.
 5.  **Type Checking:** Add mypy / type checking to CI.
-6.  **Dockerizing:** Dockerize for deployment.
 
-| Suggestion | Reality | Priority |
-|------------|----------|----------|
-| Granular exception handling for ffmpeg in processor.py | Fair point. batch_process_project likely wraps ffmpeg calls without distinguishing transient failures from config errors | Low — not blocking, but worth a retry wrapper eventually |
-| mypy / type checking | You use type hints everywhere but don't enforce them. Adding mypy --strict to CI would catch real bugs | Medium — good for v0.4 |
-| Dockerizing for deployment | Legitimate for anyone else running this. XTTS + CUDA in Docker is well-documented | Low — solo dev, not needed now |
+
+
+| Item | Priority | Notes |
+| --- | --- | --- |
+| e2e tests (2 files) | Medium | Need @pytest.mark.integration or refactor to TestClient |
+| test_server.py coverage | Medium | routes.py at 32% — lowest in codebase |
+
+**EDGE TTS:** Unicode reading issue.
+
+**Dockerizing:** Dockerize for deployment. (Optional - HOLD)

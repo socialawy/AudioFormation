@@ -32,7 +32,7 @@ Bilingual First	| Arabic + English as primary languages
 │              Project Manager                        │
 │        (JSON-driven, file-system backed)            │
 ├─────────────────────────────────────────────────────┤
-│            Web Dashboard (localhost:4000)           │
+│            Web Dashboard (localhost:4001)           │
 │     Projects │ Editor │ Timeline │ Mix │ Export     │
 └─────────────────────────────────────────────────────┘
 ```
@@ -1068,7 +1068,7 @@ Dashboard tabs:
 ├── Nuitka benchmark (if startup too slow)
 ├── Algorithmic composition (Tier 3, only if Tier 1+2 insufficient)
 ├── FishAudio-S1 / IndexTTS evaluation (if matured)
-├── GitHub release + README
+├── GitHub release + README (repor is up)
 ├── Handover validation
 └── VideoFormation integration (Node 3.5 dispatch)
 
@@ -1123,7 +1123,7 @@ audioformation/
 │   │
 │   ├── server/
 │   │   ├── app.py             # FastAPI entry + static mounts
-│   │   ├── routes.py          # 13 REST endpoints
+│   │   ├── routes.py          # 15 REST endpoints
 │   │   └── static/            # Dashboard HTML/JS/CSS
 │   │
 │   └── utils/
@@ -1132,7 +1132,7 @@ audioformation/
 │       ├── hardware.py        # GPU/VRAM detection + strategy
 │       └── security.py        # Sanitization, path validation
 │
-├── tests/                     # 371 tests, 24 test files
+├── tests/                     # 371 tests, 26 test files
 │   ├── conftest.py
 │   ├── test_arabic.py
 │   ├── test_chunking.py

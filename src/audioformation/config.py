@@ -104,7 +104,6 @@ COVER_ART_MAX_PX: Final[int] = 3000
 # Server
 # ──────────────────────────────────────────────
 
-DASHBOARD_PORT: Final[int] = 4000
 API_PORT: Final[int] = 4001
 
 # ──────────────────────────────────────────────

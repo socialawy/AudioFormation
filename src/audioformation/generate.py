@@ -320,6 +320,9 @@ async def _generate_chapter(
             gen_config.get("edge_tts_ssml", True) and seg_engine.supports_ssml
         )
 
+        if language and language.startswith("ar"):
+            seg_use_ssml = False
+
         engines_used.add(seg_engine_name)
 
         chunks = chunk_text(

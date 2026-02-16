@@ -12,6 +12,8 @@ consistency (all internal audio is WAV).
 
 import asyncio
 import tempfile
+import shutil
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -52,7 +54,14 @@ class EdgeTTSEngine(TTSEngine):
         """
         voice = request.voice or "ar-SA-HamedNeural"
         output_path = request.output_path
-
+        
+        # Create unique temp file to avoid conflicts
+        temp_id = uuid.uuid4().hex[:8]
+        mp3_temp = (
+            output_path.parent
+            / f"{output_path.stem}_tmp_{temp_id}.mp3"
+        )
+        
         try:
             # Build SSML or plain text
             use_ssml = (
@@ -60,55 +69,50 @@ class EdgeTTSEngine(TTSEngine):
                 and request.params
                 and request.params.get("ssml", True)
             )
-
+            
             if use_ssml:
-                text = direction_to_ssml(request.text, request.direction)
+                # Add unicode safeguard for direction config values
+                direction = {k: v for k, v in request.direction.items() if isinstance(v, str)}
+                text = direction_to_ssml(request.text, direction)
             else:
                 text = request.text
-
-            # Edge-tts always produces MP3
-            # If target is WAV, save MP3 to temp then convert
-            if output_path.suffix.lower() == ".wav":
-                mp3_temp = output_path.with_suffix(".mp3")
-            else:
-                mp3_temp = output_path
-
+            
+            # Edge-tts communication and save
             communicate = edge_tts.Communicate(text, voice)
             await communicate.save(str(mp3_temp))
-
-            if not mp3_temp.exists() or mp3_temp.stat().st_size == 0:
-                return GenerationResult(
-                    success=False,
-                    error="edge-tts produced empty output.",
-                )
-
+            
             # Convert MP3 → WAV if needed
             if output_path.suffix.lower() == ".wav":
                 ok = _mp3_to_wav(mp3_temp, output_path)
-                # Clean up temp MP3
+                # Clean up temp MP3 after successful conversion
                 mp3_temp.unlink(missing_ok=True)
                 if not ok:
                     return GenerationResult(
                         success=False,
                         error="Failed to convert edge-tts MP3 to WAV.",
                     )
-
+            else:
+                # Just move MP3 to final location
+                shutil.move(str(mp3_temp), str(output_path))
+            
             # Get duration
             duration = _get_duration(output_path)
-
+            
             return GenerationResult(
                 success=True,
                 output_path=output_path,
                 duration_sec=duration,
                 sample_rate=24000,
             )
-
+            
         except Exception as e:
             # Clean up any temp files on failure
-            if output_path.suffix.lower() == ".wav":
-                mp3_temp = output_path.with_suffix(".mp3")
-                mp3_temp.unlink(missing_ok=True)
-
+            if 'mp3_temp' in locals():
+                try:
+                    mp3_temp.unlink(missing_ok=True)
+                except:
+                    pass
+            
             return GenerationResult(
                 success=False,
                 error=f"edge-tts error: {type(e).__name__}: {e}",

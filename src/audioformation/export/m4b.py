@@ -19,7 +19,7 @@ def export_project_m4b(
     bitrate: int = 128,
 ) -> bool:
     """
-    Export the entire project as a single M4B audiobook.
+    Export entire project as a single M4B audiobook.
 
     1. Gathers mixed files from 06_MIX/renders/
     2. Calculates timeline positions
@@ -160,6 +160,23 @@ def export_project_m4b(
 
     except Exception:
         return False
+
+
+def export_project_m4b_auto(project_id: str, bitrate: int = 128) -> bool:
+    """
+    Export entire project as M4B with automatic output path.
+    
+    Finds mixed audio files and exports them as a single M4B file.
+    Returns True on success.
+    """
+    from audioformation.project import get_project_path
+    
+    project_path = get_project_path(project_id)
+    export_dir = project_path / "07_EXPORT" / "audiobook"
+    export_dir.mkdir(parents=True, exist_ok=True)
+    
+    output_file = export_dir / f"{project_id}.m4b"
+    return export_project_m4b(project_id, output_file, bitrate)
 
 
 def _generate_ffmetadata(chapters: list[dict], title: str, author: str, year: str, narrator: str) -> str:

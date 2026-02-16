@@ -223,11 +223,11 @@ class TestNodesInRange:
 class TestPipelineStatusWiring:
     """Verify every CLI-mapped node writes back to pipeline-status.json."""
 
-    def test_mark_node_creates_status_file(self, tmp_path):
+    def test_mark_node_creates_status_file(self, isolate_projects):
         """mark_node creates pipeline-status.json if missing."""
         from audioformation.pipeline import mark_node
 
-        project_dir = tmp_path / "TEST"
+        project_dir = isolate_projects / "TEST_MN1"
         project_dir.mkdir()
 
         mark_node(project_dir, "bootstrap", "complete")
@@ -239,14 +239,13 @@ class TestPipelineStatusWiring:
         assert data["nodes"]["bootstrap"]["status"] == "complete"
         assert "timestamp" in data["nodes"]["bootstrap"]
 
-    def test_mark_node_updates_existing(self, tmp_path):
+    def test_mark_node_updates_existing(self, isolate_projects):
         """mark_node updates existing status without clobbering other nodes."""
         from audioformation.pipeline import mark_node
 
-        project_dir = tmp_path / "TEST"
+        project_dir = isolate_projects / "TEST_MN2"
         project_dir.mkdir()
 
-        # Write two nodes
         mark_node(project_dir, "bootstrap", "complete")
         mark_node(project_dir, "ingest", "complete", files_ingested=3)
 
@@ -255,11 +254,11 @@ class TestPipelineStatusWiring:
         assert data["nodes"]["ingest"]["status"] == "complete"
         assert data["nodes"]["ingest"]["files_ingested"] == 3
 
-    def test_mark_node_overwrites_node(self, tmp_path):
+    def test_mark_node_overwrites_node(self, isolate_projects):
         """Updating a node replaces its previous state."""
         from audioformation.pipeline import mark_node
 
-        project_dir = tmp_path / "TEST"
+        project_dir = isolate_projects / "TEST_MN3"
         project_dir.mkdir()
 
         mark_node(project_dir, "generate", "partial", chunks_done=5)
@@ -269,43 +268,40 @@ class TestPipelineStatusWiring:
         assert data["nodes"]["generate"]["status"] == "complete"
         assert data["nodes"]["generate"]["chunks_done"] == 20
 
-    def test_get_node_status_missing_file(self, tmp_path):
+    def test_mark_node_missing_file(self, isolate_projects):
         """mark_node + reading JSON works even with fresh directory."""
         from audioformation.pipeline import mark_node
 
-        project_dir = tmp_path / "TEST"
+        project_dir = isolate_projects / "TEST_MN4"
         project_dir.mkdir()
 
-        # No pipeline-status.json exists yet
         status_file = project_dir / "pipeline-status.json"
         assert not status_file.exists()
 
-        # mark_node should create it
         mark_node(project_dir, "bootstrap", "complete")
         assert status_file.exists()
 
         data = json.loads(status_file.read_text(encoding="utf-8"))
         assert data["nodes"]["bootstrap"]["status"] == "complete"
 
-    def test_get_node_status_missing_node(self, tmp_path):
+    def test_mark_node_missing_node(self, isolate_projects):
         """Nodes not yet written default to absent in JSON."""
         from audioformation.pipeline import mark_node
 
-        project_dir = tmp_path / "TEST"
+        project_dir = isolate_projects / "TEST_MN5"
         project_dir.mkdir()
         mark_node(project_dir, "bootstrap", "complete")
 
         data = json.loads(
             (project_dir / "pipeline-status.json").read_text(encoding="utf-8")
         )
-        # "mix" was never written
         assert "mix" not in data["nodes"]
 
-    def test_mark_node_extra_fields(self, tmp_path):
+    def test_mark_node_extra_fields(self, isolate_projects):
         """Extra kwargs are stored in node dict."""
         from audioformation.pipeline import mark_node
 
-        project_dir = tmp_path / "TEST"
+        project_dir = isolate_projects / "TEST_MN6"
         project_dir.mkdir()
 
         mark_node(project_dir, "export", "complete",

@@ -24,6 +24,8 @@ Bilingual First	| Arabic + English as primary languages
 # Install
 pip install -e ".[dev,server]"
 
+pip install "audioformation[server]"
+
 # Create a project
 audioformation new "MY_NOVEL"
 
@@ -59,7 +61,8 @@ Feature | Status
 Edge TTS (free, Arabic + English) | ✅ BUILT
 SSML direction mapping | ✅ BUILT
 Text chunking (breath-group) | ✅ BUILT
-Per-chunk QC scanning | ✅ BUILT
+Per-chapter QC scanning | ✅ BUILT
+QC Scan API endpoint | ✅ BUILT
 LUFS normalization | ✅ BUILT
 MP3 export with manifest | ✅ BUILT
 Arabic diacritics detection | ✅ BUILT
@@ -71,6 +74,7 @@ Ambient pad generation | ✅ BUILT
 VAD-based ducking | ✅ BUILT
 M4B audiobook export | ✅ BUILT
 Web dashboard | ✅ BUILT
+Run All Pipeline | ✅ BUILT
 
 ## Architecture
 
@@ -99,6 +103,7 @@ The dashboard (`audioformation serve`) provides a visual interface for:
 *   **Project Management**: Create and list projects.
 *   **Editor**: Configure generation settings, edit chapter metadata, trigger generation per-chapter.
 *   **Mix & Review**: Visualize audio waveforms (`wavesurfer.js`), play back generated/mixed audio, trigger the mixing pipeline.
+*   **Run All Pipeline**: Single-click execution of entire audiobook workflow (validate → generate → QC scan → process → compose → mix → export).
 
 ## Testing
 ```bash

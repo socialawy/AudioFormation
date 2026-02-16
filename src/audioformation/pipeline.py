@@ -1,8 +1,8 @@
 """
-Pipeline state machine — node execution, resumption, status tracking.
+Pipeline state machine -- node execution, resumption, status tracking.
 
 Tracks state at chunk level for the Generate node, node level for all others.
-Supports `--from <node>` resumption by checking pipeline-status.json.
+Supports '--from <node>' resumption by checking pipeline-status.json.
 """
 
 import json
@@ -52,7 +52,12 @@ def update_node_status(
     if status not in valid_statuses:
         raise ValueError(f"Invalid status '{status}'. Must be one of: {valid_statuses}")
 
-    pipeline = load_pipeline_status(project_id)
+    # Handle first write (bootstrap) -- file may not exist yet
+    try:
+        pipeline = load_pipeline_status(project_id)
+    except FileNotFoundError:
+        pipeline = {"project_id": project_id, "nodes": {}}
+
     node_data = pipeline["nodes"].get(node, {})
     old_status = node_data.get("status", "pending")
     node_data["status"] = status
@@ -62,7 +67,7 @@ def update_node_status(
     save_pipeline_status(project_id, pipeline)
     
     # Enhanced logging
-    log_msg = f"Node {node} status: {old_status} → {status}"
+    log_msg = f"Node {node} status: {old_status} -> {status}"
     if extra:
         log_msg += f" (extra: {extra})"
     pipeline_logger.info(f"[{project_id}] {log_msg}")
@@ -120,7 +125,7 @@ def get_resume_point(project_id: str, from_node: str | None = None) -> str:
         if node_status not in ("complete", "skipped"):
             return node
 
-    return PIPELINE_NODES[-1]  # All complete — return last node
+    return PIPELINE_NODES[-1]  # All complete -- return last node
 
 
 def get_incomplete_chapters(project_id: str) -> list[str]:
@@ -183,30 +188,16 @@ def nodes_in_range(from_node: str, to_node: str | None = None) -> list[str]:
 
 def mark_node(project_dir: Path, node: str, status: str, **extra):
     """
-    Convenience wrapper: update a pipeline node's status.
-    
+    Convenience wrapper: update a pipeline node's status by path.
+
+    Delegates to update_node_status() for consistent validation,
+    logging, and single-writer semantics.
+
     Args:
         project_dir: Path to project root
-        node: Node name (bootstrap, ingest, validate, etc.)
-        status: One of: pending, complete, partial, failed, skipped
+        node: Node name (must be in PIPELINE_NODES)
+        status: One of: pending, running, complete, partial, failed, skipped
         **extra: Additional fields merged into node dict
     """
-    status_file = project_dir / "pipeline-status.json"
-
-    if status_file.exists():
-        data = json.loads(status_file.read_text(encoding="utf-8"))
-    else:
-        data = {"project_id": project_dir.name, "nodes": {}}
-
-    node_data = {
-        "status": status,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
-    node_data.update(extra)
-
-    data.setdefault("nodes", {})[node] = node_data
-
-    status_file.write_text(
-        json.dumps(data, indent=2, ensure_ascii=False),
-        encoding="utf-8"
-    )
+    project_id = project_dir.name
+    update_node_status(project_id, node, status, **extra)

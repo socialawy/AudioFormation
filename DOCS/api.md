@@ -54,6 +54,11 @@ Body (optional):
 {"engine": "edge", "chapters": ["ch01", "ch02"]}
 ```
 
+### `POST /api/projects/{id}/qc-scan`
+Run QC scan on generated audio (Node 3.5). Runs in background.
+
+Scans all generated audio files for quality issues (SNR, clipping, duration, LUFS, pitch, boundary artifacts).
+
 ### `POST /api/projects/{id}/process`
 Run audio normalization (Node 4). Runs in background.
 

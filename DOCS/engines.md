@@ -7,7 +7,7 @@
 | `edge` | Cloud (free) | No | Yes | No | ✅ Primary |
 | `gtts` | Cloud (free) | No | No | No | ✅ Fallback |
 | `xtts` | Local | Yes | No | Recommended | ✅ Built |
-| `elevenlabs` | Cloud (paid) | Yes | No | No | ✅ Built |
+| `elevenlabs` | Cloud (paid/free tier) | Yes | No | No | ✅ Built |
 
 ## edge-tts (Primary)
 
