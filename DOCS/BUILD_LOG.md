@@ -2,13 +2,13 @@
 # AudioFormation Build Log
 
 **Status:** Phase 3 Complete (Mix & Review Dashboard)  
-**Tests:** 360 / 360 Passing (100%)  
-**Date:** February 14, 2026  
+**Tests:** 371 / 371 Passing (100%)  
+**Date:** February 16, 2026  
 **Hardware Reference:** NVIDIA GTX 1650 Ti (4GB VRAM)
 
 ---
 
-##  Recent Activity (Feb 14, 2026)
+##  Recent Activity (Feb 16, 2026)
 
 **Phase 3: Web Dashboard (Mixing)**
 *   **Mix UI:** Added "Mix & Review" view to the dashboard.
@@ -48,6 +48,27 @@ The core pipeline is now accessible via both CLI and Web Dashboard.
 
 ---
 
+## 🚀 Recent Enhancements (Feb 16, 2026)
+
+### **Critical Infrastructure Improvements**
+- **Pipeline Status Tracking**: Comprehensive background task monitoring with async-aware wrapper
+- **"Run All Pipeline" Button**: End-to-end orchestration in dashboard with real-time progress
+- **Polling Timeout Protection**: 10-minute timeouts prevent infinite polling
+- **Console Noise Suppression**: Silent handling of expected 404s
+
+### **Security & Quality Improvements**
+- **XSS Vulnerabilities**: All 3 Medium-severity issues resolved in web dashboard
+- **Code Quality Infrastructure**: Ruff linting, pytest-cov reporting, MyPy type checking
+- **Snyk Integration**: Security scanning with 0 remaining issues
+- **Coverage Enhancement**: HTML/XML reports with 65% current coverage
+
+### **Multi-Engine Achievement**
+- **100% Engine Coverage**: Edge-TTS, gTTS, XTTS, ElevenLabs all operational
+- **Unicode Text Processing**: Comprehensive hidden character sanitization
+- **Environment Variable Fix**: ElevenLabs API key properly loaded in dashboard
+
+---
+
 ## 🏗️ Phase 2: Advanced Audio (Completed)
 
 **Goal:** Bridge the gap between "TTS output" and "Audiobook production" via voice cloning, mixing, and ambient sound.
@@ -75,7 +96,7 @@ The core pipeline is now accessible via both CLI and Web Dashboard.
 *   **Engines:** `base.py`, `registry.py`, `edge_tts.py`, `gtts_engine.py`, `xtts.py`, `elevenlabs.py`
 *   **Audio:** `mixer.py`, `sfx.py`, `composer.py`, `processor.py`, `synthesis.py`
 *   **Server:** `app.py`, `routes.py`
-*   **Tests:** 360 unit/integration tests.
+*   **Tests:** 371 unit/integration tests.
 
 ---
 

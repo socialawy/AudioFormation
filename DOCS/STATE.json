@@ -1,24 +1,25 @@
 {
-  "generated_at": "2026-02-14T00:06:15.068389+00:00",
-  "version": "0.1.0",
-  "test_count": 12,
-  "source_files": 29,
-  "test_files": 12,
+  "generated_at": "2026-02-16T12:37:00.000000+00:00",
+  "version": "0.3.0",
+  "test_count": 371,
+  "source_files": 40,
+  "test_files": 26,
   "engines_registered": [
     "edge",
     "gtts",
-    "xtts"
+    "xtts",
+    "elevenlabs"
   ],
   "pipeline_nodes": {
-    "bootstrap": "planned",
+    "bootstrap": "built",
     "ingest": "built",
     "validate": "built",
     "generate": "built",
-    "qc_scan": "planned",
+    "qc_scan": "built",
     "process": "built",
-    "compose": "planned",
-    "mix": "planned",
-    "qc_final": "planned",
+    "compose": "built",
+    "mix": "built",
+    "qc_final": "built",
     "export": "built"
   },
   "dependencies": [

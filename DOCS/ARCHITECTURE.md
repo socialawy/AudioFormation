@@ -125,7 +125,7 @@ Implementation:
 
 #### Test Infrastructure & Coverage
 
-**360 tests (100% passing), all isolated and mocked:**
+**371 tests (100% passing), all isolated and mocked:**
 
 | Characteristic | Status | Notes |
 |:---|:---|:---|
@@ -378,7 +378,7 @@ Bootstrap creates `.gitignore` in every project:
 
 Port Assignments
 ```text
-AudioFormation Dashboard:  localhost:4000
+AudioFormation Dashboard:  localhost:4001
 AudioFormation API:        localhost:4001
 VideoFormation Dashboard:  localhost:3000
 VideoFormation API:        localhost:3001
@@ -1053,7 +1053,7 @@ Deliverable: Full audiobook with chapters, mixed and exported
 ├── ✅ Web dashboard (vanilla HTML/JS, project browser + timeline)
 └── ✅ Full test suite + documentation
 **Dashboard: Timeline View**
-Integrated `wavesurfer.js` for the mix timeline.
+Integrated `wavesurfer.js` for mix timeline.
 Single dependency, gives interactive waveform display, makes the
 mix step dramatically more intuitive than abstract timeline blocks.
 Dashboard tabs:
@@ -1172,3 +1172,4 @@ audioformation/
 | FishAudio-S1 | Strong multilingual cloning + emotion | Promising, not mature | Test in Phase 4 |
 | IndexTTS | XTTS successor candidate, better naturalness | Paper stage, limited adoption | Monitor |
 | MeloTTS | Fast CPU inference, multilingual | Weaker voice cloning | Skip unless cloning not needed |
+s
