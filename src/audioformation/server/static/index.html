@@ -20,7 +20,9 @@
             <nav class="nav-links">
                 <a href="#" onclick="app.showProjects()" class="active" id="nav-projects">Projects</a>
                 <a href="#" class="disabled" id="nav-editor" onclick="app.showEditor()">Editor</a>
-                <a href="#" class="disabled" id="nav-mix" onclick="app.showMix()">Mix & Review</a>
+                <a href="#" class="disabled" id="nav-mix" onclick="app.showMix()">Mix</a>
+                <a href="#" class="disabled" id="nav-export" onclick="app.showExport()">Export</a>
+                <a href="#" class="disabled" id="nav-qc" onclick="app.showQC()">QC</a>
             </nav>
             <div class="status-bar">
                 <span id="system-status" class="online">● System Ready</span>
@@ -53,31 +55,62 @@
                 
                 <div class="editor-layout">
                     <aside class="sidebar">
-                        <div class="nav-item active" onclick="app.switchTab('config')" id="tab-btn-config">Configuration</div>
+                        <div class="nav-item active" onclick="app.switchTab('overview')" id="tab-btn-overview">Overview</div>
+                        <div class="nav-item" onclick="app.switchTab('cast')" id="tab-btn-cast">Cast</div>
                         <div class="nav-item" onclick="app.switchTab('chapters')" id="tab-btn-chapters">Chapters</div>
+                        <div class="nav-item" onclick="app.switchTab('engine')" id="tab-btn-engine">Engine Settings</div>
                         <div class="nav-item" onclick="app.switchTab('json')" id="tab-btn-json">Raw JSON</div>
                     </aside>
                     
                     <div class="main-panel">
-                        <!-- Config Tab -->
-                        <div id="tab-config" class="tab-content">
+                        
+                        <!-- Overview Tab -->
+                        <div id="tab-overview" class="tab-content">
+                            <h2>Project Overview</h2>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Languages</label>
+                                    <div style="font-size:1.1rem; padding:0.5rem;" id="overview-languages">ar, en</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Created</label>
+                                    <div style="font-size:1.1rem; padding:0.5rem;" id="overview-created">2026-02-16</div>
+                                </div>
+                            </div>
+                            
+                            <h3>Pipeline Status</h3>
+                            <div class="pipeline-stepper" id="pipeline-stepper">
+                                <!-- Populated by JS -->
+                            </div>
+                            
+                            <div style="margin-top:2rem;">
+                                <h3>Hardware Detection</h3>
+                                <div id="hardware-info" class="info-panel" style="font-family:monospace;">
+                                    Loading hardware info...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cast Tab -->
+                        <div id="tab-cast" class="tab-content hidden">
+                            <div class="flex-row" style="justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                <h2>Cast & Voices</h2>
+                                <button class="btn primary small" onclick="app.addCharacter()">+ Add Character</button>
+                            </div>
+                            <div id="cast-list">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Engine Tab -->
+                        <div id="tab-engine" class="tab-content hidden">
                             <h2>Generation Settings</h2>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label>Chunk Max Chars</label>
-                                    <input type="number" id="conf-chunk-chars">
-                                </div>
-                                <div class="form-group">
-                                    <label>Crossfade (ms)</label>
-                                    <input type="number" id="conf-crossfade">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Chunk Strategy</label>
-                                    <select id="conf-strategy">
-                                        <option value="breath_group">Breath Group</option>
-                                        <option value="sentence">Sentence</option>
+                                    <label>Fallback Scope</label>
+                                    <select id="conf-fallback-scope">
+                                        <option value="chapter">Chapter (Retry)</option>
+                                        <option value="project">Project (Switch All)</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -86,7 +119,32 @@
                                 </div>
                             </div>
                             
-                            <h2>Mix Settings</h2>
+                            <h3>Chunking & Stitching</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Chunk Max Chars</label>
+                                    <input type="number" id="conf-chunk-chars">
+                                </div>
+                                <div class="form-group">
+                                    <label>Strategy</label>
+                                    <select id="conf-strategy">
+                                        <option value="breath_group">Breath Group</option>
+                                        <option value="sentence">Sentence</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Crossfade (ms)</label>
+                                    <input type="number" id="conf-crossfade">
+                                </div>
+                                <div class="form-group">
+                                    <label>Leading Silence (ms)</label>
+                                    <input type="number" id="conf-silence">
+                                </div>
+                            </div>
+                            
+                            <h3>Mix Settings</h3>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>Target LUFS</label>
@@ -144,18 +202,40 @@
                                         </select>
                                     </div>
                                     <div class="form-group">
-                                        <label>Energy (Direction)</label>
-                                        <input type="text" id="chap-energy" placeholder="normal">
+                                        <label>Energy</label>
+                                        <select id="chap-energy">
+                                            <option value="">(Default)</option>
+                                            <option value="whisper">Whisper</option>
+                                            <option value="quiet">Quiet</option>
+                                            <option value="normal">Normal</option>
+                                            <option value="loud">Loud</option>
+                                            <option value="intense">Intense</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label>Pace</label>
-                                        <input type="text" id="chap-pace" placeholder="moderate">
+                                        <select id="chap-pace">
+                                            <option value="">(Default)</option>
+                                            <option value="very slow">Very Slow</option>
+                                            <option value="slow">Slow</option>
+                                            <option value="moderate">Moderate</option>
+                                            <option value="fast">Fast</option>
+                                            <option value="very fast">Very Fast</option>
+                                        </select>
                                     </div>
                                     <div class="form-group">
                                         <label>Emotion</label>
-                                        <input type="text" id="chap-emotion" placeholder="neutral">
+                                        <select id="chap-emotion">
+                                            <option value="">(Default)</option>
+                                            <option value="neutral">Neutral</option>
+                                            <option value="wonder">Wonder</option>
+                                            <option value="sadness">Sadness</option>
+                                            <option value="tension">Tension</option>
+                                            <option value="triumph">Triumph</option>
+                                            <option value="contemplation">Contemplation</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -213,6 +293,68 @@
                         <div class="info-panel" id="track-info">
                             <h3>Select a track to review</h3>
                             <p>Files are loaded from <code>03_GENERATED/processed</code> or <code>06_MIX/renders</code>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export View -->
+            <div id="export-view" class="view hidden">
+                <div class="view-header">
+                    <h1>Export Audio</h1>
+                    <div class="actions">
+                        <button class="btn" onclick="app.showProjects()">Close</button>
+                    </div>
+                </div>
+                
+                <div class="editor-layout">
+                    <div class="main-panel">
+                        <div class="form-row" style="align-items: flex-end;">
+                            <div class="form-group">
+                                <label>Format</label>
+                                <select id="export-format">
+                                    <option value="mp3">MP3 (Chapters + Full)</option>
+                                    <option value="m4b">M4B (Audiobook)</option>
+                                    <option value="wav">WAV (Master)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Bitrate</label>
+                                <select id="export-bitrate">
+                                    <option value="128">128 kbps</option>
+                                    <option value="192" selected>192 kbps</option>
+                                    <option value="320">320 kbps</option>
+                                </select>
+                            </div>
+                            <button class="btn primary big" onclick="app.triggerExport()">📦 Export Now</button>
+                        </div>
+                        
+                        <div id="export-status-panel" class="info-panel hidden" style="margin-top:2rem;">
+                            <h3>Export Status: <span id="export-status-text">Pending</span></h3>
+                            <p id="export-status-msg"></p>
+                        </div>
+                        
+                        <h3 style="margin-top:2rem;">Download Files</h3>
+                        <div id="export-file-list">
+                            <div class="card loading">No exported files yet. Run export above.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QC View -->
+            <div id="qc-view" class="view hidden">
+                <div class="view-header">
+                    <h1>Quality Control</h1>
+                    <div class="actions">
+                        <button class="btn" onclick="app.showProjects()">Close</button>
+                    </div>
+                </div>
+                
+                <div class="editor-layout">
+                    <div class="main-panel">
+                        <div id="qc-reports-container">
+                            <div class="card loading">Loading QC reports...</div>
                         </div>
                     </div>
                 </div>

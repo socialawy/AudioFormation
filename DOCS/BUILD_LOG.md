@@ -6,6 +6,25 @@
 **Date:** February 16, 2026  
 **Hardware Reference:** NVIDIA GTX 1650 Ti (4GB VRAM)
 
+**Phase 4:** Final Polish & Export UI
+# Dashboard v2 Implementation Log
+
+Tracking progress against `docs/New-Dashboard.md`.
+
+| Phase | Scope | Status | Notes |
+|---|---|---|---|
+| **4a** | Export view + download links | ✅ Done | `/api/projects/{id}/files` + Export tab implemented. |
+| **4b** | QC dashboard view | ✅ Done | `/api/projects/{id}/qc` + QC tab showing reports. |
+| **4c** | Cast panel + engine/voice dropdowns | 🚧 In Progress | API endpoints ready. UI needs edit mode. |
+| **4d** | Direction dropdowns + engine settings | 🚧 In Progress | Chapter direction dropdowns added. Engine tab needs polish. |
+| **4e** | Pipeline stepper + hardware panel | ✅ Done | Visual stepper and hardware info added to Overview. |
+| **4f** | Mix controls (ducking params) | ⏳ Pending | Waveform view exists. Controls need wiring to config. |
+
+## Recent Updates
+- Implemented core Dashboard v2 layout (5 tabs).
+- Added `wavesurfer.js` integration for Mix view.
+- Added "Run All Pipeline" orchestrator.
+- Wired up Hardware detection display.
 ---
 
 ## Recent Activity (Feb 16, 2026)

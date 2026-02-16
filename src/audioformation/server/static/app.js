@@ -12,10 +12,26 @@ const app = {
     selectedChapterIndex: -1,
     wavesurfer: null,
     pollInterval: null,
+    availableEngines: [],
 
     init() {
-        // Check hash to determine view (rudimentary routing)
         this.fetchProjects();
+        this.fetchEngines();
+    },
+
+    // ──────────────────────────────────────────────
+    // Global Data Fetching
+    // ──────────────────────────────────────────────
+
+    async fetchEngines() {
+        try {
+            const res = await fetch(`${API_BASE}/engines`);
+            if (res.ok) {
+                this.availableEngines = await res.json();
+            }
+        } catch (e) {
+            console.error("Failed to fetch engines", e);
+        }
     },
 
     // ──────────────────────────────────────────────
@@ -61,7 +77,7 @@ const app = {
             if (p.pipeline_node === 'failed') statusClass = 'failed';
             if (p.pipeline_node === 'partial') statusClass = 'partial';
 
-            // Create card content securely using DOM manipulation
+            // Create card content
             const titleEl = document.createElement('h3');
             titleEl.textContent = p.id;
             
@@ -142,40 +158,130 @@ const app = {
             this.currentData = await projRes.json();
             this.currentStatus = statRes.ok ? await statRes.json() : null;
             
-            // Populate both views initially
-            this.renderForm();
+            // Populate views
+            this.renderOverview();
+            this.renderCast();
+            this.renderEngineSettings();
+            this.renderForm(); // Chapters
             this.renderJson();
             
-            // Reset tab state
-            this.switchTab('config', true); // true = skip sync logic
+            // Initial view
             this.showEditor();
+            this.switchTab('overview', true);
             
-            // Update Mix link state
-            const mixLink = document.getElementById('nav-mix');
-            mixLink.classList.remove('disabled');
-            mixLink.onclick = () => this.showMix();
+            // Enable nav
+            ['nav-editor', 'nav-mix', 'nav-export', 'nav-qc'].forEach(id => {
+                document.getElementById(id).classList.remove('disabled');
+            });
+            
+            // Navbar click handlers
+            document.getElementById('nav-mix').onclick = () => this.showMix();
+            document.getElementById('nav-export').onclick = () => this.showExport();
+            document.getElementById('nav-qc').onclick = () => this.showQC();
+
+            // Load Hardware Info
+            this.fetchHardwareInfo(id);
 
         } catch (e) {
             alert(e.message);
         }
     },
 
-    renderForm() {
-        const d = this.currentData;
-        document.getElementById('editor-project-id').innerText = d.id;
+    async fetchHardwareInfo(id) {
+        try {
+            const res = await fetch(`${API_BASE}/projects/${id}/hardware`);
+            if (res.ok) {
+                const hw = await res.json();
+                const container = document.getElementById('hardware-info');
+                container.innerHTML = `
+                    <p>GPU: ${hw.gpu_name || 'None'} (${hw.vram_total_gb || 0} GB)</p>
+                    <p>Strategy: ${hw.recommended_vram_strategy}</p>
+                    <p>ffmpeg: ${hw.ffmpeg_available ? '✅' : '❌'}</p>
+                `;
+            }
+        } catch(e) { console.error(e); }
+    },
 
-        // Config
-        const gen = d.generation || {};
+    renderOverview() {
+        const d = this.currentData;
+        const s = this.currentStatus;
+        document.getElementById('editor-project-id').innerText = d.id;
+        document.getElementById('overview-languages').innerText = d.languages.join(', ');
+        document.getElementById('overview-created').innerText = new Date(d.created).toLocaleDateString();
+
+        // Render Pipeline Stepper
+        const container = document.getElementById('pipeline-stepper');
+        container.innerHTML = '';
+        
+        const nodes = ['bootstrap', 'ingest', 'validate', 'generate', 'qc_scan', 'process', 'compose', 'mix', 'qc_final', 'export'];
+        nodes.forEach(n => {
+            const status = s?.nodes?.[n]?.status || 'pending';
+            const nodeEl = document.createElement('div');
+            nodeEl.className = `pipeline-node ${status}`;
+            
+            let icon = '○';
+            if (status === 'complete') icon = '✅';
+            if (status === 'running') icon = '⏳';
+            if (status === 'failed') icon = '❌';
+            
+            nodeEl.innerHTML = `<span style="font-size:1.2rem">${icon}</span> <span>${n}</span>`;
+            container.appendChild(nodeEl);
+        });
+    },
+
+    renderCast() {
+        const list = document.getElementById('cast-list');
+        list.innerHTML = '';
+        const chars = this.currentData.characters || {};
+
+        Object.keys(chars).forEach(cid => {
+            const char = chars[cid];
+            const el = document.createElement('div');
+            el.className = 'cast-item';
+            
+            el.innerHTML = `
+                <h4>${char.name} (${cid})</h4>
+                <div class="cast-prop"><label>Engine:</label> <span>${char.engine}</span></div>
+                <div class="cast-prop"><label>Voice:</label> <span>${char.voice || char.reference_audio || 'None'}</span></div>
+                <div class="cast-prop"><label>Dialect:</label> <span>${char.dialect || 'msa'}</span></div>
+            `;
+            list.appendChild(el);
+        });
+    },
+    
+    async addCharacter() {
+        const id = prompt("Character ID (e.g. hero):");
+        if (!id) return;
+        const name = prompt("Display Name:");
+        
+        if (!this.currentData.characters) this.currentData.characters = {};
+        this.currentData.characters[id] = {
+            name: name,
+            engine: "edge", // default
+            voice: "ar-SA-HamedNeural",
+            dialect: "msa"
+        };
+        await this.saveProject();
+        this.renderCast();
+    },
+
+    renderEngineSettings() {
+        const gen = this.currentData.generation || {};
         document.getElementById('conf-chunk-chars').value = gen.chunk_max_chars || 200;
         document.getElementById('conf-crossfade').value = gen.crossfade_ms || 120;
         document.getElementById('conf-strategy').value = gen.chunk_strategy || 'breath_group';
         document.getElementById('conf-fail-thresh').value = gen.fail_threshold_percent || 5;
+        document.getElementById('conf-silence').value = gen.leading_silence_ms || 100;
+        document.getElementById('conf-fallback-scope').value = gen.fallback_scope || 'chapter';
 
-        const mix = d.mix || {};
+        const mix = this.currentData.mix || {};
         document.getElementById('conf-lufs').value = mix.target_lufs || -16.0;
         document.getElementById('conf-vol').value = mix.master_volume || 0.9;
+    },
 
+    renderForm() {
         // Chapters List
+        const d = this.currentData;
         const chList = document.getElementById('chapter-list');
         chList.innerHTML = '';
         (d.chapters || []).forEach((ch, idx) => {
@@ -193,7 +299,6 @@ const app = {
             chList.appendChild(row);
         });
         
-        // Hide detail if no selection
         if (this.selectedChapterIndex === -1) {
             document.getElementById('chapter-detail').classList.add('hidden');
         } else {
@@ -203,14 +308,11 @@ const app = {
 
     selectChapter(idx) {
         this.selectedChapterIndex = idx;
-        
-        // Update list styles
         const rows = document.getElementById('chapter-list').children;
         for (let i = 0; i < rows.length; i++) {
             if (i === idx) rows[i].classList.add('active');
             else rows[i].classList.remove('active');
         }
-        
         document.getElementById('chapter-detail').classList.remove('hidden');
         this.populateChapterDetail();
     },
@@ -222,22 +324,16 @@ const app = {
         
         document.getElementById('chap-detail-title').innerText = `Edit: ${ch.id}`;
         
-        // Status Badge Logic
         const badge = document.getElementById('chap-status-badge');
         let status = 'pending';
         if (this.currentStatus && this.currentStatus.nodes.generate.chapters) {
             const chStat = this.currentStatus.nodes.generate.chapters[ch.id];
             if (chStat) status = chStat.status;
         }
-        
         badge.innerText = status.toUpperCase();
-        badge.className = 'status-badge';
-        if (status === 'complete') badge.classList.add('complete');
-        else if (status === 'failed') badge.classList.add('failed');
-        else if (status === 'running') badge.classList.add('partial'); // Re-use partial style for running
+        badge.className = `status-badge ${status === 'complete' ? 'complete' : status === 'running' ? 'partial' : status === 'failed' ? 'failed' : ''}`;
         badge.style.display = 'inline-block';
 
-        // Populate fields
         document.getElementById('chap-title').value = ch.title || "";
         
         const charSelect = document.getElementById('chap-character');
@@ -249,22 +345,20 @@ const app = {
             charSelect.add(opt);
         });
         const currentChar = ch.character || ch.default_character || 'narrator';
-        if (chars[currentChar]) {
-            charSelect.value = currentChar;
-        }
+        if (chars[currentChar]) charSelect.value = currentChar;
 
         document.getElementById('chap-mode').value = ch.mode || "single";
         
         const dir = ch.direction || {};
+        // Using new dropdowns
         document.getElementById('chap-energy').value = dir.energy || "";
         document.getElementById('chap-pace').value = dir.pace || "";
         document.getElementById('chap-emotion').value = dir.emotion || "";
         
-        // Attach listeners
+        // Listeners
         const inputs = ['chap-title', 'chap-character', 'chap-mode', 'chap-energy', 'chap-pace', 'chap-emotion'];
         inputs.forEach(id => {
-            const el = document.getElementById(id);
-            el.onchange = () => this.updateChapterData();
+            document.getElementById(id).onchange = () => this.updateChapterData();
         });
     },
 
@@ -289,18 +383,505 @@ const app = {
         ch.direction.energy = document.getElementById('chap-energy').value;
         ch.direction.pace = document.getElementById('chap-pace').value;
         ch.direction.emotion = document.getElementById('chap-emotion').value;
-        
-        this.renderForm();
     },
 
+    updateDataFromForm() {
+        if (!this.currentData.generation) this.currentData.generation = {};
+        const gen = this.currentData.generation;
+        gen.chunk_max_chars = parseInt(document.getElementById('conf-chunk-chars').value);
+        gen.crossfade_ms = parseInt(document.getElementById('conf-crossfade').value);
+        gen.chunk_strategy = document.getElementById('conf-strategy').value;
+        gen.fail_threshold_percent = parseFloat(document.getElementById('conf-fail-thresh').value);
+        gen.leading_silence_ms = parseInt(document.getElementById('conf-silence').value);
+        gen.fallback_scope = document.getElementById('conf-fallback-scope').value;
+
+        if (!this.currentData.mix) this.currentData.mix = {};
+        this.currentData.mix.target_lufs = parseFloat(document.getElementById('conf-lufs').value);
+        this.currentData.mix.master_volume = parseFloat(document.getElementById('conf-vol').value);
+    },
+
+    renderJson() {
+        document.getElementById('json-editor').value = JSON.stringify(this.currentData, null, 2);
+    },
+
+    switchTab(targetTab, skipSync = false) {
+        if (!skipSync) this.updateDataFromForm(); // Always sync from form before switching
+
+        ['overview', 'cast', 'chapters', 'engine', 'json'].forEach(t => {
+            const el = document.getElementById(`tab-${t}`);
+            const btn = document.getElementById(`tab-btn-${t}`);
+            if (t === targetTab) {
+                el.classList.remove('hidden');
+                btn.classList.add('active');
+            } else {
+                el.classList.add('hidden');
+                btn.classList.remove('active');
+            }
+        });
+        
+        // If switching to JSON tab, refresh it
+        if (targetTab === 'json') this.renderJson();
+    },
+
+    async saveProject() {
+        try {
+            this.updateDataFromForm();
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.currentData)
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                alert(`Error saving: ${err.detail}`);
+            }
+        } catch (e) {
+            alert(`Save error: ${e.message}`);
+        }
+    },
+
+    // ──────────────────────────────────────────────
+    // Export View
+    // ──────────────────────────────────────────────
+
+    async showExport() {
+        if (!this.currentProject) return;
+        this.hideAllViews();
+        document.getElementById('export-view').classList.remove('hidden');
+        document.getElementById('nav-export').classList.add('active');
+        
+        this.fetchFiles();
+    },
+
+    async fetchFiles() {
+        const list = document.getElementById('export-file-list');
+        list.innerHTML = '<div class="card loading">Loading files...</div>';
+        
+        try {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/files`);
+            if (res.ok) {
+                const files = await res.json();
+                this.renderFileList(files);
+            } else {
+                list.innerHTML = '<div class="card" style="color:red">Failed to load files</div>';
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    },
+
+    renderFileList(files) {
+        const list = document.getElementById('export-file-list');
+        list.innerHTML = '';
+        
+        if (files.length === 0) {
+            list.innerHTML = '<div class="card">No files found. Run export.</div>';
+            return;
+        }
+        
+        files.forEach(f => {
+            const el = document.createElement('div');
+            el.className = 'file-download';
+            
+            const sizeMB = (f.size / (1024*1024)).toFixed(2);
+            const date = new Date(f.modified * 1000).toLocaleString();
+            
+            el.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:0.2rem;">
+                    <a href="/projects/${this.currentProject}/${f.path}" target="_blank" download>${f.name}</a>
+                    <span class="file-size">${f.category} • ${date}</span>
+                </div>
+                <span class="file-size">${sizeMB} MB</span>
+            `;
+            list.appendChild(el);
+        });
+    },
+
+    async triggerExport() {
+        const fmt = document.getElementById('export-format').value;
+        const bitrate = parseInt(document.getElementById('export-bitrate').value);
+        
+        const statusPanel = document.getElementById('export-status-panel');
+        const statusText = document.getElementById('export-status-text');
+        const statusMsg = document.getElementById('export-status-msg');
+        
+        statusPanel.classList.remove('hidden');
+        statusText.innerText = 'Running...';
+        statusMsg.innerText = `Exporting as ${fmt} at ${bitrate}kbps...`;
+        
+        try {
+            await this.saveProject(); // Ensure config is saved
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/export`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({format: fmt, bitrate: bitrate})
+            });
+            
+            if (res.ok) {
+                this.pollExportStatus();
+            } else {
+                statusText.innerText = 'Failed';
+                statusMsg.innerText = 'Server returned error.';
+            }
+        } catch(e) {
+            statusText.innerText = 'Error';
+            statusMsg.innerText = e.message;
+        }
+    },
+
+    pollExportStatus() {
+        if (this.pollInterval) clearInterval(this.pollInterval);
+        
+        this.pollInterval = setInterval(async () => {
+            try {
+                const res = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
+                if (res.ok) {
+                    const status = await res.json();
+                    const exportNode = status.nodes.export;
+                    
+                    if (exportNode.status === 'complete') {
+                        clearInterval(this.pollInterval);
+                        document.getElementById('export-status-text').innerText = 'Complete ✅';
+                        document.getElementById('export-status-msg').innerText = 'Export finished successfully.';
+                        this.fetchFiles(); // Refresh list
+                    } else if (exportNode.status === 'failed') {
+                        clearInterval(this.pollInterval);
+                        document.getElementById('export-status-text').innerText = 'Failed ❌';
+                        document.getElementById('export-status-msg').innerText = exportNode.error || 'Unknown error';
+                    }
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }, 2000);
+    },
+
+    // ──────────────────────────────────────────────
+    // QC View
+    // ──────────────────────────────────────────────
+
+    async showQC() {
+        if (!this.currentProject) return;
+        this.hideAllViews();
+        document.getElementById('qc-view').classList.remove('hidden');
+        document.getElementById('nav-qc').classList.add('active');
+        
+        const container = document.getElementById('qc-reports-container');
+        try {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/qc`);
+            if (res.ok) {
+                const reports = await res.json();
+                this.renderQCReports(reports);
+            } else {
+                container.innerHTML = '<div class="card">No QC reports found. Run QC Scan or QC Final.</div>';
+            }
+        } catch(e) {
+            container.innerHTML = `<div class="card" style="color:red">Error: ${e.message}</div>`;
+        }
+    },
+
+    renderQCReports(reports) {
+        const container = document.getElementById('qc-reports-container');
+        container.innerHTML = '';
+        
+        if (reports.final_qc) {
+            const final = reports.final_qc;
+            const el = document.createElement('div');
+            el.className = 'card';
+            el.innerHTML = `
+                <h3>QC Final Report</h3>
+                <div style="display:flex; gap:2rem; margin-bottom:1rem;">
+                    <div>Passed: ${final.passed ? '✅ YES' : '❌ NO'}</div>
+                    <div>Files: ${final.total_files}</div>
+                    <div>Failures: ${final.failed_files}</div>
+                </div>
+                ${final.results.map(r => `
+                    <div style="margin-top:0.5rem; padding:0.5rem; background:#333; border-radius:4px; border-left:4px solid ${r.status==='pass'?'#10b981':'#ef4444'}">
+                        <strong>${r.filename}</strong>: LUFS ${r.lufs.toFixed(1)} | TP ${r.true_peak.toFixed(1)}
+                        ${r.messages.length > 0 ? `<div style="color:#ef4444; font-size:0.9rem;">${r.messages.join('<br>')}</div>` : ''}
+                    </div>
+                `).join('')}
+            `;
+            container.appendChild(el);
+        }
+        
+        if (reports.chunk_qc && reports.chunk_qc.length > 0) {
+            const latest = reports.chunk_qc[reports.chunk_qc.length-1];
+            const el = document.createElement('div');
+            el.className = 'card';
+            el.innerHTML = `
+                <h3>Latest Chunk Scan</h3>
+                <div style="display:flex; gap:2rem;">
+                    <div>Fail Rate: ${latest.fail_rate_percent}%</div>
+                    <div>Chunks: ${latest.total_chunks}</div>
+                    <div>Failures: ${latest.failures}</div>
+                </div>
+            `;
+            container.appendChild(el);
+        }
+    },
+
+    // ──────────────────────────────────────────────
+    // Core Navigation & Helpers
+    // ──────────────────────────────────────────────
+
+    hideAllViews() {
+        ['projects-view', 'editor-view', 'mix-view', 'export-view', 'qc-view'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+    },
+
+    showProjects() {
+        this.hideAllViews();
+        document.getElementById('projects-view').classList.remove('hidden');
+        document.getElementById('nav-projects').classList.add('active');
+        this.currentProject = null;
+        if (this.pollInterval) clearInterval(this.pollInterval);
+        this.fetchProjects();
+    },
+
+    showEditor() {
+        if (!this.currentProject) return;
+        this.hideAllViews();
+        document.getElementById('editor-view').classList.remove('hidden');
+        document.getElementById('nav-editor').classList.add('active');
+    },
+
+    // Mix View Logic (retained from prev version)
+    async showMix() {
+        if (!this.currentProject) return;
+        this.hideAllViews();
+        document.getElementById('mix-view').classList.remove('hidden');
+        document.getElementById('nav-mix').classList.add('active');
+        document.getElementById('mix-project-id').innerText = this.currentProject;
+        
+        this.initWaveSurfer();
+        this.loadMixFiles();
+        if (this.currentStatus?.nodes?.mix) this.updateMixBadge(this.currentStatus.nodes.mix.status);
+    },
+
+    updateMixBadge(status) {
+        const badge = document.getElementById('mix-status-badge');
+        const btn = document.getElementById('btn-mix');
+        badge.innerText = status.toUpperCase();
+        badge.className = `status-badge ${status === 'complete' ? 'complete' : status === 'running' ? 'partial' : status === 'failed' ? 'failed' : ''}`;
+        badge.style.display = 'inline-block';
+        
+        if (status === 'running') {
+            btn.disabled = true;
+            btn.innerText = "Mixing...";
+        } else {
+            btn.disabled = false;
+            btn.innerText = "☊ Run Mix";
+        }
+    },
+
+    async runMix() {
+        await this.saveProject();
+        const btn = document.getElementById('btn-mix');
+        btn.disabled = true;
+        btn.innerText = "Starting...";
+        
+        try {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/mix`, { method: 'POST' });
+            if (res.ok) {
+                this.updateMixBadge('running');
+                this.pollMixStatus();
+            } else {
+                alert("Failed to start mix.");
+                btn.disabled = false;
+                btn.innerText = "☊ Run Mix";
+            }
+        } catch (e) { alert(`Error: ${e.message}`); btn.disabled = false; }
+    },
+
+    pollMixStatus() {
+        if (this.pollInterval) clearInterval(this.pollInterval);
+        this.pollInterval = setInterval(async () => {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
+            if (res.ok) {
+                const status = await res.json();
+                this.currentStatus = status;
+                const mixStatus = status.nodes?.mix?.status;
+                if (mixStatus) {
+                    this.updateMixBadge(mixStatus);
+                    if (mixStatus === 'complete' || mixStatus === 'failed') {
+                        clearInterval(this.pollInterval);
+                        if (mixStatus === 'complete') this.loadMixFiles();
+                    }
+                }
+            }
+        }, 2000);
+    },
+
+    loadMixFiles() {
+        const list = document.getElementById('mix-file-list');
+        list.innerHTML = '';
+        if (this.currentData?.chapters) {
+            this.currentData.chapters.forEach(ch => {
+                const el = document.createElement('div');
+                el.className = 'file-list-item';
+                el.innerText = `${ch.id} - ${ch.title}`;
+                el.onclick = () => {
+                    document.querySelectorAll('.file-list-item').forEach(i => i.classList.remove('active'));
+                    el.classList.add('active');
+                    this.loadAudio(ch);
+                };
+                list.appendChild(el);
+            });
+        }
+    },
+
+    initWaveSurfer() {
+        if (this.wavesurfer) return;
+        this.wavesurfer = WaveSurfer.create({
+            container: '#waveform',
+            waveColor: '#10b981',
+            progressColor: '#059669',
+            cursorColor: '#fff',
+            barWidth: 2,
+            barRadius: 3,
+            cursorWidth: 1,
+            height: 100,
+            barGap: 2,
+            normalize: true,
+        });
+        this.wavesurfer.on('audioprocess', () => this.updateTime());
+        this.wavesurfer.on('seek', () => this.updateTime());
+        this.wavesurfer.on('ready', () => this.updateTime());
+        document.getElementById('play-btn').onclick = () => this.wavesurfer.playPause();
+        document.getElementById('zoom-slider').oninput = (e) => this.wavesurfer.zoom(Number(e.target.value));
+    },
+
+    updateTime() {
+        const cur = this.formatTime(this.wavesurfer.getCurrentTime());
+        const dur = this.formatTime(this.wavesurfer.getDuration());
+        document.getElementById('time-display').innerText = `${cur} / ${dur}`;
+        document.getElementById('play-btn').innerText = this.wavesurfer.isPlaying() ? '⏸ Pause' : '▶ Play';
+    },
+
+    async loadAudio(chapterInfo) {
+        const paths = [
+            { url: `/projects/${this.currentProject}/06_MIX/renders/${chapterInfo.id}.wav`, type: "Mixed" },
+            { url: `/projects/${this.currentProject}/03_GENERATED/processed/${chapterInfo.id}.wav`, type: "Processed" },
+            { url: `/projects/${this.currentProject}/03_GENERATED/raw/${chapterInfo.id}.wav`, type: "Raw" },
+        ];
+        
+        const trackInfoEl = document.getElementById('track-info');
+        trackInfoEl.innerHTML = `<h3>${chapterInfo.id}</h3><p>Loading...</p>`;
+
+        let loaded = false;
+        for (const p of paths) {
+            try {
+                const res = await fetch(p.url, { method: 'HEAD' });
+                if (res.ok) {
+                    await this.wavesurfer.load(p.url);
+                    trackInfoEl.innerHTML = `
+                        <h3>${chapterInfo.title} (${chapterInfo.id})</h3>
+                        <div class="status-badge complete" style="display:inline-block; margin:0.5rem 0;">${p.type}</div>
+                        <p>Duration: ${this.formatTime(this.wavesurfer.getDuration())}</p>
+                    `;
+                    loaded = true;
+                    break;
+                }
+            } catch(e) {}
+        }
+        
+        if (!loaded) trackInfoEl.innerHTML = `<h3 style="color:red">Audio Not Found</h3><p>Run generation first.</p>`;
+    },
+
+    // Helpers
+    formatTime(seconds) {
+        if (!seconds) return "00:00";
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    },
+
+    escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') return unsafe;
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    },
+
+    triggerIngest() {
+        document.getElementById('ingest-file-input').click();
+    },
+
+    async handleIngestFiles(input) {
+        if (!input.files.length) return;
+        const formData = new FormData();
+        for (let i = 0; i < input.files.length; i++) formData.append('files', input.files[i]);
+        
+        try {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/ingest`, { method: 'POST', body: formData });
+            if (res.ok) {
+                alert("Files ingested.");
+                await this.loadProject(this.currentProject);
+            } else alert("Ingest failed.");
+        } catch(e) { alert(e.message); }
+    },
+
+    async runAllPipeline() {
+        if (!confirm("Run full pipeline? This may take time.")) return;
+        
+        const steps = ['validate', 'generate', 'qc-scan', 'process', 'compose', 'mix', 'export'];
+        const btn = document.getElementById('btn-run-all');
+        btn.disabled = true;
+        
+        for (const step of steps) {
+            btn.innerText = `Running ${step}...`;
+            try {
+                let body = {};
+                if (step === 'generate') body = { chapters: null };
+                if (step === 'compose') body = { preset: 'contemplative', duration: 60 };
+                if (step === 'export') body = { format: 'mp3', bitrate: 192 };
+                
+                const res = await fetch(`${API_BASE}/projects/${this.currentProject}/${step}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(body)
+                });
+                
+                if (!res.ok) throw new Error(`${step} failed`);
+                
+                // Wait for completion
+                if (step !== 'validate') await this.waitForNode(step);
+                
+            } catch(e) {
+                alert(`Pipeline stopped at ${step}: ${e.message}`);
+                btn.disabled = false;
+                btn.innerText = "🚀 Run All Pipeline";
+                return;
+            }
+        }
+        
+        btn.disabled = false;
+        btn.innerText = "🚀 Run All Pipeline";
+        alert("Pipeline complete!");
+        this.loadProject(this.currentProject);
+    },
+
+    async waitForNode(endpoint) {
+        const nodeMap = { 'generate': 'generate', 'qc-scan': 'qc_scan', 'process': 'process', 'compose': 'compose', 'mix': 'mix', 'export': 'export' };
+        const nodeName = nodeMap[endpoint] || endpoint;
+        
+        while (true) {
+            await new Promise(r => setTimeout(r, 2000));
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
+            if (res.ok) {
+                const s = await res.json();
+                const status = s.nodes?.[nodeName]?.status;
+                if (status === 'complete') return true;
+                if (status === 'failed') throw new Error(`Node ${nodeName} failed`);
+            }
+        }
+    },
+    
     async generateCurrentChapter() {
         if (this.selectedChapterIndex === -1) return;
         const ch = this.currentData.chapters[this.selectedChapterIndex];
-        
-        // 1. Save config first
         await this.saveProject();
-        
-        // 2. Trigger generation
         const btn = document.getElementById('btn-generate-chap');
         btn.disabled = true;
         btn.innerText = "Starting...";
@@ -314,761 +895,33 @@ const app = {
             
             if (res.ok) {
                 btn.innerText = "Generating...";
-                // Start polling status
                 this.pollStatus(ch.id);
             } else {
-                const err = await res.json();
-                alert(`Generation failed to start: ${err.detail}`);
+                alert("Failed to start generation");
                 btn.disabled = false;
                 btn.innerText = "⚡ Generate Audio";
             }
-        } catch (e) {
-            alert(`Error: ${e.message}`);
-            btn.disabled = false;
-            btn.innerText = "⚡ Generate Audio";
-        }
+        } catch(e) { alert(e.message); btn.disabled = false; btn.innerText = "⚡ Generate Audio"; }
     },
 
     pollStatus(chapterId) {
         if (this.pollInterval) clearInterval(this.pollInterval);
-        
-        const MAX_POLL_SECONDS = 600; // 10 minutes max
-        const POLL_INTERVAL_MS = 2000;
-        let elapsed = 0;
-        
         this.pollInterval = setInterval(async () => {
-            elapsed += POLL_INTERVAL_MS / 1000;
-            
-            if (elapsed > MAX_POLL_SECONDS) {
-                clearInterval(this.pollInterval);
-                this.pollInterval = null;
-                
-                // Reset UI
-                const btn = document.getElementById('btn-generate-chap');
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerText = "⚡ Generate Audio";
-                }
-                alert("Operation timed out. Check server logs.");
-                return;
-            }
-            
-            try {
-                const res = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
-                if (!res.ok) return;
-                
-                const status = await res.json();
-                this.currentStatus = status;
-                
-                // Update Gen Badge
-                if (this.selectedChapterIndex !== -1 && chapterId) {
-                    const currentCh = this.currentData.chapters[this.selectedChapterIndex];
-                    if (currentCh.id === chapterId) {
-                        this.populateChapterDetail(); // Refreshes badge
-                    }
-                }
-                
-                // Update Mix Badge (global)
-                if (status.nodes && status.nodes.mix) {
-                    this.updateMixBadge(status.nodes.mix.status);
-                }
-                
-                // Check Chapter Gen completion
-                if (chapterId) {
-                    const genNode = status.nodes && status.nodes.generate;
-                    if (genNode) {
-                        const nodeStatus = genNode.status;
-                        
-                        // Check node-level completion (covers the wrapper)
-                        if (nodeStatus === 'complete' || nodeStatus === 'failed') {
-                            const btn = document.getElementById('btn-generate-chap');
-                            if (btn) {
-                                btn.disabled = false;
-                                btn.innerText = "⚡ Generate Audio";
-                            }
-                            if (nodeStatus === 'failed') {
-                                const errMsg = genNode.error || "Unknown error";
-                                alert(`Generation failed: ${errMsg}`);
-                            }
-                            if (!this.isMixinRunning()) {
-                                clearInterval(this.pollInterval);
-                                this.pollInterval = null;
-                            }
-                            return;
-                        }
-                        
-                        // Check chapter-level completion (finer granularity)
-                        if (genNode.chapters && genNode.chapters[chapterId]) {
-                            const chStatus = genNode.chapters[chapterId].status;
-                            if (chStatus === 'complete' || chStatus === 'failed') {
-                                const btn = document.getElementById('btn-generate-chap');
-                                if (btn) {
-                                    btn.disabled = false;
-                                    btn.innerText = "⚡ Generate Audio";
-                                }
-                                if (chStatus === 'failed') alert("Generation failed for chapter.");
-                                if (!this.isMixinRunning()) {
-                                    clearInterval(this.pollInterval);
-                                    this.pollInterval = null;
-                                }
-                            }
-                        }
-                    }
-                }
-                
-            } catch (e) {
-                console.error("Poll error", e);
-            }
-        }, POLL_INTERVAL_MS);
-    },
-    
-    isMixinRunning() {
-        const btn = document.getElementById('btn-mix');
-        return btn && btn.disabled;
-    },
-
-    triggerIngest() {
-        document.getElementById('ingest-file-input').click();
-    },
-
-    async handleIngestFiles(input) {
-        if (!input.files || input.files.length === 0) return;
-        
-        const formData = new FormData();
-        for (let i = 0; i < input.files.length; i++) {
-            formData.append('files', input.files[i]);
-        }
-        
-        const btn = document.querySelector('button[onclick="app.triggerIngest()"]');
-        const originalText = btn.innerText;
-        btn.innerText = "Uploading...";
-        btn.disabled = true;
-
-        try {
-            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/ingest`, {
-                method: 'POST',
-                body: formData
-            });
-            
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
             if (res.ok) {
-                const data = await res.json();
-                alert(data.message);
-                await this.loadProject(this.currentProject);
-                this.switchTab('chapters');
-            } else {
-                const err = await res.json();
-                alert(`Ingest failed: ${err.detail}`);
-            }
-        } catch (e) {
-            alert(`Network error during ingest: ${e.message}`);
-        } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
-            input.value = "";
-        }
-    },
-
-    renderJson() {
-        document.getElementById('json-editor').value = JSON.stringify(this.currentData, null, 2);
-    },
-
-    updateDataFromForm() {
-        if (!this.currentData.generation) this.currentData.generation = {};
-        this.currentData.generation.chunk_max_chars = parseInt(document.getElementById('conf-chunk-chars').value);
-        this.currentData.generation.crossfade_ms = parseInt(document.getElementById('conf-crossfade').value);
-        this.currentData.generation.chunk_strategy = document.getElementById('conf-strategy').value;
-        this.currentData.generation.fail_threshold_percent = parseFloat(document.getElementById('conf-fail-thresh').value);
-
-        if (!this.currentData.mix) this.currentData.mix = {};
-        this.currentData.mix.target_lufs = parseFloat(document.getElementById('conf-lufs').value);
-        this.currentData.mix.master_volume = parseFloat(document.getElementById('conf-vol').value);
-    },
-
-    switchTab(targetTab, skipSync = false) {
-        let currentTab = 'config'; // default
-        if (document.getElementById('tab-btn-chapters').classList.contains('active')) currentTab = 'chapters';
-        if (document.getElementById('tab-btn-json').classList.contains('active')) currentTab = 'json';
-
-        if (!skipSync) {
-            if (currentTab === 'json' && targetTab !== 'json') {
-                try {
-                    const raw = document.getElementById('json-editor').value;
-                    this.currentData = JSON.parse(raw);
-                    this.renderForm(); 
-                } catch (e) {
-                    alert("Invalid JSON. Please fix errors before switching tabs.");
-                    return;
+                this.currentStatus = await res.json();
+                // Update specific chapter status
+                if (this.currentData.chapters[this.selectedChapterIndex].id === chapterId) {
+                    this.populateChapterDetail(); // Updates badge
+                }
+                const chStatus = this.currentStatus.nodes.generate.chapters?.[chapterId]?.status;
+                if (chStatus === 'complete' || chStatus === 'failed') {
+                    clearInterval(this.pollInterval);
+                    const btn = document.getElementById('btn-generate-chap');
+                    if (btn) { btn.disabled = false; btn.innerText = "⚡ Generate Audio"; }
                 }
             }
-            else if (currentTab !== 'json' && targetTab === 'json') {
-                this.updateDataFromForm();
-                this.renderJson();
-            }
-        }
-
-        ['config', 'chapters', 'json'].forEach(t => {
-            const el = document.getElementById(`tab-${t}`);
-            const btn = document.getElementById(`tab-btn-${t}`);
-            
-            if (t === targetTab) {
-                el.classList.remove('hidden');
-                btn.classList.add('active');
-            } else {
-                el.classList.add('hidden');
-                btn.classList.remove('active');
-            }
-        });
-    },
-
-    async saveProject() {
-        const isJsonTab = document.getElementById('tab-btn-json').classList.contains('active');
-        try {
-            if (isJsonTab) {
-                const raw = document.getElementById('json-editor').value;
-                this.currentData = JSON.parse(raw);
-            } else {
-                this.updateDataFromForm();
-                this.renderJson();
-            }
-
-            const res = await fetch(`${API_BASE}/projects/${this.currentProject}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(this.currentData)
-            });
-
-            if (res.ok) {
-                // optional notify
-            } else {
-                const err = await res.json();
-                alert(`Error saving: ${err.detail}`);
-            }
-        } catch (e) {
-            alert(`Invalid JSON or save error: ${e.message}`);
-        }
-    },
-
-    // ──────────────────────────────────────────────
-    // Timeline / Mix View
-    // ──────────────────────────────────────────────
-
-    async showMix() {
-        if (!this.currentProject) return;
-
-        document.getElementById('projects-view').classList.add('hidden');
-        document.getElementById('editor-view').classList.add('hidden');
-        document.getElementById('mix-view').classList.remove('hidden');
-
-        document.getElementById('nav-projects').classList.remove('active');
-        document.getElementById('nav-editor').classList.remove('active');
-        document.getElementById('nav-mix').classList.add('active');
-
-        document.getElementById('mix-project-id').innerText = this.currentProject;
-
-        this.initWaveSurfer();
-        this.loadMixFiles();
-        
-        // Load mix status
-        if (this.currentStatus && this.currentStatus.nodes.mix) {
-            this.updateMixBadge(this.currentStatus.nodes.mix.status);
-        }
-    },
-    
-    updateMixBadge(status) {
-        const badge = document.getElementById('mix-status-badge');
-        const btn = document.getElementById('btn-mix');
-        
-        badge.innerText = status.toUpperCase();
-        badge.className = 'status-badge';
-        badge.style.display = 'inline-block';
-        
-        if (status === 'complete') {
-            badge.classList.add('complete');
-            btn.disabled = false;
-            btn.innerText = "☊ Run Mix";
-        } else if (status === 'running') {
-            badge.classList.add('partial');
-            btn.disabled = true;
-            btn.innerText = "Mixing...";
-        } else if (status === 'failed') {
-            badge.classList.add('failed');
-            btn.disabled = false;
-            btn.innerText = "☊ Run Mix";
-        } else {
-            // Pending
-            btn.disabled = false;
-            btn.innerText = "☊ Run Mix";
-        }
-    },
-    
-    async runMix() {
-        // Save config first
-        await this.saveProject();
-        
-        const btn = document.getElementById('btn-mix');
-        btn.disabled = true;
-        btn.innerText = "Starting...";
-        
-        try {
-            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/mix`, {
-                method: 'POST'
-            });
-            
-            if (res.ok) {
-                this.updateMixBadge('running');
-                
-                // Start polling
-                if (this.pollInterval) clearInterval(this.pollInterval);
-                
-                const MAX_POLL_SECONDS = 600; // 10 minutes max
-                const POLL_INTERVAL_MS = 2000;
-                let elapsed = 0;
-                
-                this.pollInterval = setInterval(async () => {
-                    elapsed += POLL_INTERVAL_MS / 1000;
-                    
-                    if (elapsed > MAX_POLL_SECONDS) {
-                        clearInterval(this.pollInterval);
-                        this.pollInterval = null;
-                        
-                        // Reset UI
-                        const mixBtn = document.getElementById('btn-mix');
-                        if (mixBtn) {
-                            mixBtn.disabled = false;
-                            mixBtn.innerText = "☊ Run Mix";
-                        }
-                        alert("Mix operation timed out. Check server logs.");
-                        return;
-                    }
-                    
-                    const statRes = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
-                    if (statRes.ok) {
-                        const status = await statRes.json();
-                        this.currentStatus = status;
-                        const mixStatus = status.nodes && status.nodes.mix && status.nodes.mix.status;
-                        
-                        if (mixStatus) {
-                            this.updateMixBadge(mixStatus);
-                            
-                            if (mixStatus === 'complete' || mixStatus === 'failed') {
-                                clearInterval(this.pollInterval);
-                                this.pollInterval = null;
-                                
-                                // Reset button
-                                const mixBtn = document.getElementById('btn-mix');
-                                if (mixBtn) {
-                                    mixBtn.disabled = false;
-                                    mixBtn.innerText = "☊ Run Mix";
-                                }
-                                
-                                if (mixStatus === 'complete') {
-                                    this.loadMixFiles(); // Refresh file list
-                                } else {
-                                    const errMsg = status.nodes.mix.error || "Unknown error";
-                                    alert(`Mix failed: ${errMsg}`);
-                                }
-                            }
-                        }
-                    }
-                }, POLL_INTERVAL_MS);
-                
-            } else {
-                alert("Failed to start mix.");
-                btn.disabled = false;
-                btn.innerText = "☊ Run Mix";
-            }
-        } catch (e) {
-            alert(`Error: ${e.message}`);
-            btn.disabled = false;
-            btn.innerText = "☊ Run Mix";
-        }
-    },
-
-    async runAllPipeline() {
-        if (!this.currentProject) return;
-        
-        const btn = document.getElementById('btn-run-all');
-        const originalText = btn.innerText;
-        btn.disabled = true;
-        
-        const steps = [
-            { name: 'Validate', endpoint: 'validate', method: 'POST' },
-            { name: 'Generate', endpoint: 'generate', method: 'POST', body: { chapters: null, engine: null } },
-            { name: 'QC Scan', endpoint: 'qc-scan', method: 'POST' },
-            { name: 'Process', endpoint: 'process', method: 'POST' },
-            { name: 'Compose', endpoint: 'compose', method: 'POST', body: { preset: 'contemplative', duration: 60 } },
-            { name: 'Mix', endpoint: 'mix', method: 'POST' },
-            { name: 'Export', endpoint: 'export', method: 'POST', body: { format: 'mp3', bitrate: 192 } },
-        ];
-        
-        try {
-            // Save config first
-            await this.saveProject();
-            
-            for (const step of steps) {
-                btn.innerText = `${step.name}...`;
-                
-                const options = {
-                    method: step.method,
-                    headers: { 'Content-Type': 'application/json' },
-                };
-                if (step.body) {
-                    options.body = JSON.stringify(step.body);
-                }
-                
-                const res = await fetch(
-                    `${API_BASE}/projects/${this.currentProject}/${step.endpoint}`,
-                    options
-                );
-                
-                // Handle non-JSON responses defensively
-                const contentType = res.headers.get('content-type') || '';
-                let data;
-                if (contentType.includes('application/json')) {
-                    data = await res.json();
-                } else {
-                    const text = await res.text();
-                    data = { detail: text };
-                }
-                
-                if (!res.ok) {
-                    const errMsg = data.detail || `${step.name} failed (HTTP ${res.status})`;
-                    alert(`Pipeline stopped at ${step.name}:\n${errMsg}`);
-                    return;
-                }
-                
-                // For validate: check if validation passed
-                if (step.endpoint === 'validate') {
-                    const passed = data.ok ?? data.passed ?? true;
-                    if (!passed) {
-                        const failures = data.details?.failures || data.failures || [];
-                        const msg = failures.length > 0 
-                            ? failures.map(f => `• ${f}`).join('\n')
-                            : 'Check project config.';
-                        alert(`Validation failed:\n${msg}`);
-                        return;
-                    }
-                }
-                
-                // For background tasks: wait for completion
-                if (data.status === 'running') {
-                    const completed = await this.waitForNode(step.endpoint);
-                    if (!completed) {
-                        alert(`${step.name} failed or timed out. Check server logs.`);
-                        return;
-                    }
-                }
-            }
-            
-            alert("✅ Full pipeline completed successfully!");
-            await this.loadProject(this.currentProject);
-            
-        } catch (e) {
-            alert(`❌ Pipeline error: ${e.message}`);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = originalText;
-        }
-    },
-
-    async waitForNode(endpoint) {
-        // Map endpoint to pipeline node name
-        const nodeMap = {
-            'generate': 'generate',
-            'qc-scan': 'qc_scan',
-            'process': 'process',
-            'compose': 'compose',
-            'mix': 'mix',
-            'export': 'export',
-        };
-        const nodeName = nodeMap[endpoint] || endpoint;
-        
-        const MAX_WAIT_MS = 600000; // 10 minutes
-        const POLL_MS = 2000;
-        let elapsed = 0;
-        
-        while (elapsed < MAX_WAIT_MS) {
-            await new Promise(r => setTimeout(r, POLL_MS));
-            elapsed += POLL_MS;
-            
-            try {
-                const res = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
-                if (!res.ok) continue;
-                
-                const status = await res.json();
-                this.currentStatus = status;
-                
-                const nodeStatus = status.nodes?.[nodeName]?.status;
-                if (nodeStatus === 'complete') return true;
-                if (nodeStatus === 'failed') {
-                    const error = status.nodes?.[nodeName]?.error || 'Unknown error';
-                    console.error(`Node ${nodeName} failed:`, error);
-                    return false;
-                }
-            } catch (e) {
-                console.error('Poll error:', e);
-            }
-        }
-        
-        return false; // Timeout
-    },
-
-    initWaveSurfer() {
-        if (this.wavesurfer) return;
-
-        this.wavesurfer = WaveSurfer.create({
-            container: '#waveform',
-            waveColor: '#10b981',
-            progressColor: '#059669',
-            cursorColor: '#fff',
-            barWidth: 2,
-            barRadius: 3,
-            cursorWidth: 1,
-            height: 100,
-            barGap: 2,
-            normalize: true,
-        });
-
-        this.wavesurfer.on('audioprocess', () => this.updateTime());
-        this.wavesurfer.on('seek', () => this.updateTime());
-        this.wavesurfer.on('ready', () => this.updateTime());
-
-        document.getElementById('play-btn').onclick = () => this.wavesurfer.playPause();
-        
-        document.getElementById('zoom-slider').oninput = (e) => {
-            this.wavesurfer.zoom(Number(e.target.value));
-        };
-    },
-
-    updateTime() {
-        const cur = this.formatTime(this.wavesurfer.getCurrentTime());
-        const dur = this.formatTime(this.wavesurfer.getDuration());
-        document.getElementById('time-display').innerText = `${cur} / ${dur}`;
-        
-        const btn = document.getElementById('play-btn');
-        btn.innerText = this.wavesurfer.isPlaying() ? '⏸ Pause' : '▶ Play';
-    },
-
-    formatTime(seconds) {
-        if (!seconds) return "00:00";
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60);
-        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    },
-
-    loadMixFiles() {
-        const list = document.getElementById('mix-file-list');
-        list.innerHTML = '';
-
-        if (!this.currentData || !this.currentData.chapters) return;
-
-        this.currentData.chapters.forEach(ch => {
-            const el = document.createElement('div');
-            el.className = 'file-list-item';
-            el.innerText = `${ch.id} - ${ch.title}`;
-            
-            el.onclick = () => {
-                document.querySelectorAll('.file-list-item').forEach(i => i.classList.remove('active'));
-                el.classList.add('active');
-                
-                this.loadAudio(ch);
-            };
-            
-            list.appendChild(el);
-        });
-    },
-
-    async loadAudio(chapterInfo) {
-        const paths = [
-            { url: `/projects/${this.currentProject}/06_MIX/renders/${chapterInfo.id}.wav`, type: "Mixed (Final)" },
-            { url: `/projects/${this.currentProject}/03_GENERATED/processed/${chapterInfo.id}.wav`, type: "Processed (Normalized)" },
-            { url: `/projects/${this.currentProject}/03_GENERATED/raw/${chapterInfo.id}.wav`, type: "Raw (Unprocessed)" },
-        ];
-
-        // Create track info securely
-        const trackInfoEl = document.getElementById('track-info');
-        trackInfoEl.innerHTML = ''; // Clear existing content
-        
-        const titleEl = document.createElement('h3');
-        titleEl.textContent = `${chapterInfo.title} (${chapterInfo.id})`;
-        
-        const statusEl = document.createElement('p');
-        statusEl.textContent = 'Checking audio availability...';
-        
-        trackInfoEl.appendChild(titleEl);
-        trackInfoEl.appendChild(statusEl);
-
-        let targetUrl = null;
-        let type = "";
-
-        for (const path of paths) {
-            try {
-                const res = await fetch(path.url, { method: 'HEAD' });
-                if (res.ok) {
-                    targetUrl = path.url;
-                    type = path.type;
-                    break;
-                }
-                // 404 is expected — just continue to next path
-            } catch (e) {
-                // Network error — continue to next path
-            }
-        }
-
-        if (!targetUrl) {
-            // Create error message securely
-            const trackInfoEl = document.getElementById('track-info');
-            trackInfoEl.innerHTML = ''; // Clear existing content
-            
-            const errorTitleEl = document.createElement('h3');
-            errorTitleEl.style.cssText = 'color:var(--danger)';
-            errorTitleEl.textContent = 'Audio Not Found';
-            
-            const errorMsgEl = document.createElement('p');
-            errorMsgEl.innerHTML = `No audio found for <strong>${this.escapeHtml(chapterInfo.id)}</strong>.`;
-            
-            const checkedDiv = document.createElement('div');
-            checkedDiv.style.cssText = 'background:var(--bg-card); padding:1rem; border-radius:4px; margin-top:1rem;';
-            
-            const checkedTitleEl = document.createElement('p');
-            checkedTitleEl.style.cssText = 'margin-top:0';
-            checkedTitleEl.textContent = 'Checked:';
-            
-            const checkedListEl = document.createElement('ul');
-            checkedListEl.style.cssText = 'margin-bottom:0';
-            
-            paths.forEach(p => {
-                const liEl = document.createElement('li');
-                const codeEl = document.createElement('code');
-                codeEl.textContent = p.url;
-                liEl.appendChild(codeEl);
-                checkedListEl.appendChild(liEl);
-            });
-            
-            const instructionEl = document.createElement('p');
-            instructionEl.style.cssText = 'margin-top:1rem; color:var(--text-secondary);';
-            instructionEl.innerHTML = 'Generate audio in the <strong>Editor</strong>, then return here.';
-            
-            checkedDiv.appendChild(checkedTitleEl);
-            checkedDiv.appendChild(checkedListEl);
-            
-            trackInfoEl.appendChild(errorTitleEl);
-            trackInfoEl.appendChild(errorMsgEl);
-            trackInfoEl.appendChild(checkedDiv);
-            trackInfoEl.appendChild(instructionEl);
-            
-            return;
-        }
-
-        // Load into wavesurfer - create loading message securely
-        trackInfoEl.innerHTML = ''; // Clear existing content (reusing variable)
-        
-        const loadingTitleEl = document.createElement('h3');
-        loadingTitleEl.textContent = `${chapterInfo.title} (${chapterInfo.id})`;
-        
-        const loadingStatusEl = document.createElement('p');
-        loadingStatusEl.textContent = `Loading ${type}...`;
-        
-        trackInfoEl.appendChild(loadingTitleEl);
-        trackInfoEl.appendChild(loadingStatusEl);
-
-        try {
-            await this.wavesurfer.load(targetUrl);
-            
-            let badgeClass = type.startsWith('Mixed') ? 'complete' : 'partial';
-            
-            // Create success message securely
-            trackInfoEl.innerHTML = ''; // Clear existing content
-            
-            const successTitleEl = document.createElement('h3');
-            successTitleEl.textContent = `${chapterInfo.title} (${chapterInfo.id})`;
-            
-            const badgeDivEl = document.createElement('div');
-            badgeDivEl.style.cssText = 'margin-top:0.5rem; margin-bottom:1rem;';
-            
-            const badgeSpanEl = document.createElement('span');
-            badgeSpanEl.className = `status-badge ${badgeClass}`;
-            badgeSpanEl.textContent = type;
-            
-            const durationEl = document.createElement('p');
-            durationEl.textContent = `Duration: ${this.formatTime(this.wavesurfer.getDuration())}`;
-            
-            badgeDivEl.appendChild(badgeSpanEl);
-            
-            trackInfoEl.appendChild(successTitleEl);
-            trackInfoEl.appendChild(badgeDivEl);
-            trackInfoEl.appendChild(durationEl);
-        } catch (e) {
-            // Create error message securely
-            trackInfoEl.innerHTML = ''; // Clear existing content
-            
-            const errorTitleEl = document.createElement('h3');
-            errorTitleEl.style.cssText = 'color:var(--danger)';
-            errorTitleEl.textContent = 'Load Error';
-            
-            const errorMsgEl = document.createElement('p');
-            errorMsgEl.textContent = 'Found file but failed to decode: ';
-            
-            const codeEl = document.createElement('code');
-            codeEl.textContent = e.message || 'Unknown error';
-            errorMsgEl.appendChild(codeEl);
-            
-            trackInfoEl.appendChild(errorTitleEl);
-            trackInfoEl.appendChild(errorMsgEl);
-        }
-    },
-
-    // ──────────────────────────────────────────────
-    // Nav / Helpers
-    // ──────────────────────────────────────────────
-
-    showProjects() {
-        document.getElementById('projects-view').classList.remove('hidden');
-        document.getElementById('editor-view').classList.add('hidden');
-        document.getElementById('mix-view').classList.add('hidden');
-        
-        document.getElementById('nav-projects').classList.add('active');
-        
-        const edit = document.getElementById('nav-editor');
-        edit.classList.remove('active');
-        edit.classList.add('disabled');
-        
-        const mix = document.getElementById('nav-mix');
-        mix.classList.remove('active');
-        mix.classList.add('disabled');
-        
-        if (this.wavesurfer) {
-            this.wavesurfer.pause();
-        }
-        if (this.pollInterval) clearInterval(this.pollInterval);
-
-        this.currentProject = null;
-        this.fetchProjects();
-    },
-
-    showEditor() {
-        if (!this.currentProject) return;
-        document.getElementById('projects-view').classList.add('hidden');
-        document.getElementById('editor-view').classList.remove('hidden');
-        document.getElementById('mix-view').classList.add('hidden');
-        
-        document.getElementById('nav-projects').classList.remove('active');
-        document.getElementById('nav-editor').classList.add('active');
-        document.getElementById('nav-mix').classList.remove('active');
-        
-        if (this.wavesurfer) {
-            this.wavesurfer.pause();
-        }
-    },
-
-    escapeHtml(unsafe) {
-        if (typeof unsafe !== 'string') return unsafe;
-        return unsafe
-             .replace(/&/g, "&amp;")
-             .replace(/</g, "&lt;")
-             .replace(/>/g, "&gt;")
-             .replace(/"/g, "&quot;")
-             .replace(/'/g, "&#039;");
+        }, 2000);
     }
 };
 

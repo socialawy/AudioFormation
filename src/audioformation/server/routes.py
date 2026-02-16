@@ -35,6 +35,7 @@ from audioformation.audio.composer import generate_pad
 from audioformation.export.mp3 import export_project_mp3
 from audioformation.export.m4b import export_project_m4b_auto
 from audioformation.qc.final import scan_final_mix
+from audioformation.engines.registry import registry
 
 router = APIRouter()
 logger = logging.getLogger("audioformation.api")
@@ -456,3 +457,93 @@ async def get_project_status(project_id: str):
         return load_pipeline_status(project_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── New Endpoints for Dashboard v2 ───────────────────────────
+
+@router.get("/engines")
+async def list_engines():
+    """List available TTS engines and their capabilities."""
+    engines = []
+    for name in registry.list_available():
+        try:
+            eng = registry.get(name)
+            engines.append({
+                "id": name,
+                "name": name,
+                "cloning": eng.supports_cloning,
+                "ssml": eng.supports_ssml,
+                "gpu": eng.requires_gpu
+            })
+        except Exception as e:
+            logger.warning(f"Failed to load engine {name}: {e}")
+            engines.append({"id": name, "error": str(e)})
+    return engines
+
+
+@router.get("/engines/{name}/voices")
+async def list_engine_voices(name: str, lang: Optional[str] = None):
+    """List voices for a specific engine, optionally filtered by language."""
+    try:
+        engine = registry.get(name)
+        voices = await engine.list_voices(language=lang)
+        return voices
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Engine '{name}' not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/projects/{project_id}/hardware")
+async def get_project_hardware(project_id: str):
+    """Get project hardware detection info (hardware.json)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    path = get_project_path(project_id) / "00_CONFIG" / "hardware.json"
+    if not path.exists():
+        return {}
+    
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+@router.get("/projects/{project_id}/files")
+async def list_project_files(project_id: str):
+    """List exportable files in the project."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+        
+    project_path = get_project_path(project_id)
+    export_dir = project_path / "07_EXPORT"
+    
+    files = []
+    
+    def scan_dir(d: Path, category: str):
+        if d.exists():
+            for f in sorted(d.glob("*")):
+                if f.is_file() and not f.name.startswith("."):
+                    files.append({
+                        "path": str(f.relative_to(project_path)).replace("\\", "/"),
+                        "name": f.name,
+                        "category": category,
+                        "size": f.stat().st_size,
+                        "modified": f.stat().st_mtime
+                    })
+
+    scan_dir(export_dir / "audiobook", "audiobook")
+    scan_dir(export_dir / "chapters", "chapter")
+    
+    manifest = export_dir / "manifest.json"
+    if manifest.exists():
+        files.append({
+            "path": str(manifest.relative_to(project_path)).replace("\\", "/"),
+            "name": "manifest.json",
+            "category": "metadata",
+            "size": manifest.stat().st_size,
+            "modified": manifest.stat().st_mtime
+        })
+        
+    return files
