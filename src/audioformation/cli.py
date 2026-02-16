@@ -22,7 +22,7 @@ from pathlib import Path
 import click
 
 from audioformation import __version__
-from audioformation.config import PROJECTS_ROOT, PIPELINE_NODES, HARD_GATES, AUTO_GATES, API_PORT
+from audioformation.config import PIPELINE_NODES, HARD_GATES, AUTO_GATES, API_PORT
 from audioformation.pipeline import mark_node
 
 
@@ -639,7 +639,6 @@ def qc(project_id: str, report: bool) -> None:
 
     # Write pipeline status — qc_scan
     from audioformation.pipeline import mark_node
-    from audioformation.project import load_project_json
     
     # Calculate overall result
     total_chunks = sum(r.get("total_chunks", 0) for r in all_reports)
@@ -836,7 +835,7 @@ def qc_final(project_id: str) -> None:
     report = scan_final_mix(project_id)
     
     click.echo()
-    click.secho(f"QC Final Report", bold=True)
+    click.secho("QC Final Report", bold=True)
     click.echo(f"  Target LUFS: {report.target_lufs} (±1.0)")
     click.echo(f"  Limit True Peak: {report.true_peak_limit} dBTP")
     click.echo("-" * 60)
@@ -891,7 +890,7 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
     
     # ── M4B / Audiobook Export ──
     if fmt == "m4b":
-        click.echo(f"Exporting full audiobook as M4B...")
+        click.echo("Exporting full audiobook as M4B...")
         audiobook_dir = export_dir / "audiobook"
         audiobook_dir.mkdir(parents=True, exist_ok=True)
         
@@ -1004,7 +1003,7 @@ def quick(text: str | None, engine: str, voice: str, output: Path | None) -> Non
 
     # Default output path
     if output is None:
-        output = Path(f"quick_output.mp3")
+        output = Path("quick_output.mp3")
 
     # Use WAV for generation, then convert if needed
     wav_output = output.with_suffix(".wav") if output.suffix != ".wav" else output
@@ -1062,7 +1061,6 @@ def preview(project_id: str, chapter_id: str, duration: float, chars: int | None
     from audioformation.project import get_project_path, load_project_json
     from audioformation.engines.registry import registry
     from audioformation.engines.base import GenerationRequest
-    from audioformation.utils.text import chunk_text
 
     if not _project_guard(project_id):
         return
@@ -1262,8 +1260,6 @@ def engines_voices(engine_name: str, lang: str | None) -> None:
 def run(project_id: str, run_all: bool, from_node: str | None, dry_run: bool, engine: str | None) -> None:
     """Run the full pipeline or resume from a node."""
     from audioformation.pipeline import get_resume_point, nodes_in_range
-    from audioformation.project import load_project_json
-    from audioformation.utils.text import chunk_text
 
     if not _project_guard(project_id):
         return
@@ -1414,14 +1410,16 @@ def serve(port: int, host: str) -> None:
     """Start the AudioFormation API server."""
     try:
         import uvicorn
-        from audioformation.server.app import app
+        import importlib.util
+        if not importlib.util.find_spec("audioformation.server.app"):
+            raise ImportError()
     except ImportError:
         click.secho("✗ Server dependencies not installed.", fg="red")
         click.echo("  Run: pip install \"audioformation[server]\"")
         sys.exit(1)
 
-    click.secho(f"🚀 Starting API server on http://{host}:{port}", fg="green", bold=True)
-    click.echo(f"   Docs: http://{host}:{port}/docs")
+    click.secho(f"🚀 Starting API server on http://localhost:{port}", fg="green", bold=True)
+    click.echo(f"   Docs: http://localhost:{port}/docs")
     
     uvicorn.run("audioformation.server.app:app", host=host, port=port, reload=True)
 

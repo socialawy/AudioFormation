@@ -8,7 +8,6 @@ Uses ffmpeg to concatenate chapters, encode to AAC, and embed ffmetadata.
 
 import subprocess
 from pathlib import Path
-from typing import Any
 
 from audioformation.project import get_project_path, load_project_json
 from audioformation.audio.processor import get_duration

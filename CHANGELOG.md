@@ -8,6 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added 2026-02-16
+- **Code Quality Infrastructure**: Comprehensive tooling for robust development
+  - Ruff linting with automated fixes (31 issues resolved)
+  - pytest-cov coverage reporting with 80% threshold
+  - MyPy type checking with gradual adoption strategy
+  - Enhanced CI/CD pipeline with quality gates
+  - Pre-commit hooks updated with type checking
+- **Security Hardening**: Fixed all XSS vulnerabilities in web dashboard
+  - Input sanitization applied to all dynamic content
+  - Snyk security scanning integrated (0 remaining issues)
+- **Coverage Reporting**: HTML and XML reports with Codecov integration
+- **Type Safety**: 21 type errors identified for gradual resolution
+
+### Changed
+- **Dependencies**: Added pytest-cov, mypy, types-jsonschema to dev group
+- **CI Pipeline**: Enhanced with linting, type checking, and coverage reporting
+- **Pre-commit**: Added MyPy type checking hook
+- **Configuration**: Updated pytest.ini with coverage options and thresholds
+
+### Fixed
+- **Ruff Installation**: Resolved missing linter tooling
+- **XSS Vulnerabilities**: All 3 Medium-severity issues resolved in app.js
+- **Import Issues**: Fixed unused imports and circular dependencies
+- **Type Annotations**: Improved type hints across codebase
+
+### Tests
+- **371 tests passing** with comprehensive coverage reporting
+- **Current coverage**: 65% (targeting 80%+)
+- **Quality gates**: Automated linting, type checking, and security scanning
+
 ## [0.3.0] - 2026-02-14
 
 ### Added

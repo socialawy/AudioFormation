@@ -64,11 +64,11 @@ const app = {
             card.innerHTML = `
                 <h3>${this.escapeHtml(p.id)}</h3>
                 <div style="font-size: 0.85rem; color: #888; margin-bottom: 0.5rem;">
-                    Created: ${date}
+                    Created: ${this.escapeHtml(date)}
                 </div>
                 <div class="meta">
-                    <span>${p.chapters} Chs • ${p.languages.join(', ')}</span>
-                    <span class="status-badge ${statusClass}">${p.pipeline_node}</span>
+                    <span>${this.escapeHtml(p.chapters)} Chs • ${this.escapeHtml(p.languages.join(', '))}</span>
+                    <span class="status-badge ${statusClass}">${this.escapeHtml(p.pipeline_node)}</span>
                 </div>
             `;
             
@@ -720,8 +720,8 @@ const app = {
         }
 
         document.getElementById('track-info').innerHTML = `
-            <h3>${chapterInfo.title} (${chapterInfo.id})</h3>
-            <p>Loading ${type}...</p>
+            <h3>${this.escapeHtml(chapterInfo.title)} (${this.escapeHtml(chapterInfo.id)})</h3>
+            <p>Loading ${this.escapeHtml(type)}...</p>
         `;
 
         try {
@@ -731,18 +731,18 @@ const app = {
             if (type.startsWith('Mixed')) badgeClass = 'complete';
             
             document.getElementById('track-info').innerHTML = `
-                <h3>${chapterInfo.title} (${chapterInfo.id})</h3>
+                <h3>${this.escapeHtml(chapterInfo.title)} (${this.escapeHtml(chapterInfo.id)})</h3>
                 <div style="margin-top:0.5rem; margin-bottom:1rem;">
-                    <span class="status-badge ${badgeClass}">${type}</span>
+                    <span class="status-badge ${badgeClass}">${this.escapeHtml(type)}</span>
                 </div>
-                <p>Duration: ${this.formatTime(this.wavesurfer.getDuration())}</p>
-                <p><small style="opacity:0.6">${targetUrl}</small></p>
+                <p>Duration: ${this.escapeHtml(this.formatTime(this.wavesurfer.getDuration()))}</p>
+                <p><small style="opacity:0.6">${this.escapeHtml(targetUrl)}</small></p>
             `;
         } catch (e) {
              document.getElementById('track-info').innerHTML = `
                 <h3 style="color:var(--danger)">Load Error</h3>
                 <p>Found file but failed to decode.</p>
-                <p><code>${e.message}</code></p>
+                <p><code>${this.escapeHtml(e.message)}</code></p>
             `;
         }
     },
@@ -791,6 +791,7 @@ const app = {
     },
 
     escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') return unsafe;
         return unsafe
              .replace(/&/g, "&amp;")
              .replace(/</g, "&lt;")

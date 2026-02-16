@@ -11,7 +11,7 @@ Pipeline Node 5: Compose.
 
 import numpy as np
 import soundfile as sf
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 

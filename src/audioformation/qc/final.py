@@ -69,7 +69,6 @@ class FinalQCReport:
 def _detect_silence_gaps(audio_path: Path, max_gap_sec: float = 2.0) -> dict:
     """Detect silence gaps between audio segments."""
     try:
-        from audioformation.audio.processor import get_duration
         import soundfile as sf
         
         # Load audio

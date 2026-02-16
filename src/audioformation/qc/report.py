@@ -5,7 +5,6 @@ Formats QC reports for CLI output and JSON export.
 """
 
 from pathlib import Path
-from typing import Any
 
 from audioformation.qc.scanner import QCReport
 

@@ -8,7 +8,7 @@ Calls the AudioMixer.
 
 import logging
 from pathlib import Path
-from typing import Any, Callable
+from typing import Callable
 
 from audioformation.audio.mixer import AudioMixer
 from audioformation.project import (

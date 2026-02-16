@@ -329,7 +329,7 @@ def _diacritize_mishkal(text: str) -> str:
         return result.strip() if result else text
     except ImportError:
         return text
-    except Exception as e:
+    except Exception:
         return text
 
 

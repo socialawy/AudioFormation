@@ -9,7 +9,6 @@ Refactored to be UI-agnostic (no click dependency). Use `progress_callback`
 to stream status updates to CLI or WebSocket.
 """
 
-import asyncio
 import logging
 from pathlib import Path
 from typing import Any, Callable
@@ -28,7 +27,6 @@ from audioformation.project import (
 from audioformation.pipeline import (
     update_node_status,
     update_chapter_status,
-    get_node_status,
 )
 from audioformation.engines.base import GenerationRequest
 from audioformation.engines.registry import registry

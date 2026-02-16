@@ -14,10 +14,8 @@ from pathlib import Path
 from typing import Optional, Literal
 
 from audioformation.audio.synthesis import (
-    oscillator,
     generate_noise,
     simple_lowpass,
-    simple_highpass,
     apply_envelope,
 )
 

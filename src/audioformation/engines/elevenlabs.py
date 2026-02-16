@@ -10,7 +10,6 @@ TODO(Phase 2): Advanced features
   - [ ] Voice cloning from reference audio
   - [ ] Voice settings (stability, similarity, style)
   - [ ] Streaming generation for long texts
-  - [ ] Batch optimization for cloud API efficiency
 """
 
 import asyncio
@@ -178,7 +177,7 @@ class ElevenLabsEngine(TTSEngine):
             
             return voices
             
-        except Exception as e:
+        except Exception:
             # Return empty list on error
             return []
 
@@ -213,7 +212,6 @@ class ElevenLabsEngine(TTSEngine):
     async def _mp3_to_wav(self, mp3_path: Path, wav_path: Path) -> bool:
         """Convert MP3 to WAV using ffmpeg."""
         try:
-            import subprocess
             
             cmd = [
                 "ffmpeg",
@@ -241,7 +239,6 @@ class ElevenLabsEngine(TTSEngine):
     async def _get_duration(self, audio_path: Path) -> float:
         """Get audio duration in seconds."""
         try:
-            import subprocess
             
             cmd = [
                 "ffprobe",

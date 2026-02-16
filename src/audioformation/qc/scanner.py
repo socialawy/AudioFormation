@@ -13,7 +13,7 @@ Results: PASS / WARN / FAIL per check, per chunk.
 """
 
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
