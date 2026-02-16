@@ -104,6 +104,8 @@ The dashboard (`audioformation serve`) provides a visual interface for:
 ```bash
 pip install -e ".[dev]"
 pytest -v
+# or
+pytest --cov=src --cov-report=term-missing
 ```
 
 ## Contributing

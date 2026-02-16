@@ -5,6 +5,8 @@ API Routes for AudioFormation.
 Handles project CRUD and status retrieval.
 """
 
+import asyncio
+import logging
 import shutil
 import tempfile
 from pathlib import Path
@@ -19,6 +21,7 @@ from audioformation.project import (
     save_project_json,
     load_pipeline_status,
     project_exists,
+    get_project_path,
 )
 from audioformation.utils.hardware import write_hardware_json
 from audioformation.pipeline import mark_node
@@ -33,6 +36,25 @@ from audioformation.export.m4b import export_project_m4b
 from audioformation.qc.final import scan_final_mix
 
 router = APIRouter()
+logger = logging.getLogger("audioformation.api")
+
+
+async def _run_with_status(func, project_id: str, node: str):
+    """Wrapper that marks node running/complete/failed around any pipeline function.
+    
+    Handles both sync and async functions by checking if the result is a coroutine.
+    """
+    path = get_project_path(project_id)
+    try:
+        mark_node(path, node, "running")
+        result = func()  # Call lambda/closure
+        # If func() returned a coroutine (async function), await it
+        if asyncio.iscoroutine(result):
+            await result
+        mark_node(path, node, "complete")
+    except Exception as e:
+        logger.exception(f"Background task '{node}' failed for {project_id}: {e}")
+        mark_node(path, node, "failed", error=str(e))
 
 
 class ProjectCreateRequest(BaseModel):
@@ -146,11 +168,18 @@ async def trigger_generation(
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
     
+    path = get_project_path(project_id)
+    mark_node(path, "generate", "running")
+    
     background_tasks.add_task(
-        generate_project, 
-        project_id=project_id, 
-        engine_name=request.engine, 
-        chapters=request.chapters
+        _run_with_status,
+        lambda: generate_project(
+            project_id=project_id,
+            engine_name=request.engine,
+            chapters=request.chapters,
+        ),
+        project_id,
+        "generate",
     )
     
     return {"message": "Generation started", "status": "running"}
@@ -162,8 +191,15 @@ async def trigger_mix(project_id: str, background_tasks: BackgroundTasks):
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # For now, auto-detect music file inside mix_project
-    background_tasks.add_task(mix_project, project_id=project_id)
+    path = get_project_path(project_id)
+    mark_node(path, "mix", "running")
+    
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: mix_project(project_id=project_id),
+        project_id,
+        "mix",
+    )
     
     return {"message": "Mixing started", "status": "running"}
 
@@ -175,7 +211,8 @@ async def trigger_validate(project_id: str):
         raise HTTPException(status_code=404, detail="Project not found")
     try:
         result = validate_project(project_id)
-        return result
+        # ValidationResult has a summary() method that returns a dict
+        return result.summary() if hasattr(result, 'summary') else result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -185,7 +222,17 @@ async def trigger_process(project_id: str, background_tasks: BackgroundTasks):
     """Run audio processing/normalization (Node 4)."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    background_tasks.add_task(batch_process_project, project_id)
+    
+    path = get_project_path(project_id)
+    mark_node(path, "process", "running")
+    
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: batch_process_project(project_id),
+        project_id,
+        "process",
+    )
+    
     return {"message": "Processing started", "status": "running"}
 
 
@@ -199,19 +246,24 @@ async def trigger_compose(
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
-    from audioformation.project import get_project_path
-
     project_path = get_project_path(project_id)
     output_dir = project_path / "05_MUSIC" / "generated"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"pad_{request.preset}.wav"
 
+    mark_node(project_path, "compose", "running")
+
     background_tasks.add_task(
-        generate_pad,
-        request.preset,
-        duration_sec=request.duration,
-        output_path=output_path,
+        _run_with_status,
+        lambda: generate_pad(
+            request.preset,
+            duration_sec=request.duration,
+            output_path=output_path,
+        ),
+        project_id,
+        "compose",
     )
+    
     return {
         "message": f"Composing '{request.preset}' pad ({request.duration}s)",
         "status": "running",
@@ -228,10 +280,17 @@ async def trigger_export(
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
-    if request.format == "m4b":
-        background_tasks.add_task(export_project_m4b, project_id)
-    else:
-        background_tasks.add_task(export_project_mp3, project_id)
+    path = get_project_path(project_id)
+    mark_node(path, "export", "running")
+
+    export_func = export_project_m4b if request.format == "m4b" else export_project_mp3
+
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: export_func(project_id),
+        project_id,
+        "export",
+    )
 
     return {
         "message": f"Export started ({request.format})",

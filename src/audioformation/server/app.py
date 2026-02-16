@@ -6,10 +6,19 @@ Exposes the AudioFormation pipeline via REST API.
 Port: 4001 (default).
 """
 
+import os
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available, continue without it
+    pass
 
 from audioformation import __version__
 from audioformation.server.routes import router

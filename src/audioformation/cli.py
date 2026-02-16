@@ -1421,6 +1421,7 @@ def serve(port: int, host: str) -> None:
     click.secho(f"🚀 Starting API server on http://localhost:{port}", fg="green", bold=True)
     click.echo(f"   Docs: http://localhost:{port}/docs")
     
+    # Ensure current environment variables (like ELEVENLABS_API_KEY) are preserved
     uvicorn.run("audioformation.server.app:app", host=host, port=port, reload=True)
 
 

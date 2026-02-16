@@ -8,6 +8,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added 2026-02-16 (Session 2)
+- **Pipeline Status Tracking Wrapper**: Comprehensive background task monitoring
+  - Async-aware `_run_with_status()` wrapper for all pipeline functions
+  - Detects and awaits coroutines from async functions (generate, mix, process, compose, export)
+  - Records node status as running → complete/failed with error messages
+  - Fixes root cause of polling timeouts (tasks were silently discarded)
+
+- **"Run All Pipeline" Button**: Full end-to-end orchestration in dashboard
+  - Single-click execution of entire audiobook pipeline (validate → generate → process → compose → mix → export)
+  - Real-time progress updates via button text (Validating... → Generating... → etc.)
+  - Validation failure details displayed to user
+  - 10-minute timeout per stage with graceful error handling
+  - Auto-refresh on completion
+
+- **Polling Timeout Protection**: Prevent infinite polling on silent failures
+  - 10-minute timeout on generation/mix/process/compose/export polling
+  - Clear user alert when operation times out
+  - Button state reset on timeout so UI isn't frozen
+
+- **Console Noise Suppression**: Silent handling of expected 404s
+  - `loadAudio()` refactored to silently try fallback paths (mixed → processed → raw)
+  - Only actual decode errors are shown to user
+  - Cleaner browser console during normal operation
+
+### Fixed 2026-02-16 (Session 2)
+- **Background Task Execution**: Generate/mix/process/compose/export functions now execute
+  - Made `_run_with_status()` async with `asyncio.iscoroutine()` detection
+  - FastAPI properly awaits all async pipeline functions
+  - Status updates write to pipeline-status.json after task completion
+
+- **Non-Serializable Validation Response**: `/validate` endpoint 500 error
+  - Called `ValidationResult.summary()` to convert object to dict
+  - FastAPI can now serialize response to JSON
+  - Run All Pipeline validates before continuing
+
+- **BackgroundTasks.add_task() Signature Error**: TypeError on background task submission
+  - Fixed positional vs keyword argument conflict
+  - Changed from `func=lambda...` to positional lambda argument
+  - All 5 background endpoints now work (generate, mix, process, compose, export)
+
+- **Validation Failure Handling**: JavaScript defensive JSON parsing
+  - `runAllPipeline()` handles both JSON and plain-text errors
+  - Checks `Content-Type` header before parsing
+  - Shows validation failures with detailed error messages
+  - Gracefully handles 500 responses
+
+- **Console Error Handling**: Better error logging in async tasks
+  - `_run_with_status()` logs exceptions with `logger.exception()`
+  - Error details saved to pipeline-status.json `error` field
+  - Visible in UI status popup for debugging
+
+### Changed 2026-02-16 (Session 2)
+- **routes.py**: Added `asyncio` import, made wrapper async-aware, fixed all 5 background task calls
+- **app.js**: Simplified `runAllPipeline()` with step array loop, added `waitForNode()` helper, improved error handling
+- **validation.py**: Already had `.summary()` method (no changes needed)
+- **style.css**: Added `.btn.success` green button styling for "Run All Pipeline"
+
+### Tests
+- All existing tests passing (371 tests)
+- Manual testing confirms: validation failures show in UI, background tasks execute and write status, polling timeouts gracefully
+
+## [0.3.0+] - 2026-02-16
+
 ### Added 2026-02-16
 - **Code Quality Infrastructure**: Comprehensive tooling for robust development
   - Ruff linting with automated fixes (31 issues resolved)

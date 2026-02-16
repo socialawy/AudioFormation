@@ -30,7 +30,7 @@ from audioformation.pipeline import (
 )
 from audioformation.engines.base import GenerationRequest
 from audioformation.engines.registry import registry
-from audioformation.utils.text import chunk_text, parse_chapter_segments
+from audioformation.utils.text import chunk_text, parse_chapter_segments, normalize_text_for_tts
 from audioformation.audio.processor import crossfade_stitch
 from audioformation.qc.scanner import scan_chunk, QCReport
 from audioformation.qc.report import save_report
@@ -334,8 +334,11 @@ async def _generate_chapter(
             last_error = ""
 
             for attempt in range(max_retries + 1):
+                # Normalize text before TTS (remove unicode artifacts, dashes, etc.)
+                clean_text = normalize_text_for_tts(chunk_text_item)
+                
                 request = GenerationRequest(
-                    text=chunk_text_item,
+                    text=clean_text,
                     output_path=chunk_path,
                     voice=seg_voice,
                     language=language,

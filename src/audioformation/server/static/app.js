@@ -61,18 +61,32 @@ const app = {
             if (p.pipeline_node === 'failed') statusClass = 'failed';
             if (p.pipeline_node === 'partial') statusClass = 'partial';
 
-            card.innerHTML = `
-                <h3>${this.escapeHtml(p.id)}</h3>
-                <div style="font-size: 0.85rem; color: #888; margin-bottom: 0.5rem;">
-                    Created: ${this.escapeHtml(date)}
-                </div>
-                <div class="meta">
-                    <span>${this.escapeHtml(p.chapters)} Chs • ${this.escapeHtml(p.languages.join(', '))}</span>
-                    <span class="status-badge ${statusClass}">${this.escapeHtml(p.pipeline_node)}</span>
-                </div>
-            `;
+            // Create card content securely using DOM manipulation
+            const titleEl = document.createElement('h3');
+            titleEl.textContent = p.id;
             
-            card.onclick = () => this.loadProject(p.id);
+            const metaEl = document.createElement('div');
+            metaEl.style.cssText = 'font-size: 0.85rem; color: #888; margin-bottom: 0.5rem;';
+            metaEl.textContent = `Created: ${date}`;
+            
+            const metaInfoEl = document.createElement('div');
+            metaInfoEl.className = 'meta';
+            
+            const chaptersEl = document.createElement('span');
+            chaptersEl.textContent = `${p.chapters} Chs • ${p.languages.join(', ')}`;
+            
+            const statusEl = document.createElement('span');
+            statusEl.className = `status-badge ${statusClass}`;
+            statusEl.textContent = p.pipeline_node;
+            
+            metaInfoEl.appendChild(chaptersEl);
+            metaInfoEl.appendChild(statusEl);
+            
+            card.appendChild(titleEl);
+            card.appendChild(metaEl);
+            card.appendChild(metaInfoEl);
+            
+            card.onclick = () => this.loadProject(this.escapeHtml(p.id));
             grid.appendChild(card);
         });
     },
@@ -318,7 +332,27 @@ const app = {
     pollStatus(chapterId) {
         if (this.pollInterval) clearInterval(this.pollInterval);
         
+        const MAX_POLL_SECONDS = 600; // 10 minutes max
+        const POLL_INTERVAL_MS = 2000;
+        let elapsed = 0;
+        
         this.pollInterval = setInterval(async () => {
+            elapsed += POLL_INTERVAL_MS / 1000;
+            
+            if (elapsed > MAX_POLL_SECONDS) {
+                clearInterval(this.pollInterval);
+                this.pollInterval = null;
+                
+                // Reset UI
+                const btn = document.getElementById('btn-generate-chap');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = "⚡ Generate Audio";
+                }
+                alert("Operation timed out. Check server logs.");
+                return;
+            }
+            
             try {
                 const res = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
                 if (!res.ok) return;
@@ -335,23 +369,49 @@ const app = {
                 }
                 
                 // Update Mix Badge (global)
-                if (status.nodes.mix) {
+                if (status.nodes && status.nodes.mix) {
                     this.updateMixBadge(status.nodes.mix.status);
                 }
                 
                 // Check Chapter Gen completion
                 if (chapterId) {
-                    const genNode = status.nodes.generate;
-                    if (genNode && genNode.chapters && genNode.chapters[chapterId]) {
-                        const chStatus = genNode.chapters[chapterId].status;
-                        if (chStatus === 'complete' || chStatus === 'failed') {
-                            // If user is polling specifically for chapter generation
-                            document.getElementById('btn-generate-chap').disabled = false;
-                            document.getElementById('btn-generate-chap').innerText = "⚡ Generate Audio";
-                            if (chStatus === 'failed') alert("Generation failed. Check logs.");
-                            
-                            // Only clear if not mixing
-                            if (!this.isMixinRunning()) clearInterval(this.pollInterval);
+                    const genNode = status.nodes && status.nodes.generate;
+                    if (genNode) {
+                        const nodeStatus = genNode.status;
+                        
+                        // Check node-level completion (covers the wrapper)
+                        if (nodeStatus === 'complete' || nodeStatus === 'failed') {
+                            const btn = document.getElementById('btn-generate-chap');
+                            if (btn) {
+                                btn.disabled = false;
+                                btn.innerText = "⚡ Generate Audio";
+                            }
+                            if (nodeStatus === 'failed') {
+                                const errMsg = genNode.error || "Unknown error";
+                                alert(`Generation failed: ${errMsg}`);
+                            }
+                            if (!this.isMixinRunning()) {
+                                clearInterval(this.pollInterval);
+                                this.pollInterval = null;
+                            }
+                            return;
+                        }
+                        
+                        // Check chapter-level completion (finer granularity)
+                        if (genNode.chapters && genNode.chapters[chapterId]) {
+                            const chStatus = genNode.chapters[chapterId].status;
+                            if (chStatus === 'complete' || chStatus === 'failed') {
+                                const btn = document.getElementById('btn-generate-chap');
+                                if (btn) {
+                                    btn.disabled = false;
+                                    btn.innerText = "⚡ Generate Audio";
+                                }
+                                if (chStatus === 'failed') alert("Generation failed for chapter.");
+                                if (!this.isMixinRunning()) {
+                                    clearInterval(this.pollInterval);
+                                    this.pollInterval = null;
+                                }
+                            }
                         }
                     }
                 }
@@ -359,7 +419,7 @@ const app = {
             } catch (e) {
                 console.error("Poll error", e);
             }
-        }, 2000);
+        }, POLL_INTERVAL_MS);
     },
     
     isMixinRunning() {
@@ -559,26 +619,58 @@ const app = {
                 
                 // Start polling
                 if (this.pollInterval) clearInterval(this.pollInterval);
+                
+                const MAX_POLL_SECONDS = 600; // 10 minutes max
+                const POLL_INTERVAL_MS = 2000;
+                let elapsed = 0;
+                
                 this.pollInterval = setInterval(async () => {
+                    elapsed += POLL_INTERVAL_MS / 1000;
+                    
+                    if (elapsed > MAX_POLL_SECONDS) {
+                        clearInterval(this.pollInterval);
+                        this.pollInterval = null;
+                        
+                        // Reset UI
+                        const mixBtn = document.getElementById('btn-mix');
+                        if (mixBtn) {
+                            mixBtn.disabled = false;
+                            mixBtn.innerText = "☊ Run Mix";
+                        }
+                        alert("Mix operation timed out. Check server logs.");
+                        return;
+                    }
+                    
                     const statRes = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
                     if (statRes.ok) {
                         const status = await statRes.json();
                         this.currentStatus = status;
-                        const mixStatus = status.nodes.mix.status;
+                        const mixStatus = status.nodes && status.nodes.mix && status.nodes.mix.status;
                         
-                        this.updateMixBadge(mixStatus);
-                        
-                        if (mixStatus === 'complete' || mixStatus === 'failed') {
-                            clearInterval(this.pollInterval);
-                            this.pollInterval = null;
-                            if (mixStatus === 'complete') {
-                                this.loadMixFiles(); // Refresh file list
-                            } else {
-                                alert("Mix failed.");
+                        if (mixStatus) {
+                            this.updateMixBadge(mixStatus);
+                            
+                            if (mixStatus === 'complete' || mixStatus === 'failed') {
+                                clearInterval(this.pollInterval);
+                                this.pollInterval = null;
+                                
+                                // Reset button
+                                const mixBtn = document.getElementById('btn-mix');
+                                if (mixBtn) {
+                                    mixBtn.disabled = false;
+                                    mixBtn.innerText = "☊ Run Mix";
+                                }
+                                
+                                if (mixStatus === 'complete') {
+                                    this.loadMixFiles(); // Refresh file list
+                                } else {
+                                    const errMsg = status.nodes.mix.error || "Unknown error";
+                                    alert(`Mix failed: ${errMsg}`);
+                                }
                             }
                         }
                     }
-                }, 2000);
+                }, POLL_INTERVAL_MS);
                 
             } else {
                 alert("Failed to start mix.");
@@ -590,6 +682,133 @@ const app = {
             btn.disabled = false;
             btn.innerText = "☊ Run Mix";
         }
+    },
+
+    async runAllPipeline() {
+        if (!this.currentProject) return;
+        
+        const btn = document.getElementById('btn-run-all');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        
+        const steps = [
+            { name: 'Validate', endpoint: 'validate', method: 'POST' },
+            { name: 'Generate', endpoint: 'generate', method: 'POST', body: { chapters: null, engine: null } },
+            { name: 'Process', endpoint: 'process', method: 'POST' },
+            { name: 'Compose', endpoint: 'compose', method: 'POST', body: { preset: 'contemplative', duration: 60 } },
+            { name: 'Mix', endpoint: 'mix', method: 'POST' },
+            { name: 'Export', endpoint: 'export', method: 'POST', body: { format: 'mp3', bitrate: 192 } },
+        ];
+        
+        try {
+            // Save config first
+            await this.saveProject();
+            
+            for (const step of steps) {
+                btn.innerText = `${step.name}...`;
+                
+                const options = {
+                    method: step.method,
+                    headers: { 'Content-Type': 'application/json' },
+                };
+                if (step.body) {
+                    options.body = JSON.stringify(step.body);
+                }
+                
+                const res = await fetch(
+                    `${API_BASE}/projects/${this.currentProject}/${step.endpoint}`,
+                    options
+                );
+                
+                // Handle non-JSON responses defensively
+                const contentType = res.headers.get('content-type') || '';
+                let data;
+                if (contentType.includes('application/json')) {
+                    data = await res.json();
+                } else {
+                    const text = await res.text();
+                    data = { detail: text };
+                }
+                
+                if (!res.ok) {
+                    const errMsg = data.detail || `${step.name} failed (HTTP ${res.status})`;
+                    alert(`Pipeline stopped at ${step.name}:\n${errMsg}`);
+                    return;
+                }
+                
+                // For validate: check if validation passed
+                if (step.endpoint === 'validate') {
+                    const passed = data.ok ?? data.passed ?? true;
+                    if (!passed) {
+                        const failures = data.details?.failures || data.failures || [];
+                        const msg = failures.length > 0 
+                            ? failures.map(f => `• ${f}`).join('\n')
+                            : 'Check project config.';
+                        alert(`Validation failed:\n${msg}`);
+                        return;
+                    }
+                }
+                
+                // For background tasks: wait for completion
+                if (data.status === 'running') {
+                    const completed = await this.waitForNode(step.endpoint);
+                    if (!completed) {
+                        alert(`${step.name} failed or timed out. Check server logs.`);
+                        return;
+                    }
+                }
+            }
+            
+            alert("✅ Full pipeline completed successfully!");
+            await this.loadProject(this.currentProject);
+            
+        } catch (e) {
+            alert(`❌ Pipeline error: ${e.message}`);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    },
+
+    async waitForNode(endpoint) {
+        // Map endpoint to pipeline node name
+        const nodeMap = {
+            'generate': 'generate',
+            'process': 'process',
+            'compose': 'compose',
+            'mix': 'mix',
+            'export': 'export',
+        };
+        const nodeName = nodeMap[endpoint] || endpoint;
+        
+        const MAX_WAIT_MS = 600000; // 10 minutes
+        const POLL_MS = 2000;
+        let elapsed = 0;
+        
+        while (elapsed < MAX_WAIT_MS) {
+            await new Promise(r => setTimeout(r, POLL_MS));
+            elapsed += POLL_MS;
+            
+            try {
+                const res = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
+                if (!res.ok) continue;
+                
+                const status = await res.json();
+                this.currentStatus = status;
+                
+                const nodeStatus = status.nodes?.[nodeName]?.status;
+                if (nodeStatus === 'complete') return true;
+                if (nodeStatus === 'failed') {
+                    const error = status.nodes?.[nodeName]?.error || 'Unknown error';
+                    console.error(`Node ${nodeName} failed:`, error);
+                    return false;
+                }
+            } catch (e) {
+                console.error('Poll error:', e);
+            }
+        }
+        
+        return false; // Timeout
     },
 
     initWaveSurfer() {
@@ -658,92 +877,142 @@ const app = {
     },
 
     async loadAudio(chapterInfo) {
-        // Paths: mix checks render first, then processed (fallback), then raw
-        // But mix view should prioritize MIXED content if available (in 06_MIX/renders)
-        // Actually, the original logic prioritized processed.
-        // Let's improve priority: Mix Render -> Processed -> Raw
+        const paths = [
+            { url: `/projects/${this.currentProject}/06_MIX/renders/${chapterInfo.id}.wav`, type: "Mixed (Final)" },
+            { url: `/projects/${this.currentProject}/03_GENERATED/processed/${chapterInfo.id}.wav`, type: "Processed (Normalized)" },
+            { url: `/projects/${this.currentProject}/03_GENERATED/raw/${chapterInfo.id}.wav`, type: "Raw (Unprocessed)" },
+        ];
+
+        // Create track info securely
+        const trackInfoEl = document.getElementById('track-info');
+        trackInfoEl.innerHTML = ''; // Clear existing content
         
-        const mixRenderUrl = `/projects/${this.currentProject}/06_MIX/renders/${chapterInfo.id}.wav`;
-        const processedUrl = `/projects/${this.currentProject}/03_GENERATED/processed/${chapterInfo.id}.wav`;
-        const rawUrl = `/projects/${this.currentProject}/03_GENERATED/raw/${chapterInfo.id}.wav`;
+        const titleEl = document.createElement('h3');
+        titleEl.textContent = `${chapterInfo.title} (${chapterInfo.id})`;
+        
+        const statusEl = document.createElement('p');
+        statusEl.textContent = 'Checking audio availability...';
+        
+        trackInfoEl.appendChild(titleEl);
+        trackInfoEl.appendChild(statusEl);
 
         let targetUrl = null;
         let type = "";
 
-        document.getElementById('track-info').innerHTML = `
-            <h3>${chapterInfo.title} (${chapterInfo.id})</h3>
-            <p>Checking audio availability...</p>
-        `;
-
-        try {
-            // Check Mix Render
-            const mRes = await fetch(mixRenderUrl, { method: 'HEAD' });
-            if (mRes.ok) {
-                targetUrl = mixRenderUrl;
-                type = "Mixed (Final)";
-            } else {
-                // Check processed
-                const pRes = await fetch(processedUrl, { method: 'HEAD' });
-                if (pRes.ok) {
-                    targetUrl = processedUrl;
-                    type = "Processed (Normalized)";
-                } else {
-                    // Check raw fallback
-                    const rRes = await fetch(rawUrl, { method: 'HEAD' });
-                    if (rRes.ok) {
-                        targetUrl = rawUrl;
-                        type = "Raw (Unprocessed)";
-                    }
+        for (const path of paths) {
+            try {
+                const res = await fetch(path.url, { method: 'HEAD' });
+                if (res.ok) {
+                    targetUrl = path.url;
+                    type = path.type;
+                    break;
                 }
+                // 404 is expected — just continue to next path
+            } catch (e) {
+                // Network error — continue to next path
             }
-        } catch (e) {
-            console.error("Error checking files:", e);
         }
 
         if (!targetUrl) {
-             document.getElementById('track-info').innerHTML = `
-                <h3 style="color:var(--danger)">Audio Not Found</h3>
-                <p>Could not find audio for <strong>${chapterInfo.id}</strong>.</p>
-                <div style="background:var(--bg-card); padding:1rem; border-radius:4px; margin-top:1rem;">
-                    <p style="margin-top:0">Checked locations:</p>
-                    <ul style="margin-bottom:0">
-                        <li><code>renders/${chapterInfo.id}.wav</code></li>
-                        <li><code>processed/${chapterInfo.id}.wav</code></li>
-                        <li><code>raw/${chapterInfo.id}.wav</code></li>
-                    </ul>
-                </div>
-                <p style="margin-top:1rem; color:var(--text-secondary);">
-                    Use the <strong>Editor</strong> to generate audio, then <strong>Mix</strong>.
-                </p>
-            `;
+            // Create error message securely
+            const trackInfoEl = document.getElementById('track-info');
+            trackInfoEl.innerHTML = ''; // Clear existing content
+            
+            const errorTitleEl = document.createElement('h3');
+            errorTitleEl.style.cssText = 'color:var(--danger)';
+            errorTitleEl.textContent = 'Audio Not Found';
+            
+            const errorMsgEl = document.createElement('p');
+            errorMsgEl.innerHTML = `No audio found for <strong>${this.escapeHtml(chapterInfo.id)}</strong>.`;
+            
+            const checkedDiv = document.createElement('div');
+            checkedDiv.style.cssText = 'background:var(--bg-card); padding:1rem; border-radius:4px; margin-top:1rem;';
+            
+            const checkedTitleEl = document.createElement('p');
+            checkedTitleEl.style.cssText = 'margin-top:0';
+            checkedTitleEl.textContent = 'Checked:';
+            
+            const checkedListEl = document.createElement('ul');
+            checkedListEl.style.cssText = 'margin-bottom:0';
+            
+            paths.forEach(p => {
+                const liEl = document.createElement('li');
+                const codeEl = document.createElement('code');
+                codeEl.textContent = p.url;
+                liEl.appendChild(codeEl);
+                checkedListEl.appendChild(liEl);
+            });
+            
+            const instructionEl = document.createElement('p');
+            instructionEl.style.cssText = 'margin-top:1rem; color:var(--text-secondary);';
+            instructionEl.innerHTML = 'Generate audio in the <strong>Editor</strong>, then return here.';
+            
+            checkedDiv.appendChild(checkedTitleEl);
+            checkedDiv.appendChild(checkedListEl);
+            
+            trackInfoEl.appendChild(errorTitleEl);
+            trackInfoEl.appendChild(errorMsgEl);
+            trackInfoEl.appendChild(checkedDiv);
+            trackInfoEl.appendChild(instructionEl);
+            
             return;
         }
 
-        document.getElementById('track-info').innerHTML = `
-            <h3>${this.escapeHtml(chapterInfo.title)} (${this.escapeHtml(chapterInfo.id)})</h3>
-            <p>Loading ${this.escapeHtml(type)}...</p>
-        `;
+        // Load into wavesurfer - create loading message securely
+        trackInfoEl.innerHTML = ''; // Clear existing content (reusing variable)
+        
+        const loadingTitleEl = document.createElement('h3');
+        loadingTitleEl.textContent = `${chapterInfo.title} (${chapterInfo.id})`;
+        
+        const loadingStatusEl = document.createElement('p');
+        loadingStatusEl.textContent = `Loading ${type}...`;
+        
+        trackInfoEl.appendChild(loadingTitleEl);
+        trackInfoEl.appendChild(loadingStatusEl);
 
         try {
             await this.wavesurfer.load(targetUrl);
             
-            let badgeClass = 'partial';
-            if (type.startsWith('Mixed')) badgeClass = 'complete';
+            let badgeClass = type.startsWith('Mixed') ? 'complete' : 'partial';
             
-            document.getElementById('track-info').innerHTML = `
-                <h3>${this.escapeHtml(chapterInfo.title)} (${this.escapeHtml(chapterInfo.id)})</h3>
-                <div style="margin-top:0.5rem; margin-bottom:1rem;">
-                    <span class="status-badge ${badgeClass}">${this.escapeHtml(type)}</span>
-                </div>
-                <p>Duration: ${this.escapeHtml(this.formatTime(this.wavesurfer.getDuration()))}</p>
-                <p><small style="opacity:0.6">${this.escapeHtml(targetUrl)}</small></p>
-            `;
+            // Create success message securely
+            trackInfoEl.innerHTML = ''; // Clear existing content
+            
+            const successTitleEl = document.createElement('h3');
+            successTitleEl.textContent = `${chapterInfo.title} (${chapterInfo.id})`;
+            
+            const badgeDivEl = document.createElement('div');
+            badgeDivEl.style.cssText = 'margin-top:0.5rem; margin-bottom:1rem;';
+            
+            const badgeSpanEl = document.createElement('span');
+            badgeSpanEl.className = `status-badge ${badgeClass}`;
+            badgeSpanEl.textContent = type;
+            
+            const durationEl = document.createElement('p');
+            durationEl.textContent = `Duration: ${this.formatTime(this.wavesurfer.getDuration())}`;
+            
+            badgeDivEl.appendChild(badgeSpanEl);
+            
+            trackInfoEl.appendChild(successTitleEl);
+            trackInfoEl.appendChild(badgeDivEl);
+            trackInfoEl.appendChild(durationEl);
         } catch (e) {
-             document.getElementById('track-info').innerHTML = `
-                <h3 style="color:var(--danger)">Load Error</h3>
-                <p>Found file but failed to decode.</p>
-                <p><code>${this.escapeHtml(e.message)}</code></p>
-            `;
+            // Create error message securely
+            trackInfoEl.innerHTML = ''; // Clear existing content
+            
+            const errorTitleEl = document.createElement('h3');
+            errorTitleEl.style.cssText = 'color:var(--danger)';
+            errorTitleEl.textContent = 'Load Error';
+            
+            const errorMsgEl = document.createElement('p');
+            errorMsgEl.textContent = 'Found file but failed to decode: ';
+            
+            const codeEl = document.createElement('code');
+            codeEl.textContent = e.message || 'Unknown error';
+            errorMsgEl.appendChild(codeEl);
+            
+            trackInfoEl.appendChild(errorTitleEl);
+            trackInfoEl.appendChild(errorMsgEl);
         }
     },
 

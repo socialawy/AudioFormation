@@ -6,6 +6,7 @@ Supports `--from <node>` resumption by checking pipeline-status.json.
 """
 
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,8 @@ from audioformation.project import (
     save_pipeline_status,
 )
 
+# Configure pipeline logging
+pipeline_logger = logging.getLogger("audioformation.pipeline")
 
 class PipelineError(Exception):
     """Raised when a pipeline gate fails."""
@@ -51,11 +54,23 @@ def update_node_status(
 
     pipeline = load_pipeline_status(project_id)
     node_data = pipeline["nodes"].get(node, {})
+    old_status = node_data.get("status", "pending")
     node_data["status"] = status
     node_data["timestamp"] = datetime.now(timezone.utc).isoformat()
     node_data.update(extra)
     pipeline["nodes"][node] = node_data
     save_pipeline_status(project_id, pipeline)
+    
+    # Enhanced logging
+    log_msg = f"Node {node} status: {old_status} → {status}"
+    if extra:
+        log_msg += f" (extra: {extra})"
+    pipeline_logger.info(f"[{project_id}] {log_msg}")
+    
+    if status == "failed":
+        pipeline_logger.error(f"[{project_id}] Node {node} failed: {extra.get('error', 'Unknown error')}")
+    elif status == "complete":
+        pipeline_logger.info(f"[{project_id}] Node {node} completed successfully")
 
 
 def update_chapter_status(
