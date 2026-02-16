@@ -85,3 +85,12 @@ The core pipeline is now accessible via both CLI and Web Dashboard.
 1.  **Dashboard Export Tab:** Allow users to trigger M4B/MP3 export and download files.
 2.  **FXForge UI:** Add SFX generation tools to the dashboard.
 3.  **Real-time Progress:** Replace status polling with WebSockets for smoother UI updates.
+4.  **Exception Handling:** Add granular exception handling for ffmpeg in processor.py.
+5.  **Type Checking:** Add mypy / type checking to CI.
+6.  **Dockerizing:** Dockerize for deployment.
+
+| Suggestion | Reality | Priority |
+|------------|----------|----------|
+| Granular exception handling for ffmpeg in processor.py | Fair point. batch_process_project likely wraps ffmpeg calls without distinguishing transient failures from config errors | Low — not blocking, but worth a retry wrapper eventually |
+| mypy / type checking | You use type hints everywhere but don't enforce them. Adding mypy --strict to CI would catch real bugs | Medium — good for v0.4 |
+| Dockerizing for deployment | Legitimate for anyone else running this. XTTS + CUDA in Docker is well-documented | Low — solo dev, not needed now |
