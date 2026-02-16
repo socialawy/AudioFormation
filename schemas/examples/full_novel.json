@@ -1,0 +1,150 @@
+{
+  "id": "DESERT_WINDS_2026",
+  "version": "1.0",
+  "created": "2026-02-15T12:00:00Z",
+  "languages": ["ar", "en"],
+
+  "chapters": [
+    {
+      "id": "ch01",
+      "title": "المقدمة",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ch01.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "quiet contemplation",
+        "pace": "slow",
+        "emotion": "wonder"
+      }
+    },
+    {
+      "id": "ch02",
+      "title": "The Meeting",
+      "language": "en",
+      "source": "01_TEXT/chapters/ch02.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ch03",
+      "title": "المواجهة",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ch03.txt",
+      "mode": "multi",
+      "default_character": "narrator",
+      "direction": {
+        "energy": "building tension",
+        "pace": "fast",
+        "emotion": "confrontation"
+      }
+    }
+  ],
+
+  "characters": {
+    "narrator": {
+      "name": "الراوي",
+      "engine": "edge",
+      "voice": "ar-SA-HamedNeural",
+      "persona": "Calm authority, philosophical depth",
+      "dialect": "msa",
+      "reference_audio": null
+    },
+    "hero": {
+      "name": "البطل",
+      "engine": "xtts",
+      "voice": null,
+      "persona": "Young, determined, searching",
+      "dialect": "eg",
+      "reference_audio": "02_VOICES/references/hero.wav"
+    },
+    "villain": {
+      "name": "الخصم",
+      "engine": "elevenlabs",
+      "voice": "pNInz6obpgDQGcFmaJgB",
+      "persona": "Cold, calculating, older",
+      "dialect": "sa",
+      "reference_audio": null
+    },
+    "guide": {
+      "name": "The Guide",
+      "engine": "edge",
+      "voice": "en-US-GuyNeural",
+      "persona": "Wise, measured, English-speaking mentor",
+      "reference_audio": null
+    }
+  },
+
+  "generation": {
+    "chunk_max_chars": 200,
+    "chunk_strategy": "breath_group",
+    "crossfade_ms": 120,
+    "crossfade_overrides": {
+      "edge": 120,
+      "xtts": 80,
+      "gtts": 150
+    },
+    "crossfade_min_ms": 50,
+    "leading_silence_ms": 100,
+    "max_retries_per_chunk": 3,
+    "fail_threshold_percent": 5,
+    "fallback_scope": "chapter",
+    "fallback_chain": ["edge", "gtts"],
+    "xtts_temperature": 0.7,
+    "xtts_repetition_penalty": 5.0,
+    "xtts_vram_management": "empty_cache_per_chapter",
+    "edge_tts_rate_limit_ms": 200,
+    "edge_tts_concurrency": 4,
+    "edge_tts_ssml": true
+  },
+
+  "qc": {
+    "snr_method": "vad_noise_floor",
+    "snr_min_db": 20,
+    "max_duration_deviation_percent": 30,
+    "clipping_threshold_dbfs": -0.5,
+    "lufs_deviation_max": 3,
+    "pitch_jump_max_semitones": 12,
+    "boundary_artifact_check": true
+  },
+
+  "mix": {
+    "master_volume": 0.9,
+    "target_lufs": -16,
+    "true_peak_limit_dbtp": -1.0,
+    "gap_between_chapters_sec": 2.0,
+    "ducking": {
+      "method": "vad",
+      "vad_model": "silero-vad",
+      "vad_threshold": 0.5,
+      "vad_threshold_ar": 0.45,
+      "look_ahead_ms": 200,
+      "attack_ms": 100,
+      "release_ms": 500,
+      "attenuation_db": -12,
+      "frequency_aware": false
+    }
+  },
+
+  "export": {
+    "formats": ["mp3", "m4b"],
+    "mp3_bitrate": 192,
+    "m4b_aac_bitrate": 128,
+    "include_cover_art": true,
+    "cover_art": "00_CONFIG/cover.jpg",
+    "chapter_transition": "silence",
+    "chapter_transition_file": null,
+    "metadata": {
+      "author": "Ahmed Al-Rashid",
+      "narrator": "الراوي",
+      "publisher": "AudioFormation Press",
+      "year": 2026,
+      "description": "A bilingual novel spanning Cairo and London."
+    }
+  }
+}

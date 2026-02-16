@@ -481,18 +481,18 @@ VideoFormation API:        localhost:3001
 
 ### Node Summary Table
 
-| Node | Status | Description |
-|---|---|---|
+| Node | Name | Status | Description |
+|---|---|---|---|
 | 0 | Bootstrap | ✅ BUILT | Create project structure, detect hardware, write hardware.json |
 | 1 | Ingest | ✅ BUILT | Import text files, assign languages, validate encoding |
 | 2 | Validate | ✅ BUILT | Check text, characters, engines, Arabic preprocessing |
 | 3 | Generate | ✅ BUILT | TTS generation with chunking, crossfade, per-file LUFS measurement |
 | 3.5 | QC Scan | ✅ BUILT | Per-chunk quality check (SNR, pitch, duration, clipping, LUFS) |
 | 4 | Process | ✅ BUILT | Batch normalization (ffmpeg loudnorm), silence trimming |
-| 5 | Compose | ✅ BUILT | Optional: generate ambient pads with `compose` CLI |
+| 5 | Compose | ✅ BUILT | Generate ambient pads with mood presets |
 | 6 | Mix | ✅ BUILT | Multi-track layering, VAD ducking, chapter assembly |
-| 7 | QC Final | ✅ BUILT | Final mix validation (LUFS, true-peak, gaps, clipping) |
-| 8 | Export | ✅ BUILT | Render MP3/WAV, embed metadata, generate manifest + checksums |
+| 7 | QC Final | ✅ BUILT | Final mix validation (LUFS ±1, true-peak, clipping) |
+| 8 | Export | ✅ BUILT | MP3/WAV/M4B, metadata, manifest + SHA256 checksums |
 
 ## Tech Stack
 ```text
@@ -521,12 +521,10 @@ VideoFormation API:        localhost:3001
 ## Dependency Install (Reference)
 
 ```bash
-pip install click fastapi uvicorn pydub edge-tts coqui-tts httpx
+pip install click fastapi uvicorn pydub edge-tts coqui-tts httpx mishkal
 pip install numpy soundfile pyloudnorm silero-vad mutagen midiutil
 pip install pytest httpx[test]
 # System: ffmpeg must be on PATH
-# Added mishkal (Arabic diacritics)
-pip install click fastapi uvicorn pydub edge-tts coqui-tts httpx mishkal
 ```
 
 ## Version Pinning Strategy
@@ -1003,7 +1001,7 @@ Schema supports both now. Not using frequency-aware ducking by default.
 ## Implementation Phases
 
 ### Phase 1: Foundation + First Audio Output 
-Status:  - All deliverables implemented, 320/320 tests passing
+Status:  - All deliverables implemented, 218/218 tests passing (at Phase 1 completion)
 
 ├── Project scaffolding (CLI: new, list, status)
 ├── project.json schema + validation (jsonschema)
@@ -1019,11 +1017,10 @@ Status:  - All deliverables implemented, 320/320 tests passing
 ├── Test with Arabic text FIRST (harder case validates easier)
 ├── gTTS fallback engine integration
 ├── edge-tts v7 upgrade for DRM token fix
-├── Engine fallback chain (edge-tts → gTTS)
-└── Multi-speaker dialogue (per-segment character resolution)
+└── Engine fallback chain (edge-tts → gTTS)
 
 ### Phase 2: XTTS + Characters + Processing
-Status: **Completed**
+Status: **Completed** 
 Deliverable: Voice-cloned narration with consistent quality
 
 ├── ✅ XTTS v2 integration (coqui-tts, Idiap fork)
@@ -1034,12 +1031,13 @@ Deliverable: Voice-cloned narration with consistent quality
 ├── ✅ Crossfade stitching (Smart overrides: Edge 120ms, XTTS 80ms)
 ├── ✅ Engine fallback scope (Per-chapter logic implemented)
 ├── ✅ Arabic diacritics preprocessing (Mishkal integration)
+├── ✅ Multi-speaker dialogue (per-segment character resolution)
 ├── ✅ Ambient pad generator (Numpy synthesis, mood presets)
 ├── ✅ Batch normalization (ffmpeg loudnorm filter)
 └── ✅ Per-chunk retry logic on QC failure
 
 ### Phase 3: Mix + Export + Dashboard
-Status: **Completed**
+Status: **Completed** All deliverables implemented, 371/371 tests passing 
 Deliverable: Full audiobook with chapters, mixed and exported
 
 ├── ✅ Ambient pad generator (numpy synthesis, mood presets)
@@ -1080,83 +1078,91 @@ Dashboard tabs:
 audioformation/
 ├── README.md
 ├── ARCHITECTURE.md
+├── BUILD_LOG.md
 ├── CHANGELOG.md
+├── CONTRIBUTING.md
 ├── pyproject.toml
 │
 ├── src/audioformation/
-│ ├── main.py
-│ ├── cli.py
-│ ├── config.py
-│ ├── project.py
-│ ├── pipeline.py
-│ ├── validation.py
-│ │
-│ ├── engines/
-│ │ ├── base.py # Abstract engine interface
-│ │ ├── edge_tts.py # + SSML direction mapping
-│ │ ├── xtts.py # + chunking + VRAM management
-│ │ ├── cloud.py
-│ │ └── registry.py
-│ │
-│ ├── audio/
-│ │ ├── processor.py # Normalize, trim, LUFS
-│ │ ├── mixer.py # Multi-track + ducking
-│ │ ├── sfx.py # Procedural synthesis
-│ │ ├── composer.py # Ambient pad generator
-│ │ └── midi.py
-│ │
-│ ├── qc/
-│ │ ├── scanner.py # Per-chunk QC (Node 3.5)
-│ │ ├── final.py # Final mix QC (Node 7)
-│ │ └── report.py # qc_report.json generation
-│ │
-│ ├── export/
-│ │ ├── wav.py
-│ │ ├── mp3.py
-│ │ ├── m4b.py # + cover art validation
-│ │ └── metadata.py # ID3, chapters, mutagen
-│ │
-│ ├── server/
-│ │ ├── app.py
-│ │ ├── routes.py
-│ │ └── static/ # Dashboard HTML/JS/CSS
-│ │
-│ └── utils/
-│ ├── arabic.py # Diacritics, language detection, segmentation
-│ ├── text.py # Chunking, speaker tag parsing, splitting
-│ ├── hardware.py # GPU/VRAM detection + strategy recommendation
-│ └── security.py # Sanitization, path validation, key redaction
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── cli.py
+│   ├── config.py
+│   ├── project.py
+│   ├── pipeline.py
+│   ├── validation.py
+│   ├── ingest.py
+│   ├── generate.py
+│   ├── mix.py
+│   │
+│   ├── engines/
+│   │   ├── base.py            # Abstract engine interface
+│   │   ├── registry.py        # Engine discovery + fallback
+│   │   ├── edge_tts.py        # + SSML direction mapping
+│   │   ├── gtts_engine.py     # Emergency fallback
+│   │   ├── xtts.py            # Voice cloning + VRAM management
+│   │   ├── elevenlabs.py      # Cloud premium TTS
+│   │   └── cloud.py           # Generic cloud adapter
+│   │
+│   ├── audio/
+│   │   ├── processor.py       # Normalize, trim, LUFS, batch process
+│   │   ├── mixer.py           # Multi-track + VAD ducking
+│   │   ├── composer.py        # Ambient pad generator (5 presets)
+│   │   ├── sfx.py             # Procedural SFX (whoosh, impact, click, drone)
+│   │   └── synthesis.py       # Low-level oscillator/noise primitives
+│   │
+│   ├── qc/
+│   │   ├── scanner.py         # Per-chunk QC (Node 3.5)
+│   │   ├── final.py           # Final mix QC (Node 7)
+│   │   └── report.py          # qc_report.json generation
+│   │
+│   ├── export/
+│   │   ├── mp3.py             # MP3/WAV export
+│   │   ├── m4b.py             # M4B + ffmetadata + cover art
+│   │   └── metadata.py        # Manifest + SHA256 checksums
+│   │
+│   ├── server/
+│   │   ├── app.py             # FastAPI entry + static mounts
+│   │   ├── routes.py          # 13 REST endpoints
+│   │   └── static/            # Dashboard HTML/JS/CSS
+│   │
+│   └── utils/
+│       ├── arabic.py          # Diacritics, language detection, Mishkal
+│       ├── text.py            # Chunking, speaker tags, splitting
+│       ├── hardware.py        # GPU/VRAM detection + strategy
+│       └── security.py        # Sanitization, path validation
 │
-├── tests/
-│ ├── test_project.py
-│ ├── test_pipeline.py
-│ ├── test_engines.py
-│ ├── test_multispeaker.py # Multi-speaker parsing, generation, edge cases
-│ ├── test_arabic.py # Diacritics, mixed text, dialect matching
-│ ├── test_chunking.py # Breath-group, language boundary, crossfade
-│ ├── test_qc.py # SNR, clipping, pitch, boundary artifacts
-│ ├── test_mixer.py
-│ ├── test_ducking.py # VAD threshold, gain envelope, per-language
-│ ├── test_export.py # M4B, cover validation, checksums
-│ ├── test_security.py
-│ └── fixtures/
-│ ├── sample_ar.txt
-│ ├── sample_en.txt
-│ ├── sample_mixed.txt
-│ ├── sample_multispeaker.txt
-│ └── reference_voice.wav
+├── tests/                     # 371 tests, 24 test files
+│   ├── conftest.py
+│   ├── test_arabic.py
+│   ├── test_chunking.py
+│   ├── test_cli_cast.py
+│   ├── test_cli_compose.py
+│   ├── test_cli_mix.py
+│   ├── test_cli_preview.py
+│   ├── test_composer.py
+│   ├── test_engines.py
+│   ├── test_export.py
+│   ├── test_export_m4b.py
+│   ├── test_ingest.py
+│   ├── test_mix_unit.py
+│   ├── test_mixer.py
+│   ├── test_multispeaker.py
+│   ├── test_pipeline.py
+│   ├── test_processor.py
+│   ├── test_project.py
+│   ├── test_qc.py
+│   ├── test_qc_final.py
+│   ├── test_security.py
+│   ├── test_server.py
+│   ├── test_sfx.py
+│   ├── test_validation.py
+│   └── test_xtts.py
 │
 ├── schemas/
-│ ├── project.schema.json
-│ └── examples/
-│ ├── minimal.json
-│ └── full_novel.json
+│   └── project.schema.json
 │
 └── docs/
-├── engines.md
-├── arabic.md # Diacritics strategy, dialect guide
-├── pipeline.md
-└── api.md
 ```
 
 ### Future Engine Candidates (Monitor, Not Adopted Yet)

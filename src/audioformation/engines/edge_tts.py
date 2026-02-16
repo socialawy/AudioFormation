@@ -150,9 +150,16 @@ def _mp3_to_wav(mp3_path: Path, wav_path: Path) -> bool:
     try:
         from pydub import AudioSegment
 
+        # Check input file
+        if not mp3_path.exists() or mp3_path.stat().st_size == 0:
+            return False
+
+        # Load MP3 and convert to WAV
         audio = AudioSegment.from_mp3(str(mp3_path))
         audio.export(str(wav_path), format="wav")
+        
         return wav_path.exists() and wav_path.stat().st_size > 0
+            
     except Exception:
         return False
 
