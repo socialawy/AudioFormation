@@ -6,25 +6,40 @@
 **Date:** February 16, 2026  
 **Hardware Reference:** NVIDIA GTX 1650 Ti (4GB VRAM)
 
-**Phase 4:** Final Polish & Export UI
+**Phase 4:** Final Polish & Export UI (Feb 16, 2026)
 # Dashboard v2 Implementation Log
 
 Tracking progress against `docs/New-Dashboard.md`.
 
-| Phase | Scope | Status | Notes |
-|---|---|---|---|
-| **4a** | Export view + download links | ✅ Done | `/api/projects/{id}/files` + Export tab implemented. |
-| **4b** | QC dashboard view | ✅ Done | `/api/projects/{id}/qc` + QC tab showing reports. |
-| **4c** | Cast panel + engine/voice dropdowns | 🚧 In Progress | API endpoints ready. UI needs edit mode. |
-| **4d** | Direction dropdowns + engine settings | 🚧 In Progress | Chapter direction dropdowns added. Engine tab needs polish. |
-| **4e** | Pipeline stepper + hardware panel | ✅ Done | Visual stepper and hardware info added to Overview. |
-| **4f** | Mix controls (ducking params) | ⏳ Pending | Waveform view exists. Controls need wiring to config. |
 
-## Recent Updates
-- Implemented core Dashboard v2 layout (5 tabs).
-- Added `wavesurfer.js` integration for Mix view.
-- Added "Run All Pipeline" orchestrator.
-- Wired up Hardware detection display.
+- **Export View (4a)**: Complete. Format selection, metadata, and file downloads are functional.
+- **QC Dashboard (4b)**: Basic implementation complete (list view).
+- **Cast Panel (4c)**: Complete. Character editing, engine selection, and dynamic voice lists. Added file upload for XTTS reference audio and voice preview.
+- **Engine Settings (4d)**: Complete. Settings are mapped to project configuration.
+- **Pipeline Visualization (4e)**: Complete. Interactive stepper and hardware status.
+- **Mix Controls (4f)**: Complete. Added advanced mix configuration (Ducking, Music Selection, LUFS) to the Mix View. Added BGM upload.
+
+### Changes (Upload & Preview)
+1.  **API**:
+    - `POST /projects/{id}/upload`: Generic file upload for 'references' and 'music'.
+    - `POST /projects/{id}/preview`: Ad-hoc voice generation for character testing.
+2.  **UI**: 
+    - Added "Upload" and "Preview" buttons to Cast tab (for XTTS/ElevenLabs).
+    - Added "Upload BGM" button to Mix view.
+3.  **Logic**: 
+    - Implemented file handling and audio playback for previews.
+
+4.  **UI Styles**: Added collapsible components and action button groups.
+5.  **Editor**: 
+    - Added XTTS advanced configuration section.
+    - Added ElevenLabs placeholder section.
+    - Enhanced Chapter list with immediate feedback and controls.
+6.  **Logic**: 
+    - Wired XTTS parameters to `project.json` generation config.
+    - Added inline audio playback for generated chapters.
+
+### Next Steps
+- **Validation**: Perform full end-to-end test of the new dashboard flows.
 ---
 
 ## Recent Activity (Feb 16, 2026)

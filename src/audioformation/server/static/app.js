@@ -13,6 +13,8 @@ const app = {
     wavesurfer: null,
     pollInterval: null,
     availableEngines: [],
+    voiceCache: {}, // Cache voices by engine+lang
+    activeUploadCid: null, // Track character ID for ref upload
 
     init() {
         this.fetchProjects();
@@ -32,6 +34,23 @@ const app = {
         } catch (e) {
             console.error("Failed to fetch engines", e);
         }
+    },
+
+    async fetchVoices(engine, lang) {
+        const key = `${engine}:${lang}`;
+        if (this.voiceCache[key]) return this.voiceCache[key];
+
+        try {
+            const res = await fetch(`${API_BASE}/engines/${engine}/voices?lang=${lang || ''}`);
+            if (res.ok) {
+                const voices = await res.json();
+                this.voiceCache[key] = voices;
+                return voices;
+            }
+        } catch (e) {
+            console.error(`Failed to fetch voices for ${engine}`, e);
+        }
+        return [];
     },
 
     // ──────────────────────────────────────────────
@@ -229,40 +248,224 @@ const app = {
         });
     },
 
-    renderCast() {
+    async renderCast() {
         const list = document.getElementById('cast-list');
         list.innerHTML = '';
         const chars = this.currentData.characters || {};
+        const projectLangs = this.currentData.languages || ['ar'];
+        const primaryLang = projectLangs[0]; // Default for fetching voices
 
-        Object.keys(chars).forEach(cid => {
+        for (const cid of Object.keys(chars)) {
             const char = chars[cid];
             const el = document.createElement('div');
             el.className = 'cast-item';
             
+            // Build Engine Options
+            let engineOpts = '';
+            this.availableEngines.forEach(e => {
+                const selected = e.id === char.engine ? 'selected' : '';
+                engineOpts += `<option value="${e.id}" ${selected}>${e.name}</option>`;
+            });
+
+            // Fetch voices for current engine selection
+            const voices = await this.fetchVoices(char.engine, primaryLang);
+            let voiceOpts = '<option value="">(Select Voice)</option>';
+            
+            // If XTTS, voices list might be empty or locales. 
+            // For Edge/ElevenLabs/gTTS we have lists.
+            voices.forEach(v => {
+                const selected = (v.id === char.voice) ? 'selected' : '';
+                voiceOpts += `<option value="${v.id}" ${selected}>${v.name} (${v.gender})</option>`;
+            });
+
+            // If current voice isn't in list (e.g. from different language), add it
+            if (char.voice && !voices.find(v => v.id === char.voice)) {
+                voiceOpts += `<option value="${char.voice}" selected>${char.voice} (Current)</option>`;
+            }
+
+            // Reference Upload Section (XTTS/ElevenLabs cloning)
+            let referenceHtml = '';
+            if (char.engine === 'xtts' || char.engine === 'elevenlabs') {
+                referenceHtml = `
+                    <div class="form-group" style="flex:2;">
+                        <label>Reference Audio (Cloning)</label>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <input type="text" value="${this.escapeHtml(char.reference_audio || '')}" readonly style="flex:1; opacity:0.7;">
+                            <button class="btn small" onclick="app.triggerRefUpload('${cid}')">Upload</button>
+                            <button class="btn small" onclick="app.previewVoice('${cid}')">Preview</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                referenceHtml = `
+                    <div class="form-group" style="flex:2;">
+                        <label>Persona</label>
+                        <input type="text" value="${this.escapeHtml(char.persona || '')}" 
+                               onchange="app.updateCharacter('${cid}', 'persona', this.value)">
+                    </div>
+                `;
+            }
+
             el.innerHTML = `
-                <h4>${char.name} (${cid})</h4>
-                <div class="cast-prop"><label>Engine:</label> <span>${char.engine}</span></div>
-                <div class="cast-prop"><label>Voice:</label> <span>${char.voice || char.reference_audio || 'None'}</span></div>
-                <div class="cast-prop"><label>Dialect:</label> <span>${char.dialect || 'msa'}</span></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                    <h4 style="margin:0; color:var(--accent);">${char.name} <span style="color:#666; font-weight:normal;">(${cid})</span></h4>
+                    <button class="btn small" style="opacity:0.6" onclick="app.removeCharacter('${cid}')">Remove</button>
+                </div>
+                <div class="form-row" style="margin-bottom:0.5rem;">
+                    <div class="form-group">
+                        <label>Engine</label>
+                        <select onchange="app.updateCharacter('${cid}', 'engine', this.value)">
+                            ${engineOpts}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Voice</label>
+                        <select onchange="app.updateCharacter('${cid}', 'voice', this.value)">
+                            ${voiceOpts}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row" style="margin-bottom:0;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Dialect</label>
+                        <select onchange="app.updateCharacter('${cid}', 'dialect', this.value)">
+                            <option value="msa" ${char.dialect === 'msa' ? 'selected' : ''}>MSA</option>
+                            <option value="eg" ${char.dialect === 'eg' ? 'selected' : ''}>Egyptian</option>
+                            <option value="sa" ${char.dialect === 'sa' ? 'selected' : ''}>Saudi</option>
+                            <option value="ae" ${char.dialect === 'ae' ? 'selected' : ''}>Emirati</option>
+                        </select>
+                    </div>
+                    ${referenceHtml}
+                </div>
             `;
             list.appendChild(el);
-        });
+        }
+    },
+    
+    async updateCharacter(cid, field, value) {
+        if (!this.currentData.characters[cid]) return;
+        
+        this.currentData.characters[cid][field] = value;
+        
+        // If engine changed, voice might be invalid, and we need to refresh list
+        if (field === 'engine') {
+            this.currentData.characters[cid].voice = ''; // Reset voice
+            await this.saveProject();
+            this.renderCast(); // Re-render to update voice list and toggle reference/persona
+        } else {
+            // For other fields, just save
+            await this.saveProject();
+        }
+    },
+
+    async removeCharacter(cid) {
+        if (!confirm(`Remove character ${cid}?`)) return;
+        delete this.currentData.characters[cid];
+        await this.saveProject();
+        this.renderCast();
     },
     
     async addCharacter() {
         const id = prompt("Character ID (e.g. hero):");
         if (!id) return;
+        // Check for duplicate
+        if (this.currentData.characters && this.currentData.characters[id]) {
+            alert("ID already exists.");
+            return;
+        }
+
         const name = prompt("Display Name:");
-        
         if (!this.currentData.characters) this.currentData.characters = {};
+        
         this.currentData.characters[id] = {
-            name: name,
-            engine: "edge", // default
-            voice: "ar-SA-HamedNeural",
+            name: name || id,
+            engine: "edge",
+            voice: "",
             dialect: "msa"
         };
         await this.saveProject();
         this.renderCast();
+    },
+
+    triggerRefUpload(cid) {
+        this.activeUploadCid = cid;
+        document.getElementById('file-upload-ref').click();
+    },
+
+    async handleRefUpload(input) {
+        if (!input.files.length || !this.activeUploadCid) return;
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/upload?category=references`, {
+                method: 'POST',
+                body: formData
+            });
+            if (res.ok) {
+                const data = await res.json();
+                this.updateCharacter(this.activeUploadCid, 'reference_audio', data.path);
+                alert("Reference uploaded!");
+                this.renderCast();
+            } else {
+                const err = await res.json();
+                alert(`Upload failed: ${err.detail}`);
+            }
+        } catch(e) { alert(e.message); }
+        input.value = ''; // Reset
+    },
+
+    async handleMusicUpload(input) {
+        if (!input.files.length) return;
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/upload?category=music`, {
+                method: 'POST',
+                body: formData
+            });
+            if (res.ok) {
+                alert("Background music uploaded!");
+                this.fetchMusicFiles();
+            } else {
+                const err = await res.json();
+                alert(`Upload failed: ${err.detail}`);
+            }
+        } catch(e) { alert(e.message); }
+        input.value = '';
+    },
+
+    async previewVoice(cid) {
+        const char = this.currentData.characters[cid];
+        const text = prompt("Enter text for preview:", "مرحبا بالعالم. هذا اختبار للصوت.");
+        if (!text) return;
+        
+        try {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/preview`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    text: text,
+                    engine: char.engine,
+                    voice: char.voice,
+                    reference_audio: char.reference_audio,
+                    language: 'ar' // Default to arabic for preview
+                })
+            });
+            
+            if (res.ok) {
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                audio.play();
+            } else {
+                const err = await res.json();
+                alert(`Preview failed: ${err.detail}`);
+            }
+        } catch(e) { alert(e.message); }
     },
 
     renderEngineSettings() {
@@ -274,6 +477,11 @@ const app = {
         document.getElementById('conf-silence').value = gen.leading_silence_ms || 100;
         document.getElementById('conf-fallback-scope').value = gen.fallback_scope || 'chapter';
 
+        // XTTS Settings
+        document.getElementById('conf-xtts-temp').value = gen.xtts_temperature || 0.7;
+        document.getElementById('conf-xtts-rep').value = gen.xtts_repetition_penalty || 5.0;
+        document.getElementById('conf-xtts-vram').value = gen.xtts_vram_management || 'empty_cache_per_chapter';
+
         const mix = this.currentData.mix || {};
         document.getElementById('conf-lufs').value = mix.target_lufs || -16.0;
         document.getElementById('conf-vol').value = mix.master_volume || 0.9;
@@ -282,6 +490,7 @@ const app = {
     renderForm() {
         // Chapters List
         const d = this.currentData;
+        const s = this.currentStatus;
         const chList = document.getElementById('chapter-list');
         chList.innerHTML = '';
         (d.chapters || []).forEach((ch, idx) => {
@@ -289,11 +498,30 @@ const app = {
             row.className = 'list-item';
             if (this.selectedChapterIndex === idx) row.classList.add('active');
             
+            // Determine status
+            let status = 'pending';
+            if (s && s.nodes && s.nodes.generate && s.nodes.generate.chapters) {
+                const chStat = s.nodes.generate.chapters[ch.id];
+                if (chStat) status = chStat.status;
+            }
+            
+            let statusBadge = `<span class="status-badge ${status}">${status}</span>`;
+            
+            // Actions
+            let actions = `
+                <div class="action-buttons">
+                    <button class="btn small" onclick="app.selectChapter(${idx})">Edit</button>
+                    <button class="btn small success" onclick="event.stopPropagation(); app.generateSingleChapter('${ch.id}')">⚡Gen</button>
+                    ${status === 'complete' ? `<button class="btn small" onclick="event.stopPropagation(); app.playChapter('${ch.id}')">▶ Play</button>` : ''}
+                </div>
+            `;
+
             row.innerHTML = `
                 <span>${this.escapeHtml(ch.id)}</span>
                 <span>${this.escapeHtml(ch.title || '')}</span>
                 <span>${this.escapeHtml(ch.language || '')}</span>
-                <span>${this.escapeHtml(ch.mode || 'single')}</span>
+                <span>${statusBadge}</span>
+                <span>${actions}</span>
             `;
             row.onclick = () => this.selectChapter(idx);
             chList.appendChild(row);
@@ -324,15 +552,8 @@ const app = {
         
         document.getElementById('chap-detail-title').innerText = `Edit: ${ch.id}`;
         
-        const badge = document.getElementById('chap-status-badge');
-        let status = 'pending';
-        if (this.currentStatus && this.currentStatus.nodes.generate.chapters) {
-            const chStat = this.currentStatus.nodes.generate.chapters[ch.id];
-            if (chStat) status = chStat.status;
-        }
-        badge.innerText = status.toUpperCase();
-        badge.className = `status-badge ${status === 'complete' ? 'complete' : status === 'running' ? 'partial' : status === 'failed' ? 'failed' : ''}`;
-        badge.style.display = 'inline-block';
+        // Remove badge from detail view as it's now in the list
+        // document.getElementById('chap-status-badge').style.display = 'none';
 
         document.getElementById('chap-title').value = ch.title || "";
         
@@ -395,6 +616,11 @@ const app = {
         gen.leading_silence_ms = parseInt(document.getElementById('conf-silence').value);
         gen.fallback_scope = document.getElementById('conf-fallback-scope').value;
 
+        // XTTS Settings
+        gen.xtts_temperature = parseFloat(document.getElementById('conf-xtts-temp').value);
+        gen.xtts_repetition_penalty = parseFloat(document.getElementById('conf-xtts-rep').value);
+        gen.xtts_vram_management = document.getElementById('conf-xtts-vram').value;
+
         if (!this.currentData.mix) this.currentData.mix = {};
         this.currentData.mix.target_lufs = parseFloat(document.getElementById('conf-lufs').value);
         this.currentData.mix.master_volume = parseFloat(document.getElementById('conf-vol').value);
@@ -450,7 +676,32 @@ const app = {
         document.getElementById('export-view').classList.remove('hidden');
         document.getElementById('nav-export').classList.add('active');
         
+        // Populate Metadata inputs
+        const meta = this.currentData.export?.metadata || {};
+        document.getElementById('meta-title').value = meta.title || this.currentProject;
+        document.getElementById('meta-author').value = meta.author || '';
+        document.getElementById('meta-narrator').value = meta.narrator || '';
+        document.getElementById('meta-year').value = meta.year || new Date().getFullYear();
+        
         this.fetchFiles();
+    },
+
+    onExportFormatChange() {
+        const fmt = document.getElementById('export-format').value;
+        const mp3Group = document.getElementById('group-mp3-bitrate');
+        const aacGroup = document.getElementById('group-aac-bitrate');
+        
+        if (fmt === 'm4b') {
+            mp3Group.classList.add('hidden');
+            aacGroup.classList.remove('hidden');
+        } else if (fmt === 'mp3') {
+            mp3Group.classList.remove('hidden');
+            aacGroup.classList.add('hidden');
+        } else {
+            // WAV
+            mp3Group.classList.add('hidden');
+            aacGroup.classList.add('hidden');
+        }
     },
 
     async fetchFiles() {
@@ -475,7 +726,7 @@ const app = {
         list.innerHTML = '';
         
         if (files.length === 0) {
-            list.innerHTML = '<div class="card">No files found. Run export.</div>';
+            list.innerHTML = '<div class="card">No exported files found. Click "Export Now".</div>';
             return;
         }
         
@@ -491,15 +742,34 @@ const app = {
                     <a href="/projects/${this.currentProject}/${f.path}" target="_blank" download>${f.name}</a>
                     <span class="file-size">${f.category} • ${date}</span>
                 </div>
-                <span class="file-size">${sizeMB} MB</span>
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <span class="file-size">${sizeMB} MB</span>
+                    <a href="/projects/${this.currentProject}/${f.path}" target="_blank" download class="btn small">⬇</a>
+                </div>
             `;
             list.appendChild(el);
         });
     },
 
     async triggerExport() {
+        // Save metadata first
+        if (!this.currentData.export) this.currentData.export = {};
+        this.currentData.export.metadata = {
+            title: document.getElementById('meta-title').value,
+            author: document.getElementById('meta-author').value,
+            narrator: document.getElementById('meta-narrator').value,
+            year: parseInt(document.getElementById('meta-year').value),
+        };
+        await this.saveProject();
+
         const fmt = document.getElementById('export-format').value;
-        const bitrate = parseInt(document.getElementById('export-bitrate').value);
+        let bitrate = 192;
+        
+        if (fmt === 'mp3') {
+            bitrate = parseInt(document.getElementById('export-bitrate').value);
+        } else if (fmt === 'm4b') {
+            bitrate = parseInt(document.getElementById('export-aac-bitrate').value);
+        }
         
         const statusPanel = document.getElementById('export-status-panel');
         const statusText = document.getElementById('export-status-text');
@@ -507,10 +777,9 @@ const app = {
         
         statusPanel.classList.remove('hidden');
         statusText.innerText = 'Running...';
-        statusMsg.innerText = `Exporting as ${fmt} at ${bitrate}kbps...`;
+        statusMsg.innerText = `Exporting as ${fmt.toUpperCase()} (${bitrate}kbps)...`;
         
         try {
-            await this.saveProject(); // Ensure config is saved
             const res = await fetch(`${API_BASE}/projects/${this.currentProject}/export`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -658,7 +927,60 @@ const app = {
         
         this.initWaveSurfer();
         this.loadMixFiles();
+        this.loadMixConfig();
+        this.fetchMusicFiles();
+        
         if (this.currentStatus?.nodes?.mix) this.updateMixBadge(this.currentStatus.nodes.mix.status);
+    },
+
+    loadMixConfig() {
+        const mix = this.currentData.mix || {};
+        const duck = mix.ducking || {};
+        
+        document.getElementById('mix-master-vol').value = mix.master_volume || 0.9;
+        document.getElementById('mix-target-lufs').value = mix.target_lufs || -16.0;
+        
+        document.getElementById('mix-duck-thresh').value = duck.vad_threshold || 0.5;
+        document.getElementById('mix-duck-atten').value = duck.attenuation_db || -12;
+        document.getElementById('mix-duck-lookahead').value = duck.look_ahead_ms || 200;
+        document.getElementById('mix-duck-attack').value = duck.attack_ms || 100;
+        document.getElementById('mix-duck-release').value = duck.release_ms || 500;
+    },
+    
+    updateMixConfigFromForm() {
+        if (!this.currentData.mix) this.currentData.mix = {};
+        if (!this.currentData.mix.ducking) this.currentData.mix.ducking = {};
+        
+        const mix = this.currentData.mix;
+        const duck = mix.ducking;
+        
+        mix.master_volume = parseFloat(document.getElementById('mix-master-vol').value);
+        mix.target_lufs = parseFloat(document.getElementById('mix-target-lufs').value);
+        
+        duck.vad_threshold = parseFloat(document.getElementById('mix-duck-thresh').value);
+        duck.attenuation_db = parseFloat(document.getElementById('mix-duck-atten').value);
+        duck.look_ahead_ms = parseInt(document.getElementById('mix-duck-lookahead').value);
+        duck.attack_ms = parseInt(document.getElementById('mix-duck-attack').value);
+        duck.release_ms = parseInt(document.getElementById('mix-duck-release').value);
+    },
+
+    async fetchMusicFiles() {
+        const select = document.getElementById('mix-music-file');
+        // Keep first two options (Auto, None)
+        select.length = 2; 
+        
+        try {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/files`);
+            if (res.ok) {
+                const files = await res.json();
+                files.filter(f => f.category === 'music').forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f.name; // Just the filename
+                    opt.text = f.name;
+                    select.add(opt);
+                });
+            }
+        } catch(e) { console.error(e); }
     },
 
     updateMixBadge(status) {
@@ -678,13 +1000,36 @@ const app = {
     },
 
     async runMix() {
+        this.updateMixConfigFromForm();
         await this.saveProject();
+        
         const btn = document.getElementById('btn-mix');
         btn.disabled = true;
         btn.innerText = "Starting...";
         
+        const musicVal = document.getElementById('mix-music-file').value;
+        // Construct API URL with music param if selected (or 'none' explicitly)
+        // If empty string (Auto), send nothing (null)
+        let url = `${API_BASE}/projects/${this.currentProject}/mix`;
+        if (musicVal === 'none') {
+            // Logic handled by backend? No, API takes music_file param.
+            // If we want NO music, we might need a way to signal that.
+            // Current backend: if music_file provided, uses it. If None, auto-detects.
+            // To force NO music, we might need to pass a special value or update backend logic.
+            // Hack for now: pass a non-existent file? No, that warns.
+            // Proper fix: Backend should support explicit "none".
+            // For now, let's assume 'none' string is not a file and handle gracefully or just omit.
+            // Actually, if value is 'none', let's not pass parameter, but that triggers auto-detect.
+            // Let's pass 'none' as query param and let backend fail gracefully to voice-only? 
+            // In mix.py: if music_file provided and not found, it falls back to voice-only with warning.
+            // So passing "FORCE_NO_MUSIC" works.
+            url += `?music=FORCE_NO_MUSIC`; 
+        } else if (musicVal) {
+            url += `?music=${encodeURIComponent(musicVal)}`;
+        }
+        
         try {
-            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/mix`, { method: 'POST' });
+            const res = await fetch(url, { method: 'POST' });
             if (res.ok) {
                 this.updateMixBadge('running');
                 this.pollMixStatus();
@@ -701,9 +1046,8 @@ const app = {
         this.pollInterval = setInterval(async () => {
             const res = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
             if (res.ok) {
-                const status = await res.json();
-                this.currentStatus = status;
-                const mixStatus = status.nodes?.mix?.status;
+                this.currentStatus = await res.json();
+                const mixStatus = this.currentStatus.nodes?.mix?.status;
                 if (mixStatus) {
                     this.updateMixBadge(mixStatus);
                     if (mixStatus === 'complete' || mixStatus === 'failed') {
@@ -903,6 +1247,47 @@ const app = {
             }
         } catch(e) { alert(e.message); btn.disabled = false; btn.innerText = "⚡ Generate Audio"; }
     },
+    
+    async generateSingleChapter(chapterId) {
+        if (!confirm(`Regenerate chapter ${chapterId}? This will overwrite existing audio.`)) return;
+        
+        try {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chapters: [chapterId] })
+            });
+            if (res.ok) {
+                alert(`Started generation for ${chapterId}`);
+                // Start polling to update UI
+                this.pollStatus(chapterId);
+            } else {
+                alert("Generation failed to start");
+            }
+        } catch(e) {
+            alert(e.message);
+        }
+    },
+    
+    toggleCollapse(el) {
+        el.classList.toggle('collapsed');
+    },
+    
+    playChapter(chapterId) {
+        // Try playing from Mix renders first, then raw
+        const audio = new Audio(`/projects/${this.currentProject}/06_MIX/renders/${chapterId}.wav`);
+        audio.onerror = () => {
+            // Fallback to processed
+            audio.src = `/projects/${this.currentProject}/03_GENERATED/processed/${chapterId}.wav`;
+            audio.onerror = () => {
+                // Fallback to raw
+                audio.src = `/projects/${this.currentProject}/03_GENERATED/raw/${chapterId}.wav`;
+                audio.play().catch(e => alert("Audio not found"));
+            };
+            audio.play();
+        };
+        audio.play();
+    },
 
     pollStatus(chapterId) {
         if (this.pollInterval) clearInterval(this.pollInterval);
@@ -910,10 +1295,16 @@ const app = {
             const res = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
             if (res.ok) {
                 this.currentStatus = await res.json();
-                // Update specific chapter status
-                if (this.currentData.chapters[this.selectedChapterIndex].id === chapterId) {
-                    this.populateChapterDetail(); // Updates badge
+                
+                // If editing specific chapter, update detail
+                if (this.selectedChapterIndex !== -1 && 
+                    this.currentData.chapters[this.selectedChapterIndex].id === chapterId) {
+                    this.populateChapterDetail(); 
                 }
+                
+                // Always refresh list to update badges
+                this.renderForm();
+                
                 const chStatus = this.currentStatus.nodes.generate.chapters?.[chapterId]?.status;
                 if (chStatus === 'complete' || chStatus === 'failed') {
                     clearInterval(this.pollInterval);

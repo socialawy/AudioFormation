@@ -14,11 +14,11 @@
       "checks": {
         "snr": {
           "status": "pass",
-          "snr_db": 21.8
+          "snr_db": 22.1
         },
         "clipping": {
           "status": "pass",
-          "peak_dbfs": -5.17
+          "peak_dbfs": -4.9
         },
         "lufs": {
           "status": "warn",

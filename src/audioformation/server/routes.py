@@ -12,6 +12,7 @@ import shutil
 import tempfile
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Any, List, Optional
 
@@ -25,6 +26,7 @@ from audioformation.project import (
     get_project_path,
 )
 from audioformation.utils.hardware import write_hardware_json
+from audioformation.utils.security import sanitize_filename
 from audioformation.pipeline import mark_node
 from audioformation.ingest import ingest_text
 from audioformation.generate import generate_project
@@ -36,6 +38,7 @@ from audioformation.export.mp3 import export_project_mp3
 from audioformation.export.m4b import export_project_m4b_auto
 from audioformation.qc.final import scan_final_mix
 from audioformation.engines.registry import registry
+from audioformation.engines.base import GenerationRequest
 
 router = APIRouter()
 logger = logging.getLogger("audioformation.api")
@@ -73,6 +76,13 @@ class ComposeRequest(BaseModel):
 class ExportRequest(BaseModel):
     format: str = "mp3"
     bitrate: int = 192
+
+class PreviewRequest(BaseModel):
+    text: str
+    engine: str
+    voice: Optional[str] = None
+    language: str = "en"
+    reference_audio: Optional[str] = None  # Relative path in project
 
 
 @router.get("/projects")
@@ -162,6 +172,105 @@ async def ingest_files(project_id: str, background_tasks: BackgroundTasks, files
     return {"message": "Ingest started", "status": "running"}
 
 
+@router.post("/projects/{project_id}/upload")
+async def upload_file(
+    project_id: str,
+    category: str,
+    file: UploadFile = File(...)
+):
+    """
+    Upload a file to a specific project category.
+    
+    Categories:
+    - 'references': Voice cloning references (02_VOICES/references)
+    - 'music': Background music (05_MUSIC/imported)
+    """
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    project_path = get_project_path(project_id)
+    
+    if category == "references":
+        target_dir = project_path / "02_VOICES" / "references"
+    elif category == "music":
+        target_dir = project_path / "05_MUSIC" / "generated" # Use generated for now to show up in list
+    else:
+        raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
+        
+    target_dir.mkdir(parents=True, exist_ok=True)
+    
+    safe_name = sanitize_filename(file.filename)
+    dest_path = target_dir / safe_name
+    
+    try:
+        with open(dest_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        # Return relative path for project.json
+        rel_path = str(dest_path.relative_to(project_path)).replace("\\", "/")
+        return {"path": rel_path, "filename": safe_name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/projects/{project_id}/preview")
+async def preview_voice(
+    project_id: str,
+    request: PreviewRequest
+):
+    """Generate a quick voice preview."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    project_path = get_project_path(project_id)
+    
+    try:
+        engine = registry.get(request.engine)
+    except KeyError:
+        raise HTTPException(status_code=400, detail=f"Engine '{request.engine}' not found")
+        
+    # Resolve reference audio if present
+    ref_path = None
+    if request.reference_audio:
+        ref_path = project_path / request.reference_audio
+        if not ref_path.exists():
+            raise HTTPException(status_code=400, detail=f"Reference audio not found: {request.reference_audio}")
+            
+    # Create temp file for output
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        output_path = Path(tmp.name)
+        
+    try:
+        gen_req = GenerationRequest(
+            text=request.text,
+            output_path=output_path,
+            voice=request.voice,
+            language=request.language,
+            reference_audio=ref_path
+        )
+        
+        result = await engine.generate(gen_req)
+        
+        if not result.success:
+            raise Exception(result.error)
+            
+        return FileResponse(
+            path=output_path, 
+            media_type="audio/wav", 
+            filename="preview.wav",
+            # Clean up temp file after sending
+            background=BackgroundTask(lambda: output_path.unlink(missing_ok=True))
+        )
+        
+    except Exception as e:
+        output_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Helper for background cleanup
+from starlette.background import BackgroundTask
+
+
 def _ingest_files_sync(project_id: str, tmp_path: Path) -> dict:
     """Synchronous ingest logic for background task."""
     try:
@@ -199,14 +308,29 @@ async def trigger_generation(
 
 
 @router.post("/projects/{project_id}/mix")
-async def trigger_mix(project_id: str, background_tasks: BackgroundTasks):
-    """Trigger mixing process in background."""
+async def trigger_mix(
+    project_id: str, 
+    background_tasks: BackgroundTasks,
+    music: Optional[str] = None
+):
+    """Trigger mixing process in background.
+    
+    Args:
+        music: Optional filename of music file to use (must exist in 05_MUSIC/generated).
+               If 'FORCE_NO_MUSIC', forces voice-only mix.
+               If None, auto-detects latest music.
+    """
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
     
+    # Handle the "FORCE_NO_MUSIC" hack gracefully
+    music_file = music
+    if music == "FORCE_NO_MUSIC":
+        music_file = "FORCE_NO_MUSIC" 
+
     background_tasks.add_task(
         _run_with_status,
-        lambda: mix_project(project_id=project_id),
+        lambda: mix_project(project_id=project_id, music_file=music_file),
         project_id,
         "mix",
     )
@@ -459,7 +583,46 @@ async def get_project_status(project_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── New Endpoints for Dashboard v2 ───────────────────────────
+@router.get("/projects/{project_id}/files")
+async def list_project_files(project_id: str):
+    """List exportable files in the project."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+        
+    project_path = get_project_path(project_id)
+    export_dir = project_path / "07_EXPORT"
+    music_dir = project_path / "05_MUSIC" / "generated"
+    
+    files = []
+    
+    def scan_dir(d: Path, category: str):
+        if d.exists():
+            for f in sorted(d.glob("*")):
+                if f.is_file() and not f.name.startswith("."):
+                    files.append({
+                        "path": str(f.relative_to(project_path)).replace("\\", "/"),
+                        "name": f.name,
+                        "category": category,
+                        "size": f.stat().st_size,
+                        "modified": f.stat().st_mtime
+                    })
+
+    scan_dir(export_dir / "audiobook", "audiobook")
+    scan_dir(export_dir / "chapters", "chapter")
+    scan_dir(music_dir, "music")
+    
+    manifest = export_dir / "manifest.json"
+    if manifest.exists():
+        files.append({
+            "path": str(manifest.relative_to(project_path)).replace("\\", "/"),
+            "name": "manifest.json",
+            "category": "metadata",
+            "size": manifest.stat().st_size,
+            "modified": manifest.stat().st_mtime
+        })
+        
+    return files
+
 
 @router.get("/engines")
 async def list_engines():
@@ -508,42 +671,3 @@ async def get_project_hardware(project_id: str):
         return json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return {}
-
-
-@router.get("/projects/{project_id}/files")
-async def list_project_files(project_id: str):
-    """List exportable files in the project."""
-    if not project_exists(project_id):
-        raise HTTPException(status_code=404, detail="Project not found")
-        
-    project_path = get_project_path(project_id)
-    export_dir = project_path / "07_EXPORT"
-    
-    files = []
-    
-    def scan_dir(d: Path, category: str):
-        if d.exists():
-            for f in sorted(d.glob("*")):
-                if f.is_file() and not f.name.startswith("."):
-                    files.append({
-                        "path": str(f.relative_to(project_path)).replace("\\", "/"),
-                        "name": f.name,
-                        "category": category,
-                        "size": f.stat().st_size,
-                        "modified": f.stat().st_mtime
-                    })
-
-    scan_dir(export_dir / "audiobook", "audiobook")
-    scan_dir(export_dir / "chapters", "chapter")
-    
-    manifest = export_dir / "manifest.json"
-    if manifest.exists():
-        files.append({
-            "path": str(manifest.relative_to(project_path)).replace("\\", "/"),
-            "name": "manifest.json",
-            "category": "metadata",
-            "size": manifest.stat().st_size,
-            "modified": manifest.stat().st_mtime
-        })
-        
-    return files

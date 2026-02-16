@@ -30,6 +30,10 @@
         </header>
 
         <main class="content">
+            <!-- Hidden file inputs -->
+            <input type="file" id="file-upload-ref" accept=".wav,.mp3" style="display:none" onchange="app.handleRefUpload(this)">
+            <input type="file" id="file-upload-music" accept=".wav,.mp3" style="display:none" onchange="app.handleMusicUpload(this)">
+
             <!-- Projects Grid View -->
             <div id="projects-view" class="view">
                 <div class="view-header">
@@ -144,6 +148,33 @@
                                 </div>
                             </div>
                             
+                            <!-- XTTS Advanced Settings -->
+                            <div class="collapsible collapsed" onclick="app.toggleCollapse(this)">
+                                <div class="collapsible-header">XTTS Configuration (Voice Cloning)</div>
+                                <div class="collapsible-body" onclick="event.stopPropagation()">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Temperature (Creativity)</label>
+                                            <input type="number" id="conf-xtts-temp" step="0.1" min="0.1" max="1.0">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Repetition Penalty</label>
+                                            <input type="number" id="conf-xtts-rep" step="0.5" min="1.0" max="10.0">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>VRAM Strategy</label>
+                                            <select id="conf-xtts-vram">
+                                                <option value="empty_cache_per_chapter">Empty Cache (Recommended)</option>
+                                                <option value="conservative">Conservative (Unload Model)</option>
+                                                <option value="reload_periodic">Periodic Reload</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <h3>Mix Settings</h3>
                             <div class="form-row">
                                 <div class="form-group">
@@ -168,8 +199,9 @@
                             <div class="list-header">
                                 <span>ID</span>
                                 <span>Title</span>
-                                <span>Language</span>
-                                <span>Mode</span>
+                                <span>Lang</span>
+                                <span>Status</span>
+                                <span>Actions</span>
                             </div>
                             <div id="chapter-list" class="list-group"></div>
 
@@ -178,9 +210,8 @@
                                 <div class="flex-row" style="justify-content:space-between; align-items:center; margin-bottom:1rem;">
                                     <div style="display:flex; gap:1rem; align-items:center;">
                                         <h3 id="chap-detail-title" style="margin:0">Edit Chapter</h3>
-                                        <span id="chap-status-badge" class="status-badge" style="display:none;">PENDING</span>
                                     </div>
-                                    <button id="btn-generate-chap" class="btn primary small" onclick="app.generateCurrentChapter()">⚡ Generate Audio</button>
+                                    <button class="btn" onclick="document.getElementById('chapter-detail').classList.add('hidden')">Close Editor</button>
                                 </div>
                                 
                                 <div class="form-row">
@@ -274,7 +305,6 @@
                             <button id="btn-mix" class="btn primary" onclick="app.runMix()">☊ Run Mix</button>
                             <span id="mix-status-badge" class="status-badge" style="display:none;">PENDING</span>
                             <div style="flex:1"></div>
-                            <span style="font-size:0.9rem; color:var(--text-secondary);">VAD Ducking: On</span>
                         </div>
 
                         <div id="waveform-container">
@@ -288,6 +318,58 @@
                             <div style="flex:1"></div>
                             <label>Zoom</label>
                             <input type="range" id="zoom-slider" min="10" max="200" value="50">
+                        </div>
+
+                        <!-- Mix Configuration Panel -->
+                        <div class="settings-panel" style="background:var(--bg-input); padding:1.5rem; border-radius:8px; border:1px solid var(--border); margin-bottom: 1.5rem;">
+                            <h3 style="margin-top:0">Mix Configuration</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Music Source</label>
+                                    <div style="display:flex; gap:0.5rem;">
+                                        <select id="mix-music-file" style="flex:1;">
+                                            <option value="">(Auto-detect latest)</option>
+                                            <option value="none">(No Music)</option>
+                                            <!-- Populated via JS -->
+                                        </select>
+                                        <button class="btn small" onclick="document.getElementById('file-upload-music').click()">Upload BGM</button>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Master Volume</label>
+                                    <input type="number" id="mix-master-vol" step="0.1" min="0" max="1" value="0.9">
+                                </div>
+                                <div class="form-group">
+                                    <label>Target LUFS</label>
+                                    <input type="number" id="mix-target-lufs" step="0.1" value="-16.0">
+                                </div>
+                            </div>
+                            
+                            <h4 style="margin-top:1rem; border-bottom:1px solid #444; padding-bottom:0.5rem; font-size:0.9rem; color:var(--text-secondary);">Ducking (VAD)</h4>
+                            <div class="form-row" style="margin-bottom:0.5rem;">
+                                <div class="form-group">
+                                    <label>Threshold</label>
+                                    <input type="number" id="mix-duck-thresh" step="0.05" min="0" max="1" value="0.5">
+                                </div>
+                                <div class="form-group">
+                                    <label>Attenuation (dB)</label>
+                                    <input type="number" id="mix-duck-atten" step="1" max="0" value="-12">
+                                </div>
+                                <div class="form-group">
+                                    <label>Look-ahead (ms)</label>
+                                    <input type="number" id="mix-duck-lookahead" step="10" value="200">
+                                </div>
+                            </div>
+                            <div class="form-row" style="margin-bottom:0;">
+                                <div class="form-group">
+                                    <label>Attack (ms)</label>
+                                    <input type="number" id="mix-duck-attack" step="10" value="100">
+                                </div>
+                                <div class="form-group">
+                                    <label>Release (ms)</label>
+                                    <input type="number" id="mix-duck-release" step="10" value="500">
+                                </div>
+                            </div>
                         </div>
 
                         <div class="info-panel" id="track-info">
@@ -312,13 +394,13 @@
                         <div class="form-row" style="align-items: flex-end;">
                             <div class="form-group">
                                 <label>Format</label>
-                                <select id="export-format">
+                                <select id="export-format" onchange="app.onExportFormatChange()">
                                     <option value="mp3">MP3 (Chapters + Full)</option>
                                     <option value="m4b">M4B (Audiobook)</option>
                                     <option value="wav">WAV (Master)</option>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="group-mp3-bitrate">
                                 <label>Bitrate</label>
                                 <select id="export-bitrate">
                                     <option value="128">128 kbps</option>
@@ -326,7 +408,40 @@
                                     <option value="320">320 kbps</option>
                                 </select>
                             </div>
+                             <div class="form-group hidden" id="group-aac-bitrate">
+                                <label>AAC Bitrate</label>
+                                <select id="export-aac-bitrate">
+                                    <option value="64">64 kbps</option>
+                                    <option value="128" selected>128 kbps</option>
+                                    <option value="192">192 kbps</option>
+                                </select>
+                            </div>
                             <button class="btn primary big" onclick="app.triggerExport()">📦 Export Now</button>
+                        </div>
+
+                        <!-- Metadata Section -->
+                        <div id="export-metadata-section" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                            <h3>Metadata</h3>
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 2;">
+                                    <label>Title</label>
+                                    <input type="text" id="meta-title">
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label>Author</label>
+                                    <input type="text" id="meta-author">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Narrator</label>
+                                    <input type="text" id="meta-narrator">
+                                </div>
+                                <div class="form-group">
+                                    <label>Year</label>
+                                    <input type="number" id="meta-year">
+                                </div>
+                            </div>
                         </div>
                         
                         <div id="export-status-panel" class="info-panel hidden" style="margin-top:2rem;">
@@ -334,7 +449,7 @@
                             <p id="export-status-msg"></p>
                         </div>
                         
-                        <h3 style="margin-top:2rem;">Download Files</h3>
+                        <h3 style="margin-top:2rem;">Files</h3>
                         <div id="export-file-list">
                             <div class="card loading">No exported files yet. Run export above.</div>
                         </div>

@@ -157,6 +157,7 @@ h3 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-primary); }
 
 .status-badge.complete { color: var(--accent); background: rgba(16, 185, 129, 0.1); }
 .status-badge.partial { color: var(--warning); background: rgba(245, 158, 11, 0.1); }
+.status-badge.running { color: var(--warning); background: rgba(245, 158, 11, 0.1); }
 .status-badge.failed { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
 
 .card.new-project {
@@ -288,19 +289,22 @@ input:focus, select:focus, textarea:focus {
 /* List Group (Chapters) */
 .list-header {
     display: grid;
-    grid-template-columns: 1fr 2fr 1fr 1fr;
+    grid-template-columns: 80px 2fr 60px 100px 1fr;
     padding: 0.5rem 1rem;
     color: var(--text-secondary);
     font-weight: 600;
     border-bottom: 1px solid var(--border);
+    gap: 1rem;
+    align-items: center;
 }
 
 .list-item {
     display: grid;
-    grid-template-columns: 1fr 2fr 1fr 1fr;
+    grid-template-columns: 80px 2fr 60px 100px 1fr;
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border);
-    cursor: pointer;
+    gap: 1rem;
+    align-items: center;
 }
 
 .list-item:hover {
@@ -313,27 +317,41 @@ input:focus, select:focus, textarea:focus {
     color: var(--accent);
 }
 
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
 /* Buttons */
 .btn {
     background: var(--bg-hover);
-    border: none;
+    border: 1px solid var(--border);
     color: var(--text-primary);
     padding: 0.5rem 1rem;
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.9rem;
-    transition: background 0.2s;
+    transition: all 0.2s;
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.btn:hover { background: #333; }
+.btn:hover { background: #333; border-color: #555; }
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
 .btn.primary {
     background: var(--accent);
+    border-color: var(--accent);
     color: #fff;
 }
 
-.btn.primary:hover { background: var(--accent-hover); }
+.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 
 .btn.success {
     background: #10b981;
@@ -343,8 +361,9 @@ input:focus, select:focus, textarea:focus {
 .btn.success:hover { background: #059669; }
 
 .btn.small {
-    padding: 0.3rem 0.8rem;
-    font-size: 0.85rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.8rem;
+    height: 28px;
 }
 
 .btn.big {
@@ -459,3 +478,45 @@ input:focus, select:focus, textarea:focus {
 .cast-item h4 { margin: 0 0 0.5rem 0; color: var(--accent); }
 .cast-prop { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; }
 .cast-prop label { color: var(--text-secondary); }
+
+/* Collapsible Sections */
+.collapsible {
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-input);
+    overflow: hidden;
+}
+
+.collapsible-header {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #333;
+    font-weight: 500;
+}
+
+.collapsible-header:hover {
+    background: #444;
+}
+
+.collapsible-body {
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.collapsible.collapsed .collapsible-body {
+    display: none;
+}
+
+.collapsible.collapsed .collapsible-header::after {
+    content: "▼";
+    font-size: 0.8rem;
+}
+
+.collapsible:not(.collapsed) .collapsible-header::after {
+    content: "▲";
+    font-size: 0.8rem;
+}
