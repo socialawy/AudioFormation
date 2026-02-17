@@ -1,6 +1,5 @@
 """Tests for AudioMixer, VAD ducking, and mix pipeline (Node 6)."""
 
-import sys
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 import pytest

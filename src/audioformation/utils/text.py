@@ -97,7 +97,6 @@ def normalize_text_for_tts(text: str) -> str:
     # Step 5: Remove other problematic control characters (keep newline, tab)
     cleaned = []
     for char in text:
-        code = ord(char)
         # Keep: printable, newline (10), tab (9), common punctuation
         if char in "\n\t" or unicodedata.category(char)[0] != "C":
             cleaned.append(char)

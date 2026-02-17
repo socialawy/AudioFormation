@@ -8,13 +8,12 @@ each segment to the right character → voice → engine.
 import asyncio
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-import numpy as np
 import pytest
 import soundfile as sf
 
-from audioformation.utils.text import parse_chapter_segments, Segment
+from audioformation.utils.text import parse_chapter_segments
 
 
 # ─────────────────────────────────────────────────────────

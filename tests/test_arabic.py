@@ -1,7 +1,5 @@
 """Tests for Arabic text processing — diacritics, language detection, dialect matching."""
 
-import pytest
-from pathlib import Path
 
 from audioformation.utils.arabic import (
     detect_diacritization_level,

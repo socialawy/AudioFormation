@@ -4,21 +4,17 @@ Tests for XTTS v2 engine adapter.
 All tests mock the TTS library — no GPU or model download required.
 """
 
-import json
 import asyncio
 from pathlib import Path
-from unittest.mock import MagicMock, patch, PropertyMock
-from dataclasses import dataclass
+from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 import soundfile as sf
 
-from audioformation.engines.base import GenerationRequest, GenerationResult
+from audioformation.engines.base import GenerationRequest
 from audioformation.engines.xtts import (
     XTTSEngine,
     _map_language,
-    _get_duration,
 )
 
 
@@ -415,8 +411,6 @@ class TestModelLoading:
                 engine._ensure_model()
 
     def test_ensure_model_caches(self, engine, mock_tts_model):
-        mock_tts_class = MagicMock(return_value=mock_tts_model)
-
         with patch(
             "audioformation.engines.xtts.XTTSEngine._ensure_model",
             side_effect=lambda: setattr(engine, "_model", mock_tts_model)

@@ -5,7 +5,6 @@ Tests all 4 TTS engines across full pipeline with detailed logging.
 Uses shell=False for subprocess to ensure Windows compatibility.
 """
 
-import json
 import os
 import sys
 import time
@@ -154,16 +153,13 @@ class TestE2EPipeline:
         """Check if an engine is available"""
         try:
             if engine == "edge":
-                import edge_tts
 
                 return True
             elif engine == "gtts":
-                import gtts
 
                 return True
             elif engine == "xtts":
                 try:
-                    import TTS
 
                     return True
                 except ImportError:
@@ -320,7 +316,7 @@ class TestE2EPipeline:
             self._log_export_files(logger, project_name)
 
         # Log timing summary
-        logger.entries.append(f"\n**Timing Summary**:\n")
+        logger.entries.append("\n**Timing Summary**:\n")
         for step, duration in step_times.items():
             logger.entries.append(f"- {step}: {duration:.2f}s\n")
 
@@ -336,7 +332,7 @@ class TestE2EPipeline:
 
         for export_dir in export_dirs:
             if export_dir.exists():
-                logger.entries.append(f"\n**Exported Files**:\n")
+                logger.entries.append("\n**Exported Files**:\n")
                 for fmt_file in export_dir.glob("*"):
                     if fmt_file.is_file():
                         file_info = logger.log_file_info(fmt_file)
@@ -352,7 +348,6 @@ class TestEngineAvailability:
     def test_edge_tts_availability(self):
         """Test Edge-TTS availability"""
         try:
-            import edge_tts
 
             assert True, "Edge-TTS is available"
         except ImportError:
@@ -361,7 +356,6 @@ class TestEngineAvailability:
     def test_gtts_availability(self):
         """Test gTTS availability"""
         try:
-            import gtts
 
             assert True, "gTTS is available"
         except ImportError:
@@ -381,7 +375,6 @@ class TestEngineAvailability:
     def test_xtts_availability(self):
         """Test XTTS availability"""
         try:
-            import TTS
 
             assert True, "XTTS is available"
         except ImportError:

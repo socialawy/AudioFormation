@@ -5,7 +5,6 @@ Tracks state at chunk level for the Generate node, node level for all others.
 Supports '--from <node>' resumption by checking pipeline-status.json.
 """
 
-import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path

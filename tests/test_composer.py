@@ -2,14 +2,12 @@
 
 import numpy as np
 import pytest
-from pathlib import Path
 
 from audioformation.audio.composer import (
     generate_pad,
     list_presets,
     get_preset,
     PadPreset,
-    MOOD_PRESETS,
 )
 from audioformation.audio.synthesis import (
     oscillator,

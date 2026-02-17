@@ -3,10 +3,9 @@
 import numpy as np
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # Import soundfile, although it might be mocked by conftest
-import soundfile as sf
 
 from audioformation.audio.processor import (
     measure_lufs,

@@ -153,7 +153,7 @@ def api_client(session):
 
 
 @pytest.mark.skipif(
-    not os.environ.get("SKIP_DASHBOARD_TESTS") is None, reason="Dashboard tests skipped"
+    os.environ.get('SKIP_DASHBOARD_TESTS') is not None, reason="Dashboard tests skipped"
 )
 class TestDashboardE2E:
     """End-to-End tests for the Dashboard API."""
@@ -198,7 +198,7 @@ class TestDashboardE2E:
 
 
 @pytest.mark.skipif(
-    not os.environ.get("SKIP_DASHBOARD_TESTS") is None, reason="Dashboard tests skipped"
+    os.environ.get('SKIP_DASHBOARD_TESTS') is not None, reason="Dashboard tests skipped"
 )
 class TestEngineSpecific:
     """Parametrized tests for different engines via API."""

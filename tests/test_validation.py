@@ -1,6 +1,5 @@
 """Tests for the validation gate (Node 2)."""
 
-import pytest
 from pathlib import Path
 
 from audioformation.validation import validate_project, ValidationResult

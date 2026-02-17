@@ -2,10 +2,9 @@
 
 from click.testing import CliRunner
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from audioformation.cli import main
-from audioformation.pipeline import get_node_status
 
 
 @pytest.fixture

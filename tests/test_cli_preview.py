@@ -1,9 +1,7 @@
 """Tests for 'preview' and 'compare' CLI commands."""
 
-import json
 from click.testing import CliRunner
 import pytest
-from pathlib import Path
 
 from audioformation.cli import main
 

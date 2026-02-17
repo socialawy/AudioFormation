@@ -1,6 +1,5 @@
 """Tests for project CRUD operations."""
 
-import json
 from pathlib import Path
 
 import pytest
@@ -12,7 +11,6 @@ from audioformation.project import (
     load_pipeline_status,
     save_project_json,
     project_exists,
-    get_project_path,
 )
 from audioformation.config import PROJECT_DIRS
 

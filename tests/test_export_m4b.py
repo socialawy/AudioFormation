@@ -2,8 +2,7 @@
 
 import pytest
 import json
-from pathlib import Path
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch
 
 from audioformation.export.m4b import export_project_m4b, _generate_ffmetadata
 

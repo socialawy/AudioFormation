@@ -10,12 +10,9 @@ This adapter saves as .mp3 first, then converts to WAV for pipeline
 consistency (all internal audio is WAV).
 """
 
-import asyncio
-import tempfile
 import shutil
 import uuid
 from pathlib import Path
-from typing import Any
 
 import edge_tts
 
@@ -109,7 +106,7 @@ class EdgeTTSEngine(TTSEngine):
             if "mp3_temp" in locals():
                 try:
                     mp3_temp.unlink(missing_ok=True)
-                except:
+                except Exception:
                     pass
 
             return GenerationResult(

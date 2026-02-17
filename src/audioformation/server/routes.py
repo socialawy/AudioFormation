@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Any, List, Optional
+from starlette.background import BackgroundTask
 
 from audioformation.project import (
     list_projects,
@@ -281,10 +282,6 @@ async def preview_voice(project_id: str, request: PreviewRequest):
     except Exception as e:
         output_path.unlink(missing_ok=True)
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# Helper for background cleanup
-from starlette.background import BackgroundTask
 
 
 def _ingest_files_sync(project_id: str, tmp_path: Path) -> dict:

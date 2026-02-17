@@ -2,7 +2,7 @@
 
 import pytest
 
-from audioformation.engines.base import GenerationRequest, GenerationResult
+from audioformation.engines.base import GenerationRequest
 from audioformation.engines.registry import registry
 from audioformation.engines.edge_tts import (
     direction_to_ssml,

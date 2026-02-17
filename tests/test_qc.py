@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from audioformation.qc.scanner import (
     scan_chunk,

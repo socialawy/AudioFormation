@@ -1,12 +1,8 @@
 """Tests for FastAPI server endpoints."""
 
 import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 try:
-    from fastapi.testclient import TestClient
-    from audioformation.server.app import app
 
     SERVER_AVAILABLE = True
 except ImportError:

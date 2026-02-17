@@ -4,7 +4,6 @@ import json
 import pytest
 
 from audioformation.pipeline import (
-    PipelineError,
     get_node_status,
     update_node_status,
     update_chapter_status,
@@ -14,7 +13,6 @@ from audioformation.pipeline import (
     can_proceed_to,
     nodes_in_range,
 )
-from audioformation.project import load_pipeline_status
 from audioformation.config import PIPELINE_NODES
 
 

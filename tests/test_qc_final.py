@@ -1,10 +1,9 @@
 """Tests for QC Final (Node 7) — validating mixed audio."""
 
 import pytest
-from pathlib import Path
 from unittest.mock import patch
 
-from audioformation.qc.final import scan_final_mix, FinalMixResult, FinalQCReport
+from audioformation.qc.final import scan_final_mix
 from audioformation.pipeline import get_node_status
 
 
