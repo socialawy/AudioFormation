@@ -25,9 +25,7 @@ class EngineRegistry:
 
         if name not in self._factories:
             available = ", ".join(sorted(self._factories.keys()))
-            raise KeyError(
-                f"Engine '{name}' not registered. Available: {available}"
-            )
+            raise KeyError(f"Engine '{name}' not registered. Available: {available}")
 
         engine = self._factories[name](**kwargs)
         self._engines[name] = engine
@@ -49,11 +47,13 @@ registry = EngineRegistry()
 def _register_defaults() -> None:
     """Register all built-in engines."""
     from audioformation.engines.edge_tts import EdgeTTSEngine
+
     registry.register("edge", EdgeTTSEngine)
 
     # gTTS fallback — always available if pip install gTTS
     try:
         from audioformation.engines.gtts_engine import GTTSEngine
+
         registry.register("gtts", GTTSEngine)
     except ImportError:
         pass
@@ -61,6 +61,7 @@ def _register_defaults() -> None:
     # XTTS registered only if coqui-tts is installed
     try:
         from audioformation.engines.xtts import XTTSEngine
+
         registry.register("xtts", XTTSEngine)
     except ImportError:
         pass
@@ -68,6 +69,7 @@ def _register_defaults() -> None:
     # ElevenLabs registered only if httpx is installed
     try:
         from audioformation.engines.elevenlabs import ElevenLabsEngine
+
         registry.register("elevenlabs", ElevenLabsEngine)
     except ImportError:
         pass

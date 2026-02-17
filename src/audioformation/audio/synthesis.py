@@ -1,4 +1,3 @@
-
 """
 DSP Synthesis Primitives.
 
@@ -9,10 +8,7 @@ import numpy as np
 
 
 def oscillator(
-    freq: float,
-    duration_sec: float,
-    sr: int,
-    wave_type: str = "sine"
+    freq: float, duration_sec: float, sr: int, wave_type: str = "sine"
 ) -> np.ndarray:
     """Generate a basic waveform."""
     t = np.linspace(0, duration_sec, int(sr * duration_sec), endpoint=False)
@@ -35,23 +31,19 @@ def cents_to_ratio(cents: float) -> float:
     return 2 ** (cents / 1200)
 
 
-def generate_noise(
-    n_samples: int,
-    color: str,
-    rng: np.random.Generator
-) -> np.ndarray:
+def generate_noise(n_samples: int, color: str, rng: np.random.Generator) -> np.ndarray:
     """Generate colored noise (white, pink, brown)."""
     if color == "white":
         white = rng.standard_normal(n_samples)
         return _normalize(white)
-    
+
     elif color == "pink":
         # Simplified pink noise (1/f) approximation
         white = rng.standard_normal(n_samples)
         # Apply rolling average for pinkening
         kernel_size = 64
         kernel = np.ones(kernel_size) / kernel_size
-        pink = np.convolve(white, kernel, mode='same')
+        pink = np.convolve(white, kernel, mode="same")
         return _normalize(pink)
 
     elif color == "brown":
@@ -61,7 +53,7 @@ def generate_noise(
         # High-pass to remove DC drift
         brown = brown - np.linspace(brown[0], brown[-1], n_samples)
         return _normalize(brown)
-        
+
     else:
         return rng.standard_normal(n_samples)
 
@@ -70,7 +62,7 @@ def simple_lowpass(signal: np.ndarray, cutoff_hz: float, sr: int) -> np.ndarray:
     """Apply a simple first-order IIR lowpass filter."""
     if cutoff_hz >= sr / 2:
         return signal
-        
+
     rc = 1.0 / (2 * np.pi * cutoff_hz)
     dt = 1.0 / sr
     alpha = dt / (rc + dt)
@@ -103,7 +95,7 @@ def apply_envelope(
     sr: int,
     fade_in_sec: float,
     fade_out_sec: float,
-    curve: str = "linear"
+    curve: str = "linear",
 ) -> np.ndarray:
     """Apply fade-in and fade-out envelope."""
     n = len(signal)

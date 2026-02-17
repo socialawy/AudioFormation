@@ -1,4 +1,3 @@
-
 """
 Ambient pad generator — mood-based background audio for audiobooks.
 
@@ -29,27 +28,29 @@ from audioformation.audio.synthesis import (
 # Mood presets
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class PadPreset:
     """Configuration for an ambient pad sound."""
+
     name: str
     # Base tone
-    base_freq: float = 110.0          # Hz
-    base_type: str = "sine"           # sine, triangle, saw
+    base_freq: float = 110.0  # Hz
+    base_type: str = "sine"  # sine, triangle, saw
     base_amplitude: float = 0.3
     # Second oscillator (detune for richness)
-    detune_cents: float = 7.0         # slight detune for warmth
+    detune_cents: float = 7.0  # slight detune for warmth
     detune_amplitude: float = 0.2
     # Sub bass
-    sub_freq_ratio: float = 0.5       # relative to base
+    sub_freq_ratio: float = 0.5  # relative to base
     sub_amplitude: float = 0.15
     # Noise layer
     noise_amplitude: float = 0.05
-    noise_color: str = "pink"         # white, pink, brown
+    noise_color: str = "pink"  # white, pink, brown
     # LFO modulation
-    lfo_rate: float = 0.08            # Hz (very slow)
-    lfo_depth: float = 0.3            # 0-1, modulation depth
-    lfo_target: str = "amplitude"     # amplitude, pitch, filter
+    lfo_rate: float = 0.08  # Hz (very slow)
+    lfo_depth: float = 0.3  # 0-1, modulation depth
+    lfo_target: str = "amplitude"  # amplitude, pitch, filter
     # Filter
     lowpass_hz: float = 2000.0
     highpass_hz: float = 40.0
@@ -63,7 +64,7 @@ class PadPreset:
 MOOD_PRESETS: dict[str, PadPreset] = {
     "contemplative": PadPreset(
         name="contemplative",
-        base_freq=130.81,   # C3
+        base_freq=130.81,  # C3
         base_type="sine",
         base_amplitude=0.25,
         detune_cents=5.0,
@@ -79,7 +80,7 @@ MOOD_PRESETS: dict[str, PadPreset] = {
     ),
     "tense": PadPreset(
         name="tense",
-        base_freq=116.54,   # Bb2
+        base_freq=116.54,  # Bb2
         base_type="saw",
         base_amplitude=0.2,
         detune_cents=15.0,
@@ -97,7 +98,7 @@ MOOD_PRESETS: dict[str, PadPreset] = {
     ),
     "wonder": PadPreset(
         name="wonder",
-        base_freq=196.0,    # G3
+        base_freq=196.0,  # G3
         base_type="sine",
         base_amplitude=0.25,
         detune_cents=3.0,
@@ -113,7 +114,7 @@ MOOD_PRESETS: dict[str, PadPreset] = {
     ),
     "melancholy": PadPreset(
         name="melancholy",
-        base_freq=146.83,   # D3
+        base_freq=146.83,  # D3
         base_type="triangle",
         base_amplitude=0.22,
         detune_cents=8.0,
@@ -129,7 +130,7 @@ MOOD_PRESETS: dict[str, PadPreset] = {
     ),
     "triumph": PadPreset(
         name="triumph",
-        base_freq=164.81,   # E3
+        base_freq=164.81,  # E3
         base_type="saw",
         base_amplitude=0.3,
         detune_cents=5.0,
@@ -159,6 +160,7 @@ MOOD_PRESETS: dict[str, PadPreset] = {
 # Main generator
 # ---------------------------------------------------------------------------
 
+
 def generate_pad(
     preset: str | PadPreset,
     duration_sec: float = 60.0,
@@ -180,8 +182,7 @@ def generate_pad(
     if isinstance(preset, str):
         if preset not in MOOD_PRESETS:
             raise ValueError(
-                f"Unknown preset '{preset}'. "
-                f"Available: {list(MOOD_PRESETS.keys())}"
+                f"Unknown preset '{preset}'. " f"Available: {list(MOOD_PRESETS.keys())}"
             )
         p = MOOD_PRESETS[preset]
     else:

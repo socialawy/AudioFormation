@@ -22,7 +22,9 @@ from audioformation.project import load_project_json, get_project_path
 # Schema path
 # ──────────────────────────────────────────────
 
-_SCHEMA_PATH = Path(__file__).resolve().parent.parent.parent / "schemas" / "project.schema.json"
+_SCHEMA_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "schemas" / "project.schema.json"
+)
 
 
 class ValidationResult:
@@ -106,7 +108,9 @@ def _check_schema(pj: dict[str, Any], result: ValidationResult) -> None:
 
     except jsonschema.ValidationError as e:
         # Extract a readable path
-        path_str = " → ".join(str(p) for p in e.absolute_path) if e.absolute_path else "root"
+        path_str = (
+            " → ".join(str(p) for p in e.absolute_path) if e.absolute_path else "root"
+        )
         result.fail(f"Schema error at '{path_str}': {e.message}")
 
     except ImportError:
@@ -187,13 +191,19 @@ def _check_characters(
 
         if engine in ("edge", "elevenlabs", "openai-tts", "gemini-tts"):
             if not voice:
-                result.fail(f"Character '{char_id}': engine '{engine}' requires a voice ID.")
+                result.fail(
+                    f"Character '{char_id}': engine '{engine}' requires a voice ID."
+                )
             else:
-                result.pass_(f"Character '{char_id}': voice '{voice}' on engine '{engine}'.")
+                result.pass_(
+                    f"Character '{char_id}': voice '{voice}' on engine '{engine}'."
+                )
 
         elif engine == "xtts":
             if not ref_audio:
-                result.fail(f"Character '{char_id}': XTTS engine requires reference_audio.")
+                result.fail(
+                    f"Character '{char_id}': XTTS engine requires reference_audio."
+                )
             else:
                 ref_path = project_path / ref_audio
                 if not ref_path.exists():
@@ -201,7 +211,9 @@ def _check_characters(
                         f"Character '{char_id}': reference audio not found: {ref_audio}"
                     )
                 else:
-                    result.pass_(f"Character '{char_id}': XTTS with reference '{ref_audio}'.")
+                    result.pass_(
+                        f"Character '{char_id}': XTTS with reference '{ref_audio}'."
+                    )
 
         else:
             result.warn(f"Character '{char_id}': unknown engine '{engine}'.")
@@ -218,11 +230,15 @@ def _check_characters(
         if mode == "single":
             ch_char = ch.get("character")
             if ch_char and ch_char not in characters:
-                result.fail(f"Chapter '{ch_id}': references unknown character '{ch_char}'.")
+                result.fail(
+                    f"Chapter '{ch_id}': references unknown character '{ch_char}'."
+                )
         elif mode == "multi":
             default_char = ch.get("default_character")
             if default_char and default_char not in characters:
-                result.fail(f"Chapter '{ch_id}': default_character '{default_char}' not found.")
+                result.fail(
+                    f"Chapter '{ch_id}': default_character '{default_char}' not found."
+                )
 
 
 # ──────────────────────────────────────────────
@@ -299,7 +315,9 @@ def _check_generation_config(pj: dict[str, Any], result: ValidationResult) -> No
     if chunk_max < 50:
         result.warn(f"chunk_max_chars={chunk_max} is very small (min recommended: 50).")
     elif chunk_max > 500:
-        result.warn(f"chunk_max_chars={chunk_max} is large — may cause XTTS quality issues.")
+        result.warn(
+            f"chunk_max_chars={chunk_max} is large — may cause XTTS quality issues."
+        )
 
     crossfade = gen.get("crossfade_ms", 0)
     crossfade_min = gen.get("crossfade_min_ms", 50)
@@ -335,4 +353,6 @@ def _check_ffmpeg(result: ValidationResult) -> None:
     if ff["ffmpeg_available"]:
         result.pass_(f"ffmpeg found: {ff['ffmpeg_path']}")
     else:
-        result.fail("ffmpeg not found on PATH. Required for audio processing and export.")
+        result.fail(
+            "ffmpeg not found on PATH. Required for audio processing and export."
+        )

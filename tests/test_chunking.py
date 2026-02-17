@@ -118,7 +118,9 @@ class TestParseChapterSegments:
 
     def test_single_mode_strips_tags(self) -> None:
         text = "[hero] Some dialogue.\nNarration continues."
-        segments = parse_chapter_segments(text, mode="single", default_character="narrator")
+        segments = parse_chapter_segments(
+            text, mode="single", default_character="narrator"
+        )
         assert len(segments) == 1
         assert segments[0].character == "narrator"
         assert "Some dialogue" in segments[0].text
@@ -163,11 +165,7 @@ class TestParseChapterSegments:
 
     def test_arabic_speaker_tags(self) -> None:
         text = (
-            "قال الراوي بصوت هادئ.\n"
-            "\n"
-            "[hero] لن أستسلم أبداً.\n"
-            "\n"
-            "عاد الصمت."
+            "قال الراوي بصوت هادئ.\n" "\n" "[hero] لن أستسلم أبداً.\n" "\n" "عاد الصمت."
         )
         segments = parse_chapter_segments(
             text, mode="multi", default_character="narrator"

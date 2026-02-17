@@ -181,12 +181,16 @@ def _check_snr(audio_path: Path, min_db: float) -> dict[str, Any]:
         hop = int(rate * 0.010)  # 10ms hop
 
         if len(data) < frame_size:
-            return {"status": "warn", "snr_db": 0, "message": "Audio too short for SNR."}
+            return {
+                "status": "warn",
+                "snr_db": 0,
+                "message": "Audio too short for SNR.",
+            }
 
         energies = []
         for start in range(0, len(data) - frame_size, hop):
-            frame = data[start:start + frame_size]
-            rms = float(np.sqrt(np.mean(frame ** 2)))
+            frame = data[start : start + frame_size]
+            rms = float(np.sqrt(np.mean(frame**2)))
             if rms > 0:
                 energies.append(rms)
 
@@ -200,7 +204,11 @@ def _check_snr(audio_path: Path, min_db: float) -> dict[str, Any]:
         speech_frames = energies_arr[energies_arr > threshold]
 
         if len(noise_frames) == 0 or len(speech_frames) == 0:
-            return {"status": "warn", "snr_db": 0, "message": "Cannot separate speech/noise."}
+            return {
+                "status": "warn",
+                "snr_db": 0,
+                "message": "Cannot separate speech/noise.",
+            }
 
         noise_rms = float(np.mean(noise_frames))
         speech_rms = float(np.mean(speech_frames))
@@ -215,9 +223,17 @@ def _check_snr(audio_path: Path, min_db: float) -> dict[str, Any]:
         if snr >= min_db:
             return {"status": "pass", "snr_db": round(snr, 1)}
         elif snr >= min_db - 5:
-            return {"status": "warn", "snr_db": round(snr, 1), "message": "SNR slightly below target."}
+            return {
+                "status": "warn",
+                "snr_db": round(snr, 1),
+                "message": "SNR slightly below target.",
+            }
         else:
-            return {"status": "fail", "snr_db": round(snr, 1), "message": f"SNR {snr:.1f} dB below minimum {min_db} dB."}
+            return {
+                "status": "fail",
+                "snr_db": round(snr, 1),
+                "message": f"SNR {snr:.1f} dB below minimum {min_db} dB.",
+            }
 
     except Exception as e:
         return {"status": "warn", "snr_db": 0, "message": f"SNR check error: {e}"}

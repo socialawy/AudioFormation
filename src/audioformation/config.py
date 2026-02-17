@@ -115,9 +115,9 @@ DEFAULT_XTTS_REPETITION_PENALTY: Final[float] = 5.0
 XTTS_MIN_VRAM_GB: Final[float] = 4.0
 
 VRAM_STRATEGY_THRESHOLDS: Final[dict[str, float]] = {
-    "conservative": 3.5,   # < 3.5 GB
-    "empty_cache": 4.0,    # 4–6 GB
-    "comfortable": 6.0,    # > 6 GB
+    "conservative": 3.5,  # < 3.5 GB
+    "empty_cache": 4.0,  # 4–6 GB
+    "comfortable": 6.0,  # > 6 GB
 }
 
 # ──────────────────────────────────────────────
@@ -129,7 +129,7 @@ DIACRITIZATION_PARTIAL: Final[float] = 0.30
 
 DIALECT_VOICE_MAP: Final[dict[str, list[str]]] = {
     "msa": ["ar-SA-HamedNeural", "ar-SA-ZariyahNeural"],
-    "eg":  ["ar-EG-SalmaNeural", "ar-EG-ShakirNeural"],
-    "ae":  ["ar-AE-FatimaNeural", "ar-AE-HamdanNeural"],
-    "sa":  ["ar-SA-HamedNeural", "ar-SA-ZariyahNeural"],
+    "eg": ["ar-EG-SalmaNeural", "ar-EG-ShakirNeural"],
+    "ae": ["ar-AE-FatimaNeural", "ar-AE-HamdanNeural"],
+    "sa": ["ar-SA-HamedNeural", "ar-SA-ZariyahNeural"],
 }

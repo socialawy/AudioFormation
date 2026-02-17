@@ -1,4 +1,3 @@
-
 """
 API Routes for AudioFormation.
 
@@ -47,7 +46,7 @@ logger = logging.getLogger("audioformation.api")
 
 async def _run_with_status(func, project_id: str, node: str):
     """Wrapper that marks node running/complete/failed around any pipeline function.
-    
+
     Handles both sync and async functions by checking if the result is a coroutine.
     """
     path = get_project_path(project_id)
@@ -66,22 +65,27 @@ async def _run_with_status(func, project_id: str, node: str):
 class ProjectCreateRequest(BaseModel):
     id: str
 
+
 class GenerateRequest(BaseModel):
     chapters: Optional[List[str]] = None
     engine: Optional[str] = None
 
+
 class ComposeRequest(BaseModel):
     preset: str = "contemplative"
     duration: int = 60
+
 
 class SFXRequest(BaseModel):
     type: str
     duration: float = 1.0
     name: Optional[str] = None
 
+
 class ExportRequest(BaseModel):
     format: str = "mp3"
     bitrate: int = 192
+
 
 class PreviewRequest(BaseModel):
     text: str
@@ -102,19 +106,21 @@ async def create_new_project(request: ProjectCreateRequest):
     """Create a new project."""
     project_id = request.id
     if project_exists(project_id):
-        raise HTTPException(status_code=409, detail=f"Project '{project_id}' already exists.")
+        raise HTTPException(
+            status_code=409, detail=f"Project '{project_id}' already exists."
+        )
 
     try:
         path = create_project(project_id)
-        
+
         # Initialize hardware detection and status
         write_hardware_json(path)
         mark_node(path, "bootstrap", "complete")
-        
+
         return {
             "id": path.name,
             "path": str(path.resolve()),
-            "message": "Project created successfully."
+            "message": "Project created successfully.",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -125,7 +131,7 @@ async def get_project_details(project_id: str):
     """Get project configuration (project.json)."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     try:
         return load_project_json(project_id)
     except Exception as e:
@@ -137,11 +143,11 @@ async def update_project(project_id: str, project_data: dict[str, Any]):
     """Update project configuration (project.json)."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     # Safety check: ensure ID in body matches URL if present
     if project_data.get("id") and project_data["id"] != project_id:
-         raise HTTPException(status_code=400, detail="Project ID mismatch")
-         
+        raise HTTPException(status_code=400, detail="Project ID mismatch")
+
     try:
         save_project_json(project_id, project_data)
         return {"message": "Project updated successfully"}
@@ -150,7 +156,11 @@ async def update_project(project_id: str, project_data: dict[str, Any]):
 
 
 @router.post("/projects/{project_id}/ingest")
-async def ingest_files(project_id: str, background_tasks: BackgroundTasks, files: List[UploadFile] = File(...)):
+async def ingest_files(
+    project_id: str,
+    background_tasks: BackgroundTasks,
+    files: List[UploadFile] = File(...),
+):
     """Upload text files and run ingest."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
@@ -179,39 +189,37 @@ async def ingest_files(project_id: str, background_tasks: BackgroundTasks, files
 
 
 @router.post("/projects/{project_id}/upload")
-async def upload_file(
-    project_id: str,
-    category: str,
-    file: UploadFile = File(...)
-):
+async def upload_file(project_id: str, category: str, file: UploadFile = File(...)):
     """
     Upload a file to a specific project category.
-    
+
     Categories:
     - 'references': Voice cloning references (02_VOICES/references)
     - 'music': Background music (05_MUSIC/imported)
     """
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     project_path = get_project_path(project_id)
-    
+
     if category == "references":
         target_dir = project_path / "02_VOICES" / "references"
     elif category == "music":
-        target_dir = project_path / "05_MUSIC" / "generated" # Use generated for now to show up in list
+        target_dir = (
+            project_path / "05_MUSIC" / "generated"
+        )  # Use generated for now to show up in list
     else:
         raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
-        
+
     target_dir.mkdir(parents=True, exist_ok=True)
-    
+
     safe_name = sanitize_filename(file.filename)
     dest_path = target_dir / safe_name
-    
+
     try:
         with open(dest_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-            
+
         # Return relative path for project.json
         rel_path = str(dest_path.relative_to(project_path)).replace("\\", "/")
         return {"path": rel_path, "filename": safe_name}
@@ -220,54 +228,56 @@ async def upload_file(
 
 
 @router.post("/projects/{project_id}/preview")
-async def preview_voice(
-    project_id: str,
-    request: PreviewRequest
-):
+async def preview_voice(project_id: str, request: PreviewRequest):
     """Generate a quick voice preview."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     project_path = get_project_path(project_id)
-    
+
     try:
         engine = registry.get(request.engine)
     except KeyError:
-        raise HTTPException(status_code=400, detail=f"Engine '{request.engine}' not found")
-        
+        raise HTTPException(
+            status_code=400, detail=f"Engine '{request.engine}' not found"
+        )
+
     # Resolve reference audio if present
     ref_path = None
     if request.reference_audio:
         ref_path = project_path / request.reference_audio
         if not ref_path.exists():
-            raise HTTPException(status_code=400, detail=f"Reference audio not found: {request.reference_audio}")
-            
+            raise HTTPException(
+                status_code=400,
+                detail=f"Reference audio not found: {request.reference_audio}",
+            )
+
     # Create temp file for output
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         output_path = Path(tmp.name)
-        
+
     try:
         gen_req = GenerationRequest(
             text=request.text,
             output_path=output_path,
             voice=request.voice,
             language=request.language,
-            reference_audio=ref_path
+            reference_audio=ref_path,
         )
-        
+
         result = await engine.generate(gen_req)
-        
+
         if not result.success:
             raise Exception(result.error)
-            
+
         return FileResponse(
-            path=output_path, 
-            media_type="audio/wav", 
+            path=output_path,
+            media_type="audio/wav",
             filename="preview.wav",
             # Clean up temp file after sending
-            background=BackgroundTask(lambda: output_path.unlink(missing_ok=True))
+            background=BackgroundTask(lambda: output_path.unlink(missing_ok=True)),
         )
-        
+
     except Exception as e:
         output_path.unlink(missing_ok=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -281,24 +291,19 @@ def _ingest_files_sync(project_id: str, tmp_path: Path) -> dict:
     """Synchronous ingest logic for background task."""
     try:
         result = ingest_text(project_id, tmp_path)
-        return {
-            "message": f"Ingested {result['ingested']} files.",
-            "details": result
-        }
+        return {"message": f"Ingested {result['ingested']} files.", "details": result}
     finally:
         shutil.rmtree(tmp_path, ignore_errors=True)
 
 
 @router.post("/projects/{project_id}/generate")
 async def trigger_generation(
-    project_id: str, 
-    request: GenerateRequest, 
-    background_tasks: BackgroundTasks
+    project_id: str, request: GenerateRequest, background_tasks: BackgroundTasks
 ):
     """Trigger TTS generation in the background."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     background_tasks.add_task(
         _run_with_status,
         lambda: generate_project(
@@ -309,18 +314,16 @@ async def trigger_generation(
         project_id,
         "generate",
     )
-    
+
     return {"message": "Generation started", "status": "running"}
 
 
 @router.post("/projects/{project_id}/mix")
 async def trigger_mix(
-    project_id: str, 
-    background_tasks: BackgroundTasks,
-    music: Optional[str] = None
+    project_id: str, background_tasks: BackgroundTasks, music: Optional[str] = None
 ):
     """Trigger mixing process in background.
-    
+
     Args:
         music: Optional filename of music file to use (must exist in 05_MUSIC/generated).
                If 'FORCE_NO_MUSIC', forces voice-only mix.
@@ -328,11 +331,11 @@ async def trigger_mix(
     """
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     # Handle the "FORCE_NO_MUSIC" hack gracefully
     music_file = music
     if music == "FORCE_NO_MUSIC":
-        music_file = "FORCE_NO_MUSIC" 
+        music_file = "FORCE_NO_MUSIC"
 
     background_tasks.add_task(
         _run_with_status,
@@ -340,7 +343,7 @@ async def trigger_mix(
         project_id,
         "mix",
     )
-    
+
     return {"message": "Mixing started", "status": "running"}
 
 
@@ -349,14 +352,14 @@ async def trigger_validate(project_id: str, background_tasks: BackgroundTasks):
     """Run validation gate (Node 2)."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     background_tasks.add_task(
         _run_with_status,
         lambda: validate_project(project_id),
         project_id,
         "validate",
     )
-    
+
     return {"message": "Validation started", "status": "running"}
 
 
@@ -365,14 +368,14 @@ async def trigger_process(project_id: str, background_tasks: BackgroundTasks):
     """Run audio processing/normalization (Node 4)."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     background_tasks.add_task(
         _run_with_status,
         lambda: batch_process_project(project_id),
         project_id,
         "process",
     )
-    
+
     return {"message": "Processing started", "status": "running"}
 
 
@@ -389,10 +392,11 @@ async def trigger_compose(
     project_path = get_project_path(project_id)
     output_dir = project_path / "05_MUSIC" / "generated"
     output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Use timestamp to avoid overwriting unless specified? 
+
+    # Use timestamp to avoid overwriting unless specified?
     # For now, unique name per preset + timestamp is good
     import time
+
     timestamp = str(int(time.time()))
     output_path = output_dir / f"pad_{request.preset}_{timestamp}.wav"
 
@@ -406,7 +410,7 @@ async def trigger_compose(
         project_id,
         "compose",
     )
-    
+
     return {
         "message": f"Composing '{request.preset}' pad ({request.duration}s)",
         "status": "running",
@@ -426,34 +430,31 @@ async def trigger_sfx(
     project_path = get_project_path(project_id)
     output_dir = project_path / "04_SFX" / "procedural"
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     import time
+
     timestamp = str(int(time.time()))
     filename = request.name if request.name else f"{request.type}_{timestamp}.wav"
     if not filename.endswith(".wav"):
         filename += ".wav"
-        
+
     output_path = output_dir / filename
 
     # Simple wrapper to match _run_with_status signature
     def _gen_sfx():
-        generate_sfx(
-            request.type,
-            output_path=output_path,
-            duration=request.duration
-        )
+        generate_sfx(request.type, output_path=output_path, duration=request.duration)
 
     # Use 'compose' node status for now, or maybe we need a dedicated 'sfx' node?
-    # Architecture has 'FXForge' but pipeline.py nodes are linear. 
+    # Architecture has 'FXForge' but pipeline.py nodes are linear.
     # Let's treat it as part of 'compose' or just a side effect without blocking pipeline.
     # We'll log it but maybe not block the main pipeline status.
     # Actually, let's just run it. The UI can poll for files.
-    
+
     try:
         _gen_sfx()
         return {
             "message": f"Generated SFX: {filename}",
-            "path": str(output_path.relative_to(project_path))
+            "path": str(output_path.relative_to(project_path)),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -469,7 +470,9 @@ async def trigger_export(
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
 
-    export_func = export_project_m4b_auto if request.format == "m4b" else export_project_mp3
+    export_func = (
+        export_project_m4b_auto if request.format == "m4b" else export_project_mp3
+    )
 
     background_tasks.add_task(
         _run_with_status,
@@ -489,14 +492,14 @@ async def trigger_qc_scan(project_id: str, background_tasks: BackgroundTasks):
     """Run QC scan on generated audio (Node 3.5)."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     background_tasks.add_task(
         _run_with_status,
         lambda: _qc_scan_sync(project_id),
         project_id,
         "qc_scan",
     )
-    
+
     return {"message": "QC scan started", "status": "running"}
 
 
@@ -534,11 +537,13 @@ def _qc_scan_sync(project_id: str) -> dict:
             chunk_results.append(result)
         except Exception as e:
             # Create a failed ChunkQCResult for files that error
-            chunk_results.append(ChunkQCResult(
-                chunk_id=chunk_id,
-                status="fail",
-                checks={"scan_error": {"status": "fail", "message": str(e)}},
-            ))
+            chunk_results.append(
+                ChunkQCResult(
+                    chunk_id=chunk_id,
+                    status="fail",
+                    checks={"scan_error": {"status": "fail", "message": str(e)}},
+                )
+            )
 
     report = QCReport(
         project_id=project_id,
@@ -574,16 +579,13 @@ async def get_qc_reports(project_id: str):
     chunk_reports = list(gen_dir.glob("qc_report_*.json"))
     if chunk_reports:
         reports["chunk_qc"] = [
-            json.loads(r.read_text(encoding="utf-8"))
-            for r in sorted(chunk_reports)
+            json.loads(r.read_text(encoding="utf-8")) for r in sorted(chunk_reports)
         ]
 
     # Final mix QC report
     final_report = project_path / "06_MIX" / "qc_final_report.json"
     if final_report.exists():
-        reports["final_qc"] = json.loads(
-            final_report.read_text(encoding="utf-8")
-        )
+        reports["final_qc"] = json.loads(final_report.read_text(encoding="utf-8"))
 
     if not reports:
         return {"message": "No QC reports found. Run qc or qc-final first."}
@@ -596,14 +598,14 @@ async def trigger_qc_final(project_id: str, background_tasks: BackgroundTasks):
     """Run QC Final gate on mixed output (Node 7)."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     background_tasks.add_task(
         _run_with_status,
         lambda: _qc_final_sync(project_id),
         project_id,
         "qc_final",
     )
-    
+
     return {"message": "QC Final started", "status": "running"}
 
 
@@ -632,7 +634,7 @@ async def get_project_status(project_id: str):
     """Get project pipeline status."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     try:
         return load_pipeline_status(project_id)
     except Exception as e:
@@ -644,41 +646,45 @@ async def list_project_files(project_id: str):
     """List exportable files in the project."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-        
+
     project_path = get_project_path(project_id)
     export_dir = project_path / "07_EXPORT"
     music_dir = project_path / "05_MUSIC" / "generated"
     sfx_dir = project_path / "04_SFX" / "procedural"
-    
+
     files = []
-    
+
     def scan_dir(d: Path, category: str):
         if d.exists():
             for f in sorted(d.glob("*")):
                 if f.is_file() and not f.name.startswith("."):
-                    files.append({
-                        "path": str(f.relative_to(project_path)).replace("\\", "/"),
-                        "name": f.name,
-                        "category": category,
-                        "size": f.stat().st_size,
-                        "modified": f.stat().st_mtime
-                    })
+                    files.append(
+                        {
+                            "path": str(f.relative_to(project_path)).replace("\\", "/"),
+                            "name": f.name,
+                            "category": category,
+                            "size": f.stat().st_size,
+                            "modified": f.stat().st_mtime,
+                        }
+                    )
 
     scan_dir(export_dir / "audiobook", "audiobook")
     scan_dir(export_dir / "chapters", "chapter")
     scan_dir(music_dir, "music")
     scan_dir(sfx_dir, "sfx")
-    
+
     manifest = export_dir / "manifest.json"
     if manifest.exists():
-        files.append({
-            "path": str(manifest.relative_to(project_path)).replace("\\", "/"),
-            "name": "manifest.json",
-            "category": "metadata",
-            "size": manifest.stat().st_size,
-            "modified": manifest.stat().st_mtime
-        })
-        
+        files.append(
+            {
+                "path": str(manifest.relative_to(project_path)).replace("\\", "/"),
+                "name": "manifest.json",
+                "category": "metadata",
+                "size": manifest.stat().st_size,
+                "modified": manifest.stat().st_mtime,
+            }
+        )
+
     return files
 
 
@@ -689,13 +695,15 @@ async def list_engines():
     for name in registry.list_available():
         try:
             eng = registry.get(name)
-            engines.append({
-                "id": name,
-                "name": name,
-                "cloning": eng.supports_cloning,
-                "ssml": eng.supports_ssml,
-                "gpu": eng.requires_gpu
-            })
+            engines.append(
+                {
+                    "id": name,
+                    "name": name,
+                    "cloning": eng.supports_cloning,
+                    "ssml": eng.supports_ssml,
+                    "gpu": eng.requires_gpu,
+                }
+            )
         except Exception as e:
             logger.warning(f"Failed to load engine {name}: {e}")
             engines.append({"id": name, "error": str(e)})
@@ -720,11 +728,11 @@ async def get_project_hardware(project_id: str):
     """Get project hardware detection info (hardware.json)."""
     if not project_exists(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     path = get_project_path(project_id) / "00_CONFIG" / "hardware.json"
     if not path.exists():
         return {}
-    
+
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except Exception:

@@ -1,4 +1,3 @@
-
 """Tests for QC Final (Node 7) — validating mixed audio."""
 
 import pytest
@@ -8,22 +7,18 @@ from unittest.mock import patch
 from audioformation.qc.final import scan_final_mix, FinalMixResult, FinalQCReport
 from audioformation.pipeline import get_node_status
 
-class TestQCFinalScanner:
 
+class TestQCFinalScanner:
     @pytest.fixture
     def mock_processor(self):
         """Mock audio measurement functions."""
-        with patch("audioformation.qc.final.measure_lufs") as m_lufs, \
-             patch("audioformation.qc.final.measure_true_peak") as m_tp, \
-             patch("audioformation.qc.final.detect_clipping") as m_clip, \
-             patch("audioformation.qc.final.get_duration") as m_dur:
-            
-            yield {
-                "lufs": m_lufs,
-                "tp": m_tp,
-                "clip": m_clip,
-                "dur": m_dur
-            }
+        with patch("audioformation.qc.final.measure_lufs") as m_lufs, patch(
+            "audioformation.qc.final.measure_true_peak"
+        ) as m_tp, patch("audioformation.qc.final.detect_clipping") as m_clip, patch(
+            "audioformation.qc.final.get_duration"
+        ) as m_dur:
+
+            yield {"lufs": m_lufs, "tp": m_tp, "clip": m_clip, "dur": m_dur}
 
     @pytest.fixture
     def setup_mix_dir(self, sample_project):
@@ -38,7 +33,7 @@ class TestQCFinalScanner:
         """Test audio that meets all criteria."""
         # Setup: Target -16, Limit -1.0
         # Mock: -16.5 LUFS, -2.0 TP, No clipping
-        
+
         mock_processor["lufs"].return_value = -16.5
         mock_processor["tp"].return_value = -2.0
         mock_processor["clip"].return_value = {"clipped": False}
@@ -49,7 +44,7 @@ class TestQCFinalScanner:
         assert report.passed is True
         assert report.passed_files == 1
         assert report.results[0].status == "pass"
-        
+
         # Verify node status updated
         status = get_node_status(sample_project["id"], "qc_final")
         assert status["status"] == "complete"
@@ -99,20 +94,22 @@ class TestQCFinalScanner:
         # Ensure dir exists but empty
         mix_dir = sample_project["dir"] / "06_MIX" / "renders"
         mix_dir.mkdir(parents=True, exist_ok=True)
-        
+
         report = scan_final_mix(sample_project["id"])
-        
+
         # Should likely fail the node because nothing to check
         status = get_node_status(sample_project["id"], "qc_final")
         assert status["status"] == "failed"
         assert report.total_files == 0
 
-    def test_measurement_exception_handled(self, sample_project, setup_mix_dir, mock_processor):
+    def test_measurement_exception_handled(
+        self, sample_project, setup_mix_dir, mock_processor
+    ):
         """Scanner handles exceptions during file reading."""
         mock_processor["lufs"].side_effect = ValueError("Corrupt file")
-        
+
         report = scan_final_mix(sample_project["id"])
-        
+
         assert report.passed is False
         assert report.results[0].status == "fail"
         assert "Measurement error" in report.results[0].messages[0]

@@ -1,4 +1,3 @@
-
 """
 AudioFormation CLI — Click command groups.
 
@@ -40,6 +39,7 @@ def _run_async(coro):
 
     if loop and loop.is_running():
         import concurrent.futures
+
         with concurrent.futures.ThreadPoolExecutor() as pool:
             return pool.submit(asyncio.run, coro).result()
     else:
@@ -94,7 +94,9 @@ def new(name: str) -> None:
     if hw.get("ffmpeg_available"):
         click.echo("  ffmpeg: OK")
     else:
-        click.secho("  ffmpeg: ERROR NOT FOUND — install ffmpeg and add to PATH", fg="yellow")
+        click.secho(
+            "  ffmpeg: ERROR NOT FOUND — install ffmpeg and add to PATH", fg="yellow"
+        )
 
     click.echo()
     click.echo("Next steps:")
@@ -115,7 +117,9 @@ def list_projects() -> None:
         click.echo("  Create one: audioformation new MY_PROJECT")
         return
 
-    click.echo(f"{'ID':<30} {'Created':<22} {'Chapters':<10} {'Stage':<15} {'Languages'}")
+    click.echo(
+        f"{'ID':<30} {'Created':<22} {'Chapters':<10} {'Stage':<15} {'Languages'}"
+    )
     click.echo("─" * 95)
 
     for p in projects:
@@ -201,7 +205,9 @@ def hardware() -> None:
     if hw.get("gpu_available"):
         click.secho("  GPU:", fg="green")
         click.echo(f"    Name:     {hw['gpu_name']}")
-        click.echo(f"    VRAM:     {hw['vram_total_gb']} GB total, {hw['vram_free_gb']} GB free")
+        click.echo(
+            f"    VRAM:     {hw['vram_total_gb']} GB total, {hw['vram_free_gb']} GB free"
+        )
         click.echo(f"    CUDA:     {hw.get('cuda_version', 'unknown')}")
         click.echo(f"    Strategy: {hw['recommended_vram_strategy']}")
     else:
@@ -259,7 +265,7 @@ def cast_list(project_id: str) -> None:
         name = char_data.get("name", "")
         engine = char_data.get("engine", "")
         voice = char_data.get("voice") or char_data.get("reference_audio") or ""
-        
+
         # Truncate long paths for display
         if len(voice) > 30 and "/" in voice:
             voice = "..." + voice[-27:]
@@ -275,7 +281,15 @@ def cast_list(project_id: str) -> None:
 @click.option("--voice", default=None, help="Voice ID (for edge/cloud) or None.")
 @click.option("--dialect", default="msa", help="Dialect code (msa, eg, etc.).")
 @click.option("--persona", default="", help="Description of character persona.")
-def cast_add(project_id: str, char_id: str, name: str, engine: str, voice: str | None, dialect: str, persona: str) -> None:
+def cast_add(
+    project_id: str,
+    char_id: str,
+    name: str,
+    engine: str,
+    voice: str | None,
+    dialect: str,
+    persona: str,
+) -> None:
     """Add or update a character in project.json."""
     from audioformation.project import load_project_json, save_project_json
 
@@ -283,14 +297,14 @@ def cast_add(project_id: str, char_id: str, name: str, engine: str, voice: str |
         return
 
     pj = load_project_json(project_id)
-    
+
     char_entry = {
         "name": name,
         "engine": engine,
         "voice": voice,
         "dialect": dialect,
         "persona": persona,
-        "reference_audio": None
+        "reference_audio": None,
     }
 
     # If updating, preserve existing fields if not overwritten
@@ -315,14 +329,24 @@ def cast_add(project_id: str, char_id: str, name: str, engine: str, voice: str |
 @cast.command("clone")
 @click.argument("project_id")
 @click.option("--id", "char_id", required=True, help="Character ID.")
-@click.option("--reference", type=click.Path(exists=True, path_type=Path), required=True,
-              help="Path to reference audio file.")
+@click.option(
+    "--reference",
+    type=click.Path(exists=True, path_type=Path),
+    required=True,
+    help="Path to reference audio file.",
+)
 @click.option("--name", default=None, help="Character name (optional if exists).")
-def cast_clone(project_id: str, char_id: str, reference: Path, name: str | None) -> None:
+def cast_clone(
+    project_id: str, char_id: str, reference: Path, name: str | None
+) -> None:
     """
     Setup voice cloning: copy audio ref and set engine to XTTS.
     """
-    from audioformation.project import load_project_json, save_project_json, get_project_path
+    from audioformation.project import (
+        load_project_json,
+        save_project_json,
+        get_project_path,
+    )
     from audioformation.utils.security import sanitize_filename
 
     if not _project_guard(project_id):
@@ -336,7 +360,7 @@ def cast_clone(project_id: str, char_id: str, reference: Path, name: str | None)
     safe_name = sanitize_filename(reference.name)
     dest_path = voices_dir / safe_name
     shutil.copy2(reference, dest_path)
-    
+
     # Relative path for project.json
     rel_path = f"02_VOICES/references/{safe_name}"
 
@@ -361,7 +385,7 @@ def cast_clone(project_id: str, char_id: str, reference: Path, name: str | None)
             "voice": None,
             "dialect": "msa",
             "persona": "Voice clone",
-            "reference_audio": rel_path
+            "reference_audio": rel_path,
         }
         characters[char_id] = char_data
         action = "Created"
@@ -385,10 +409,17 @@ def sfx() -> None:
 
 @sfx.command("generate")
 @click.argument("project_id")
-@click.option("--type", "sfx_type", type=click.Choice(["whoosh", "impact", "ui_click", "static", "drone"]), required=True)
+@click.option(
+    "--type",
+    "sfx_type",
+    type=click.Choice(["whoosh", "impact", "ui_click", "static", "drone"]),
+    required=True,
+)
 @click.option("--duration", type=float, default=1.0, help="Duration in seconds.")
 @click.option("--name", "filename", default=None, help="Output filename (optional).")
-def sfx_generate(project_id: str, sfx_type: str, duration: float, filename: str | None) -> None:
+def sfx_generate(
+    project_id: str, sfx_type: str, duration: float, filename: str | None
+) -> None:
     """Generate a procedural sound effect."""
     from audioformation.project import get_project_path
     from audioformation.audio.sfx import generate_sfx
@@ -403,7 +434,7 @@ def sfx_generate(project_id: str, sfx_type: str, duration: float, filename: str 
     if not filename:
         timestamp = str(int(time.time()))
         filename = f"{sfx_type}_{timestamp}.wav"
-    
+
     output_path = sfx_dir / filename
 
     try:
@@ -453,17 +484,27 @@ def validate(project_id: str) -> None:
         click.secho("OK Validation PASSED", fg="green", bold=True)
         update_node_status(project_id, "validate", "complete")
     else:
-        click.secho("ERROR Validation FAILED — fix issues and retry", fg="red", bold=True)
+        click.secho(
+            "ERROR Validation FAILED — fix issues and retry", fg="red", bold=True
+        )
         update_node_status(project_id, "validate", "failed")
         sys.exit(1)
 
 
 @main.command()
 @click.argument("project_id")
-@click.option("--source", type=click.Path(exists=True, path_type=Path), required=True,
-              help="Directory containing .txt chapter files.")
-@click.option("--language", type=str, default=None,
-              help="Override language for all files (ar/en). Auto-detects if omitted.")
+@click.option(
+    "--source",
+    type=click.Path(exists=True, path_type=Path),
+    required=True,
+    help="Directory containing .txt chapter files.",
+)
+@click.option(
+    "--language",
+    type=str,
+    default=None,
+    help="Override language for all files (ar/en). Auto-detects if omitted.",
+)
 def ingest(project_id: str, source: Path, language: str | None) -> None:
     """Import text files into a project (Node 1)."""
     from audioformation.ingest import ingest_text
@@ -502,23 +543,34 @@ def ingest(project_id: str, source: Path, language: str | None) -> None:
         f"✓ Ingested {result['ingested']} files, skipped {result['skipped']}.",
         fg="green",
     )
-    
+
     # Write pipeline status — ingest complete
     project_path = get_project_path(project_id)
     mark_node(project_path, "ingest", "complete", files_ingested=result["ingested"])
-    
+
     click.echo(f"  Next: audioformation validate {project_id}")
 
 
 @main.command()
 @click.argument("project_id")
-@click.option("--engine", type=str, default=None,
-              help="Override TTS engine (edge, xtts, elevenlabs).")
-@click.option("--device", type=click.Choice(["gpu", "cpu"]), default=None,
-              help="Device for XTTS.")
-@click.option("--chapters", type=str, default=None,
-              help="Comma-separated chapter IDs to generate. Default: all.")
-def generate(project_id: str, engine: str | None, device: str | None, chapters: str | None) -> None:
+@click.option(
+    "--engine",
+    type=str,
+    default=None,
+    help="Override TTS engine (edge, xtts, elevenlabs).",
+)
+@click.option(
+    "--device", type=click.Choice(["gpu", "cpu"]), default=None, help="Device for XTTS."
+)
+@click.option(
+    "--chapters",
+    type=str,
+    default=None,
+    help="Comma-separated chapter IDs to generate. Default: all.",
+)
+def generate(
+    project_id: str, engine: str | None, device: str | None, chapters: str | None
+) -> None:
     """Run TTS generation (Node 3)."""
     from audioformation.generate import generate_project
     from audioformation.pipeline import can_proceed_to
@@ -546,13 +598,15 @@ def generate(project_id: str, engine: str | None, device: str | None, chapters: 
         click.echo(msg)
 
     try:
-        result = _run_async(generate_project(
-            project_id,
-            engine_name=engine,
-            device=device,
-            chapters=chapter_list,
-            progress_callback=_cli_progress,
-        ))
+        result = _run_async(
+            generate_project(
+                project_id,
+                engine_name=engine,
+                device=device,
+                chapters=chapter_list,
+                progress_callback=_cli_progress,
+            )
+        )
     except Exception as e:
         click.secho(f"ERROR Generation error: {e}", fg="red")
         sys.exit(1)
@@ -578,9 +632,14 @@ def generate(project_id: str, engine: str | None, device: str | None, chapters: 
     if fail_rate == 0:
         click.secho("✓ Generation complete.", fg="green", bold=True)
     elif fail_rate <= 5:
-        click.secho(f"✓ Generation complete with {fail_rate:.1f}% failures.", fg="yellow")
+        click.secho(
+            f"✓ Generation complete with {fail_rate:.1f}% failures.", fg="yellow"
+        )
     else:
-        click.secho(f"ERROR Generation had {fail_rate:.1f}% failures — review QC report.", fg="red")
+        click.secho(
+            f"ERROR Generation had {fail_rate:.1f}% failures — review QC report.",
+            fg="red",
+        )
         sys.exit(1)
 
     click.echo(f"  Next: audioformation qc {project_id} --report")
@@ -628,26 +687,38 @@ def qc(project_id: str, report: bool) -> None:
                     click.echo(f"    {click.style('X', fg='red')} {chunk['chunk_id']}")
                     for check_name, check_data in chunk.get("checks", {}).items():
                         if check_data.get("status") == "fail":
-                            click.echo(f"      └─ {check_name}: {check_data.get('message', '')}")
+                            click.echo(
+                                f"      └─ {check_name}: {check_data.get('message', '')}"
+                            )
                 elif status == "warn":
-                    click.echo(f"    {click.style('⚠', fg='yellow')} {chunk['chunk_id']}")
+                    click.echo(
+                        f"    {click.style('⚠', fg='yellow')} {chunk['chunk_id']}"
+                    )
                     for check_name, check_data in chunk.get("checks", {}).items():
                         if check_data.get("status") == "warn":
-                            click.echo(f"      └─ {check_name}: {check_data.get('message', '')}")
+                            click.echo(
+                                f"      └─ {check_name}: {check_data.get('message', '')}"
+                            )
 
         click.echo()
 
     # Write pipeline status — qc_scan
     from audioformation.pipeline import mark_node
-    
+
     # Calculate overall result
     total_chunks = sum(r.get("total_chunks", 0) for r in all_reports)
     total_failed = sum(r.get("failures", 0) for r in all_reports)
     fail_pct = (total_failed / total_chunks * 100) if total_chunks > 0 else 0
-    
+
     qc_status = "failed" if fail_pct > 5 else "complete"
-    mark_node(project_path, "qc_scan", qc_status, 
-              chunks_scanned=total_chunks, fail_percent=round(fail_pct, 1))
+    mark_node(
+        project_path,
+        "qc_scan",
+        qc_status,
+        chunks_scanned=total_chunks,
+        fail_percent=round(fail_pct, 1),
+    )
+
 
 @main.command("process")
 @click.argument("project_id")
@@ -679,7 +750,8 @@ def process_audio(project_id: str) -> None:
         return len(parts) == 2 and parts[1].isdigit()
 
     chapter_wavs = sorted(
-        f for f in raw_dir.glob("ch*.wav")
+        f
+        for f in raw_dir.glob("ch*.wav")
         if not _is_chunk_file(f)  # Exclude chunk files only
     )
 
@@ -704,13 +776,17 @@ def process_audio(project_id: str) -> None:
         source = trimmed_path if trim_ok and trimmed_path.exists() else wav_path
 
         # Normalize
-        norm_ok = normalize_lufs(source, output_path, target_lufs=target_lufs, true_peak=true_peak)
+        norm_ok = normalize_lufs(
+            source, output_path, target_lufs=target_lufs, true_peak=true_peak
+        )
 
         if norm_ok:
             click.echo(f"  {click.style('✓', fg='green')} {wav_path.name}")
             success_count += 1
         else:
-            click.echo(f"  {click.style('X', fg='red')} {wav_path.name} — normalization failed")
+            click.echo(
+                f"  {click.style('X', fg='red')} {wav_path.name} — normalization failed"
+            )
 
         # Clean up temp trimmed file
         if trimmed_path.exists() and trimmed_path != output_path:
@@ -721,7 +797,9 @@ def process_audio(project_id: str) -> None:
         click.secho("✓ Processing complete.", fg="green", bold=True)
         update_node_status(project_id, "process", "complete")
     else:
-        click.secho(f"⚠ Processed {success_count}/{len(chapter_wavs)} files.", fg="yellow")
+        click.secho(
+            f"⚠ Processed {success_count}/{len(chapter_wavs)} files.", fg="yellow"
+        )
         update_node_status(project_id, "process", "partial")
 
     click.echo(f"  Output: {processed_dir}")
@@ -729,11 +807,27 @@ def process_audio(project_id: str) -> None:
 
 @main.command("compose")
 @click.argument("project_id")
-@click.option("--preset", default="contemplative", help="Mood preset (contemplative, tense, wonder, etc.)")
-@click.option("--duration", type=float, default=60.0, help="Duration in seconds (default: 60)")
-@click.option("--output", "output_filename", default=None, help="Output filename (optional)")
-@click.option("--list", "list_only", is_flag=True, help="List available presets and exit")
-def compose(project_id: str, preset: str, duration: float, output_filename: str | None, list_only: bool) -> None:
+@click.option(
+    "--preset",
+    default="contemplative",
+    help="Mood preset (contemplative, tense, wonder, etc.)",
+)
+@click.option(
+    "--duration", type=float, default=60.0, help="Duration in seconds (default: 60)"
+)
+@click.option(
+    "--output", "output_filename", default=None, help="Output filename (optional)"
+)
+@click.option(
+    "--list", "list_only", is_flag=True, help="List available presets and exit"
+)
+def compose(
+    project_id: str,
+    preset: str,
+    duration: float,
+    output_filename: str | None,
+    list_only: bool,
+) -> None:
     """Generate ambient pad music (Node 5)."""
     from audioformation.audio.composer import generate_pad, list_presets
     from audioformation.project import get_project_path
@@ -760,7 +854,7 @@ def compose(project_id: str, preset: str, duration: float, output_filename: str 
     if not output_filename:
         timestamp = str(int(time.time()))
         output_filename = f"{preset}_{timestamp}.wav"
-    
+
     output_path = music_dir / output_filename
 
     try:
@@ -773,14 +867,19 @@ def compose(project_id: str, preset: str, duration: float, output_filename: str 
         sys.exit(1)
 
     click.secho(f"✓ Saved: {output_path.name}", fg="green")
-    
+
     # Update pipeline status
     mark_node(project_path, "compose", "complete", preset=preset, duration=duration)
 
 
 @main.command("mix")
 @click.argument("project_id")
-@click.option("--music", "music_file", default=None, help="Optional: Background music file (in 05_MUSIC/generated).")
+@click.option(
+    "--music",
+    "music_file",
+    default=None,
+    help="Optional: Background music file (in 05_MUSIC/generated).",
+)
 def mix(project_id: str, music_file: str | None) -> None:
     """Mix voice and music with ducking (Node 6)."""
     from audioformation.mix import mix_project
@@ -796,7 +895,7 @@ def mix(project_id: str, music_file: str | None) -> None:
         sys.exit(1)
 
     click.echo(f"Starting mix for project: {project_id}")
-    
+
     def _cli_progress(msg: str):
         # Naive color mapping
         if "ERROR" in msg:
@@ -809,7 +908,7 @@ def mix(project_id: str, music_file: str | None) -> None:
             click.echo(msg)
 
     success = mix_project(project_id, music_file, progress_callback=_cli_progress)
-    
+
     if not success:
         sys.exit(1)
 
@@ -831,39 +930,56 @@ def qc_final(project_id: str) -> None:
         sys.exit(1)
 
     click.echo(f"Running QC Final for: {project_id}")
-    
+
     report = scan_final_mix(project_id)
-    
+
     click.echo()
     click.secho("QC Final Report", bold=True)
     click.echo(f"  Target LUFS: {report.target_lufs} (±1.0)")
     click.echo(f"  Limit True Peak: {report.true_peak_limit} dBTP")
     click.echo("-" * 60)
-    
+
     for res in report.results:
-        status_icon = click.style("OK", fg="green") if res.status == "pass" else click.style("X", fg="red")
-        click.echo(f"  {status_icon} {res.filename:<25} "
-                   f"LUFS: {res.lufs:>5.1f}  TP: {res.true_peak:>5.1f}")
-        
+        status_icon = (
+            click.style("OK", fg="green")
+            if res.status == "pass"
+            else click.style("X", fg="red")
+        )
+        click.echo(
+            f"  {status_icon} {res.filename:<25} "
+            f"LUFS: {res.lufs:>5.1f}  TP: {res.true_peak:>5.1f}"
+        )
+
         if res.status == "fail":
             for msg in res.messages:
                 click.echo(f"      └─ {msg}")
 
     click.echo("-" * 60)
-    
+
     if report.passed:
         click.secho("✓ QC Final PASSED. Ready for export.", fg="green", bold=True)
     else:
-        click.secho("ERROR QC Final FAILED. Adjust mix settings and retry.", fg="red", bold=True)
+        click.secho(
+            "ERROR QC Final FAILED. Adjust mix settings and retry.", fg="red", bold=True
+        )
         sys.exit(1)
 
 
 @main.command("export")
 @click.argument("project_id")
-@click.option("--format", "fmt", type=click.Choice(["mp3", "wav", "m4b"]), default="mp3",
-              help="Export format.")
-@click.option("--bitrate", type=int, default=None,
-              help="MP3 bitrate in kbps (default: from project.json).")
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["mp3", "wav", "m4b"]),
+    default="mp3",
+    help="Export format.",
+)
+@click.option(
+    "--bitrate",
+    type=int,
+    default=None,
+    help="MP3 bitrate in kbps (default: from project.json).",
+)
 def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
     """Export final audio files (Node 8)."""
     from audioformation.project import get_project_path, load_project_json
@@ -887,35 +1003,37 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
     export_config = pj.get("export", {})
 
     export_dir = project_path / "07_EXPORT"
-    
+
     # ── M4B / Audiobook Export ──
     if fmt == "m4b":
         click.echo("Exporting full audiobook as M4B...")
         audiobook_dir = export_dir / "audiobook"
         audiobook_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Determine filename
         filename = f"{project_id}.m4b"
         out_path = audiobook_dir / filename
-        
+
         # Run export
         update_node_status(project_id, "export", "running", mode="m4b")
-        ok = export_project_m4b(project_id, out_path, bitrate=export_config.get("m4b_aac_bitrate", 128))
-        
+        ok = export_project_m4b(
+            project_id, out_path, bitrate=export_config.get("m4b_aac_bitrate", 128)
+        )
+
         if ok:
             click.secho(f"✓ Created: {out_path}", fg="green", bold=True)
             update_node_status(project_id, "export", "complete", mode="m4b")
         else:
             click.secho("✗ M4B export failed.", fg="red")
             update_node_status(project_id, "export", "failed")
-            
+
         return
 
     # ── Chapter-based Export (MP3/WAV) ──
-    
+
     # Source: Mixed files from 06_MIX/renders
     mix_dir = project_path / "06_MIX" / "renders"
-    
+
     if not mix_dir.exists() or not list(mix_dir.glob("*.wav")):
         click.secho("✗ No mixed audio files found in 06_MIX/renders/.", fg="red")
         click.echo("  Run: audioformation mix " + project_id)
@@ -948,7 +1066,9 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
             click.echo(f"  {click.style('✓', fg='green')} {out_path.name}")
             success_count += 1
         else:
-            click.echo(f"  {click.style('✗', fg='red')} {wav_path.stem} — export failed")
+            click.echo(
+                f"  {click.style('✗', fg='red')} {wav_path.stem} — export failed"
+            )
 
     # Generate manifest
     click.echo()
@@ -965,7 +1085,9 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
         click.secho("✓ Export complete.", fg="green", bold=True)
         update_node_status(project_id, "export", "complete")
     else:
-        click.secho(f"⚠ Exported {success_count}/{len(chapter_files)} files.", fg="yellow")
+        click.secho(
+            f"⚠ Exported {success_count}/{len(chapter_files)} files.", fg="yellow"
+        )
         update_node_status(project_id, "export", "partial")
 
     click.echo(f"  Output: {export_dir}")
@@ -980,8 +1102,13 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
 @click.argument("text", required=False)
 @click.option("--engine", type=str, default="edge", help="TTS engine.")
 @click.option("--voice", type=str, default="ar-SA-HamedNeural", help="Voice ID.")
-@click.option("-o", "--output", type=click.Path(path_type=Path), default=None,
-              help="Output file path.")
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output file path.",
+)
 def quick(text: str | None, engine: str, voice: str, output: Path | None) -> None:
     """Quick TTS generation without a project."""
     import sys as _sys
@@ -991,7 +1118,9 @@ def quick(text: str | None, engine: str, voice: str, output: Path | None) -> Non
         if not _sys.stdin.isatty():
             text = _sys.stdin.read().strip()
         else:
-            click.secho("✗ No text provided. Pass as argument or pipe via stdin.", fg="red")
+            click.secho(
+                "✗ No text provided. Pass as argument or pipe via stdin.", fg="red"
+            )
             sys.exit(1)
 
     if not text:
@@ -1033,6 +1162,7 @@ def quick(text: str | None, engine: str, voice: str, output: Path | None) -> Non
     # Convert to target format if needed
     if output.suffix == ".mp3":
         from audioformation.export.mp3 import export_mp3
+
         ok = export_mp3(wav_output, output, bitrate=192)
         if ok and wav_output != output:
             wav_output.unlink(missing_ok=True)
@@ -1052,11 +1182,28 @@ def quick(text: str | None, engine: str, voice: str, output: Path | None) -> Non
 @main.command()
 @click.argument("project_id")
 @click.argument("chapter_id")
-@click.option("--duration", type=float, default=30.0, help="Preview duration in seconds (default: 30).")
-@click.option("--chars", type=int, default=None, help="Preview length in characters (overrides duration).")
+@click.option(
+    "--duration",
+    type=float,
+    default=30.0,
+    help="Preview duration in seconds (default: 30).",
+)
+@click.option(
+    "--chars",
+    type=int,
+    default=None,
+    help="Preview length in characters (overrides duration).",
+)
 @click.option("--engine", type=str, default=None, help="Override TTS engine.")
 @click.option("--voice", type=str, default=None, help="Override voice ID.")
-def preview(project_id: str, chapter_id: str, duration: float, chars: int | None, engine: str | None, voice: str | None) -> None:
+def preview(
+    project_id: str,
+    chapter_id: str,
+    duration: float,
+    chars: int | None,
+    engine: str | None,
+    voice: str | None,
+) -> None:
     """Generate a quick preview of a chapter."""
     from audioformation.project import get_project_path, load_project_json
     from audioformation.engines.registry import registry
@@ -1067,7 +1214,7 @@ def preview(project_id: str, chapter_id: str, duration: float, chars: int | None
 
     project_path = get_project_path(project_id)
     pj = load_project_json(project_id)
-    
+
     # Find chapter
     chapter = next((c for c in pj.get("chapters", []) if c["id"] == chapter_id), None)
     if not chapter:
@@ -1079,9 +1226,9 @@ def preview(project_id: str, chapter_id: str, duration: float, chars: int | None
     if not source_path.exists():
         click.secho(f"✗ Source file not found: {source_path}", fg="red")
         sys.exit(1)
-        
+
     text = source_path.read_text(encoding="utf-8").strip()
-    
+
     # Truncate text for preview
     # Approx 15 chars per second for speech
     preview_chars = chars or int(duration * 15)
@@ -1096,15 +1243,15 @@ def preview(project_id: str, chapter_id: str, duration: float, chars: int | None
     # Determine character/engine
     char_id = chapter.get("character", "narrator")
     char_data = pj.get("characters", {}).get(char_id, {})
-    
+
     target_engine = engine or char_data.get("engine", "edge")
     target_voice = voice or char_data.get("voice")
-    
+
     click.echo(f"Generating preview for {project_id}/{chapter_id}")
     click.echo(f"  Engine: {target_engine}")
     click.echo(f"  Voice:  {target_voice}")
     click.echo(f"  Length: {len(text)} chars (~{len(text)/15:.1f}s)")
-    
+
     try:
         tts = registry.get(target_engine)
     except KeyError:
@@ -1140,18 +1287,31 @@ def preview(project_id: str, chapter_id: str, duration: float, chars: int | None
 @main.command()
 @click.argument("project_id")
 @click.argument("chapter_id")
-@click.option("--engines", type=str, default="edge,gtts", help="Comma-separated engines to compare.")
+@click.option(
+    "--engines",
+    type=str,
+    default="edge,gtts",
+    help="Comma-separated engines to compare.",
+)
 def compare(project_id: str, chapter_id: str, engines: str) -> None:
     """Generate A/B comparisons using multiple engines."""
     # Re-use preview logic loop
     engine_list = [e.strip() for e in engines.split(",")]
-    
+
     click.echo(f"Comparing engines: {', '.join(engine_list)}")
-    
+
     ctx = click.get_current_context()
     for eng in engine_list:
         click.echo(f"\n--- {eng} ---")
-        ctx.invoke(preview, project_id=project_id, chapter_id=chapter_id, engine=eng, duration=30.0, chars=None, voice=None)
+        ctx.invoke(
+            preview,
+            project_id=project_id,
+            chapter_id=chapter_id,
+            engine=eng,
+            duration=30.0,
+            chars=None,
+            voice=None,
+        )
 
 
 # ──────────────────────────────────────────────
@@ -1213,7 +1373,9 @@ def engines_test(engine_name: str, device: str | None) -> None:
 
 @engines.command("voices")
 @click.argument("engine_name")
-@click.option("--lang", type=str, default=None, help="Filter by language prefix (e.g., 'ar').")
+@click.option(
+    "--lang", type=str, default=None, help="Filter by language prefix (e.g., 'ar')."
+)
 def engines_voices(engine_name: str, lang: str | None) -> None:
     """List voices available on an engine."""
     from audioformation.engines.registry import registry
@@ -1227,8 +1389,11 @@ def engines_voices(engine_name: str, lang: str | None) -> None:
     voices = _run_async(engine.list_voices(language=lang))
 
     if not voices:
-        click.echo(f"No voices found for engine '{engine_name}'" +
-                    (f" with language '{lang}'" if lang else "") + ".")
+        click.echo(
+            f"No voices found for engine '{engine_name}'"
+            + (f" with language '{lang}'" if lang else "")
+            + "."
+        )
         return
 
     click.echo(f"{'ID':<35} {'Name':<40} {'Locale':<10} {'Gender'}")
@@ -1253,11 +1418,20 @@ def engines_voices(engine_name: str, lang: str | None) -> None:
 @main.command()
 @click.argument("project_id")
 @click.option("--all", "run_all", is_flag=True, help="Run complete pipeline.")
-@click.option("--from", "from_node", type=str, default=None,
-              help="Resume from a specific node.")
-@click.option("--dry-run", is_flag=True, help="Estimate time and cost without generating.")
+@click.option(
+    "--from", "from_node", type=str, default=None, help="Resume from a specific node."
+)
+@click.option(
+    "--dry-run", is_flag=True, help="Estimate time and cost without generating."
+)
 @click.option("--engine", type=str, default=None, help="Override TTS engine.")
-def run(project_id: str, run_all: bool, from_node: str | None, dry_run: bool, engine: str | None) -> None:
+def run(
+    project_id: str,
+    run_all: bool,
+    from_node: str | None,
+    dry_run: bool,
+    engine: str | None,
+) -> None:
     """Run the full pipeline or resume from a node."""
     from audioformation.pipeline import get_resume_point, nodes_in_range
 
@@ -1273,7 +1447,9 @@ def run(project_id: str, run_all: bool, from_node: str | None, dry_run: bool, en
         click.echo(f"  Nodes: {', '.join(PIPELINE_NODES)}")
         sys.exit(1)
 
-    start_node = get_resume_point(project_id, from_node) if from_node else PIPELINE_NODES[0]
+    start_node = (
+        get_resume_point(project_id, from_node) if from_node else PIPELINE_NODES[0]
+    )
     nodes = nodes_in_range(start_node)
 
     click.secho(f"Running pipeline: {project_id}", fg="cyan", bold=True)
@@ -1289,6 +1465,7 @@ def run(project_id: str, run_all: bool, from_node: str | None, dry_run: bool, en
         if node == "bootstrap":
             click.echo("  Already complete (project exists).")
             from audioformation.pipeline import update_node_status
+
             update_node_status(project_id, "bootstrap", "complete")
 
         elif node == "ingest":
@@ -1299,18 +1476,32 @@ def run(project_id: str, run_all: bool, from_node: str | None, dry_run: bool, en
             ctx.invoke(validate, project_id=project_id)
 
         elif node == "generate":
-            ctx.invoke(generate, project_id=project_id, engine=engine, device=None, chapters=None)
+            ctx.invoke(
+                generate,
+                project_id=project_id,
+                engine=engine,
+                device=None,
+                chapters=None,
+            )
 
         elif node == "qc_scan":
             click.echo("  QC scan runs automatically during generation.")
             from audioformation.pipeline import update_node_status
+
             update_node_status(project_id, "qc_scan", "complete")
 
         elif node == "process":
             ctx.invoke(process_audio, project_id=project_id)
 
         elif node == "compose":
-            ctx.invoke(compose, project_id=project_id, preset="contemplative", duration=60.0, output_filename=None, list_only=False)
+            ctx.invoke(
+                compose,
+                project_id=project_id,
+                preset="contemplative",
+                duration=60.0,
+                output_filename=None,
+                list_only=False,
+            )
 
         elif node == "mix":
             ctx.invoke(mix, project_id=project_id, music_file=None)
@@ -1357,8 +1548,7 @@ def _dry_run(project_id: str, engine_name: str | None) -> None:
             eng = engine_name or char_data.get("engine", "edge")
 
             click.echo(
-                f"  {ch['id']}: {len(text)} chars → "
-                f"{len(chunks)} chunks ({eng})"
+                f"  {ch['id']}: {len(text)} chars → " f"{len(chunks)} chunks ({eng})"
             )
         else:
             click.echo(f"  {ch['id']}: source file not found")
@@ -1411,16 +1601,19 @@ def serve(port: int, host: str) -> None:
     try:
         import uvicorn
         import importlib.util
+
         if not importlib.util.find_spec("audioformation.server.app"):
             raise ImportError()
     except ImportError:
         click.secho("✗ Server dependencies not installed.", fg="red")
-        click.echo("  Run: pip install \"audioformation[server]\"")
+        click.echo('  Run: pip install "audioformation[server]"')
         sys.exit(1)
 
-    click.secho(f"🚀 Starting API server on http://localhost:{port}", fg="green", bold=True)
+    click.secho(
+        f"🚀 Starting API server on http://localhost:{port}", fg="green", bold=True
+    )
     click.echo(f"   Docs: http://localhost:{port}/docs")
-    
+
     # Ensure current environment variables (like ELEVENLABS_API_KEY) are preserved
     uvicorn.run("audioformation.server.app:app", host=host, port=port, reload=True)
 

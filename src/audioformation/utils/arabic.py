@@ -20,14 +20,14 @@ _ARABIC_PRESENTATION_B = range(0xFE70, 0xFF00)
 # Diacritical marks (tashkeel)
 _DIACRITICS = set(
     "\u064B\u064C\u064D\u064E\u064F\u0650"  # tanween + fatha/damma/kasra
-    "\u0651\u0652\u0653\u0654\u0655"          # shadda, sukun, etc.
-    "\u0656\u0657\u0658\u065A\u065B"          # additional marks
-    "\u0670"                                    # superscript alef
+    "\u0651\u0652\u0653\u0654\u0655"  # shadda, sukun, etc.
+    "\u0656\u0657\u0658\u065A\u065B"  # additional marks
+    "\u0670"  # superscript alef
 )
 
 # Latin Unicode ranges
-_LATIN_BASIC = range(0x0041, 0x007B)      # A-Z, a-z
-_LATIN_EXTENDED = range(0x00C0, 0x0250)   # accented characters
+_LATIN_BASIC = range(0x0041, 0x007B)  # A-Z, a-z
+_LATIN_EXTENDED = range(0x00C0, 0x0250)  # accented characters
 
 # Dialect to voice mapping (edge-tts)
 DIALECT_VOICE_MAP = {
@@ -50,6 +50,7 @@ DIALECT_VOICE_MAP = {
 @dataclass
 class LanguageSegment:
     """A contiguous text segment with detected language."""
+
     text: str
     language: str  # "ar" or "en"
     start: int = 0
@@ -59,6 +60,7 @@ class LanguageSegment:
 @dataclass
 class DiacritizationResult:
     """Result of diacritization analysis/processing."""
+
     original: str
     diacritized: str
     level_before: float
@@ -194,7 +196,7 @@ def detect_language_segments(text: str) -> list[LanguageSegment]:
         else:
             # Check if this is a short inline switch (1-3 words)
             lookahead_same = 0
-            for fw, fl in tagged[tagged.index((word, lang)):]:
+            for fw, fl in tagged[tagged.index((word, lang)) :]:
                 if fl == lang:
                     lookahead_same += 1
                 else:
@@ -205,19 +207,23 @@ def detect_language_segments(text: str) -> list[LanguageSegment]:
                 current_words.append(word)
             else:
                 # Genuine language switch
-                segments.append(LanguageSegment(
-                    text=" ".join(current_words),
-                    language=current_lang,
-                ))
+                segments.append(
+                    LanguageSegment(
+                        text=" ".join(current_words),
+                        language=current_lang,
+                    )
+                )
                 current_lang = lang
                 current_words = [word]
 
     # Flush last segment
     if current_words:
-        segments.append(LanguageSegment(
-            text=" ".join(current_words),
-            language=current_lang,
-        ))
+        segments.append(
+            LanguageSegment(
+                text=" ".join(current_words),
+                language=current_lang,
+            )
+        )
 
     return segments
 
@@ -238,15 +244,19 @@ def split_at_language_boundaries(
             result.append(segment)
         else:
             # Split long segments at sentence boundaries
-            sentences = re.split(r'(?<=[.!?؟،])\s+', segment.text)
-            
+            sentences = re.split(r"(?<=[.!?؟،])\s+", segment.text)
+
             # If no sentence boundaries found, split by spaces to respect max_chars
             if len(sentences) == 1:
                 words = segment.text.split()
                 sentences = []
                 current_sentence = ""
                 for word in words:
-                    test_sentence = f"{current_sentence} {word}".strip() if current_sentence else word
+                    test_sentence = (
+                        f"{current_sentence} {word}".strip()
+                        if current_sentence
+                        else word
+                    )
                     if len(test_sentence) > max_chars:
                         if current_sentence:
                             sentences.append(current_sentence)
@@ -255,30 +265,30 @@ def split_at_language_boundaries(
                         current_sentence = test_sentence
                 if current_sentence:
                     sentences.append(current_sentence)
-            
+
             current_chunk = ""
 
             for sentence in sentences:
-                if (
-                    current_chunk
-                    and len(current_chunk) + len(sentence) + 1 > max_chars
-                ):
-                    result.append(LanguageSegment(
-                        text=current_chunk.strip(),
-                        language=segment.language,
-                    ))
+                if current_chunk and len(current_chunk) + len(sentence) + 1 > max_chars:
+                    result.append(
+                        LanguageSegment(
+                            text=current_chunk.strip(),
+                            language=segment.language,
+                        )
+                    )
                     current_chunk = sentence
                 else:
                     current_chunk = (
-                        f"{current_chunk} {sentence}" if current_chunk
-                        else sentence
+                        f"{current_chunk} {sentence}" if current_chunk else sentence
                     )
 
             if current_chunk.strip():
-                result.append(LanguageSegment(
-                    text=current_chunk.strip(),
-                    language=segment.language,
-                ))
+                result.append(
+                    LanguageSegment(
+                        text=current_chunk.strip(),
+                        language=segment.language,
+                    )
+                )
 
     return result
 
@@ -324,6 +334,7 @@ def _diacritize_mishkal(text: str) -> str:
     """Diacritize using Mishkal library."""
     try:
         from mishkal.tashkeel import TashkeelClass
+
         tashkeel = TashkeelClass()
         result = tashkeel.tashkeel(text)
         return result.strip() if result else text

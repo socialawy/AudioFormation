@@ -109,21 +109,25 @@ def list_projects() -> list[dict[str, Any]]:
             try:
                 pj = load_project_json(entry.name)
                 ps = load_pipeline_status(entry.name)
-                projects.append({
-                    "id": pj.get("id", entry.name),
-                    "created": pj.get("created", "unknown"),
-                    "languages": pj.get("languages", []),
-                    "chapters": len(pj.get("chapters", [])),
-                    "pipeline_node": _current_node(ps),
-                })
+                projects.append(
+                    {
+                        "id": pj.get("id", entry.name),
+                        "created": pj.get("created", "unknown"),
+                        "languages": pj.get("languages", []),
+                        "chapters": len(pj.get("chapters", [])),
+                        "pipeline_node": _current_node(ps),
+                    }
+                )
             except (json.JSONDecodeError, KeyError):
-                projects.append({
-                    "id": entry.name,
-                    "created": "unknown",
-                    "languages": [],
-                    "chapters": 0,
-                    "pipeline_node": "error",
-                })
+                projects.append(
+                    {
+                        "id": entry.name,
+                        "created": "unknown",
+                        "languages": [],
+                        "chapters": 0,
+                        "pipeline_node": "error",
+                    }
+                )
 
     return projects
 

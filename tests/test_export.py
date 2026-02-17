@@ -34,7 +34,9 @@ class TestMP3Export:
         assert output.exists()
         assert output.stat().st_size > 0
 
-    def test_export_with_different_bitrates(self, sample_wav: Path, tmp_path: Path) -> None:
+    def test_export_with_different_bitrates(
+        self, sample_wav: Path, tmp_path: Path
+    ) -> None:
         """Verify higher bitrate produces larger file (simulated)."""
         out_128 = tmp_path / "out_128.mp3"
         out_320 = tmp_path / "out_320.mp3"
@@ -43,17 +45,17 @@ class TestMP3Export:
         with patch("audioformation.export.mp3.AudioSegment") as MockAudioSegment:
             # Create a fresh mock instance for this specific test
             test_segment = MagicMock()
-            
+
             # Mock export to modify file size based on bitrate arg
             def _export_side_effect(path, format=None, bitrate=None, **kwargs):
                 p = Path(path)
                 # In export_mp3 it's passed as bitrate="128k" (string)
                 val = bitrate
-                
+
                 # Parse "128k" -> 128
                 if isinstance(val, str):
                     val = val.lower().replace("k", "")
-                
+
                 try:
                     kbps = int(val)
                 except (ValueError, TypeError):
@@ -72,7 +74,7 @@ class TestMP3Export:
                 return test_segment
 
             MockAudioSegment.from_file.side_effect = _from_file_override
-            
+
             export_mp3(sample_wav, out_128, bitrate=128)
             export_mp3(sample_wav, out_320, bitrate=320)
 

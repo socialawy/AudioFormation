@@ -23,7 +23,7 @@ def sine_wav(tmp_path: Path) -> Path:
     """Generate a 440Hz sine wave WAV."""
     import numpy as np
     import soundfile as sf
-    
+
     path = tmp_path / "sine.wav"
     sr = 24000
     duration = 1.0  # 1 second
@@ -39,7 +39,7 @@ def multi_chunks(tmp_path: Path) -> list[Path]:
     """Generate three short WAV chunks for stitching tests."""
     import numpy as np
     import soundfile as sf
-    
+
     paths = []
     sr = 24000
     duration = 0.5  # 0.5 seconds each
@@ -64,25 +64,25 @@ class TestMeasureLUFS:
     def test_reasonable_range(self, sine_wav: Path) -> None:
         lufs = measure_lufs(sine_wav)
         # Real LUFS measurement should be in reasonable range for a sine wave at 0.3 amplitude
-        assert -20.0 <= lufs <= -10.0 
+        assert -20.0 <= lufs <= -10.0
 
     def test_quiet_is_lower(self, tmp_path: Path) -> None:
         import numpy as np
         import soundfile as sf
-        
+
         loud = tmp_path / "loud.wav"
         quiet = tmp_path / "quiet.wav"
-        
+
         # Create real WAV files with different amplitudes
         sr = 24000
         duration = 1.0
         t = np.linspace(0, duration, int(sr * duration), False)
-        
+
         # Loud file: higher amplitude
         loud_audio = 0.5 * np.sin(2 * np.pi * 440 * t)
         sf.write(str(loud), loud_audio, sr)
-        
-        # Quiet file: lower amplitude  
+
+        # Quiet file: lower amplitude
         quiet_audio = 0.1 * np.sin(2 * np.pi * 440 * t)
         sf.write(str(quiet), quiet_audio, sr)
 
@@ -90,10 +90,10 @@ class TestMeasureLUFS:
         with patch("pyloudnorm.Meter") as MockMeter:
             meter_inst = MockMeter.return_value
             meter_inst.integrated_loudness.side_effect = [-10.0, -40.0]
-            
+
             lufs_loud = measure_lufs(loud)
             lufs_quiet = measure_lufs(quiet)
-            
+
             assert lufs_loud == -10.0
             assert lufs_quiet == -40.0
 
@@ -112,7 +112,7 @@ class TestTruePeak:
     def test_full_scale_near_zero(self, tmp_path: Path) -> None:
         path = tmp_path / "full.wav"
         path.touch()
-        
+
         with patch("soundfile.read") as mock_read:
             mock_read.return_value = (np.array([0.99] * 24000), 24000)
             peak = measure_true_peak(path)
@@ -122,7 +122,7 @@ class TestTruePeak:
     def test_silence_returns_very_low(self, tmp_path: Path) -> None:
         path = tmp_path / "silent.wav"
         path.touch()
-        
+
         with patch("soundfile.read") as mock_read:
             mock_read.return_value = (np.zeros(24000), 24000)
             peak = measure_true_peak(path)
@@ -136,7 +136,7 @@ class TestDetectClipping:
         with patch("soundfile.read") as mock_read:
             # All values 0.5
             mock_read.return_value = (np.array([0.5] * 1000), 24000)
-            
+
             result = detect_clipping(sine_wav, threshold_dbfs=-0.5)
             assert result["clipped"] is False
             assert result["clipped_samples"] == 0
@@ -144,14 +144,14 @@ class TestDetectClipping:
     def test_clipped_audio_detected(self, tmp_path: Path) -> None:
         path = tmp_path / "clipped.wav"
         path.touch()
-        
+
         with patch("soundfile.read") as mock_read:
             # Values > 1.0 (clipping)
             data = np.array([1.5] * 1000)
             # detect_clipping compares against threshold (e.g. -0.5 dbfs -> 0.94 linear)
             # 1.5 is definitely clipped relative to 1.0 full scale
             mock_read.return_value = (data, 24000)
-            
+
             result = detect_clipping(path, threshold_dbfs=-0.5)
             assert result["clipped"] is True
             assert result["clipped_samples"] > 0
@@ -182,7 +182,9 @@ class TestDuration:
 class TestCrossfadeStitch:
     """Tests for chunk stitching with crossfade."""
 
-    def test_stitch_produces_output(self, multi_chunks: list[Path], tmp_path: Path) -> None:
+    def test_stitch_produces_output(
+        self, multi_chunks: list[Path], tmp_path: Path
+    ) -> None:
         output = tmp_path / "stitched.wav"
         ok = crossfade_stitch(multi_chunks, output, crossfade_ms=50)
         assert ok is True

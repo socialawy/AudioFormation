@@ -1,4 +1,3 @@
-
 """Tests for FastAPI server endpoints."""
 
 import pytest
@@ -8,18 +7,25 @@ from unittest.mock import patch, MagicMock
 try:
     from fastapi.testclient import TestClient
     from audioformation.server.app import app
+
     SERVER_AVAILABLE = True
 except ImportError:
     SERVER_AVAILABLE = False
 
+
 @pytest.mark.skipif(not SERVER_AVAILABLE, reason="Server dependencies not installed")
-@pytest.mark.skipif(True, reason="Temporarily skipping server tests due to FastAPI version compatibility")
+@pytest.mark.skipif(
+    True,
+    reason="Temporarily skipping server tests due to FastAPI version compatibility",
+)
 class TestServer:
     """Server tests temporarily skipped due to FastAPI TestClient compatibility issues"""
-    
+
     def test_health_check_placeholder(self):
         """Placeholder test - server tests temporarily disabled"""
-        pytest.skip("Server tests temporarily disabled - FastAPI TestClient compatibility issue")
+        pytest.skip(
+            "Server tests temporarily disabled - FastAPI TestClient compatibility issue"
+        )
 
     def test_list_projects(self, client, sample_project, isolate_projects):
         response = client.get("/api/projects")
@@ -31,11 +37,11 @@ class TestServer:
     def test_create_project(self, client, isolate_projects):
         new_id = "API_TEST_PROJECT"
         response = client.post("/api/projects", json={"id": new_id})
-        
+
         assert response.status_code == 201
         data = response.json()
         assert data["id"] == new_id
-        
+
         # Verify it exists
         project_path = isolate_projects / new_id
         assert project_path.exists()
@@ -62,14 +68,14 @@ class TestServer:
         pid = sample_project["id"]
         res = client.get(f"/api/projects/{pid}")
         data = res.json()
-        
+
         # Modify
         data["mix"]["target_lufs"] = -20.0
-        
+
         # Update
         update_res = client.put(f"/api/projects/{pid}", json=data)
         assert update_res.status_code == 200
-        
+
         # Verify
         verify_res = client.get(f"/api/projects/{pid}")
         verify_data = verify_res.json()

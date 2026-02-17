@@ -106,7 +106,9 @@ class XTTSEngine(TTSEngine):
 
     def _detect_device(self) -> str:
         if self._device_preference:
-            return "cuda" if self._device_preference == "gpu" else self._device_preference
+            return (
+                "cuda" if self._device_preference == "gpu" else self._device_preference
+            )
 
         try:
             import torch
@@ -117,8 +119,7 @@ class XTTSEngine(TTSEngine):
                     logger.info("XTTS: using CUDA (%.1f GB free)", free_gb)
                     return "cuda"
                 logger.warning(
-                    "XTTS: only %.1f GB VRAM free (need %.1f), "
-                    "falling back to CPU",
+                    "XTTS: only %.1f GB VRAM free (need %.1f), " "falling back to CPU",
                     free_gb,
                     _MIN_VRAM_GB,
                 )
@@ -137,8 +138,7 @@ class XTTSEngine(TTSEngine):
             from TTS.api import TTS  # type: ignore[import-untyped]
         except ImportError as exc:
             raise RuntimeError(
-                "coqui-tts is not installed. "
-                "Run:  pip install coqui-tts"
+                "coqui-tts is not installed. " "Run:  pip install coqui-tts"
             ) from exc
 
         logger.info("XTTS: loading %s on %s …", _MODEL_NAME, self.device)
@@ -285,9 +285,7 @@ class XTTSEngine(TTSEngine):
 
     # ── Voice listing / connection test ──────────────────
 
-    async def list_voices(
-        self, language: str | None = None
-    ) -> list[dict[str, str]]:
+    async def list_voices(self, language: str | None = None) -> list[dict[str, str]]:
         """
         XTTS clones from reference audio — no preset voices.
 
@@ -295,9 +293,7 @@ class XTTSEngine(TTSEngine):
         """
         if language:
             return [
-                lang
-                for lang in _SUPPORTED_LANGUAGES
-                if lang["id"].startswith(language)
+                lang for lang in _SUPPORTED_LANGUAGES if lang["id"].startswith(language)
             ]
         return list(_SUPPORTED_LANGUAGES)
 

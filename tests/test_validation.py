@@ -51,14 +51,16 @@ class TestValidateProject:
         self, sample_project, isolate_projects: Path
     ) -> None:
         pj = load_project_json(sample_project["id"])
-        pj["chapters"] = [{
-            "id": "ch99",
-            "title": "Test",
-            "language": "en",
-            "source": "01_TEXT/chapters/nonexistent.txt",
-            "character": "narrator",
-            "mode": "single",
-        }]
+        pj["chapters"] = [
+            {
+                "id": "ch99",
+                "title": "Test",
+                "language": "en",
+                "source": "01_TEXT/chapters/nonexistent.txt",
+                "character": "narrator",
+                "mode": "single",
+            }
+        ]
         save_project_json(sample_project["id"], pj)
 
         result = validate_project(sample_project["id"])
@@ -73,14 +75,16 @@ class TestValidateProject:
         ch_path.write_text("", encoding="utf-8")
 
         pj = load_project_json(sample_project["id"])
-        pj["chapters"] = [{
-            "id": "ch01",
-            "title": "Test",
-            "language": "en",
-            "source": "01_TEXT/chapters/ch01.txt",
-            "character": "narrator",
-            "mode": "single",
-        }]
+        pj["chapters"] = [
+            {
+                "id": "ch01",
+                "title": "Test",
+                "language": "en",
+                "source": "01_TEXT/chapters/ch01.txt",
+                "character": "narrator",
+                "mode": "single",
+            }
+        ]
         save_project_json(sample_project["id"], pj)
 
         result = validate_project(sample_project["id"])
@@ -122,7 +126,9 @@ class TestValidateProject:
         save_project_json(sample_project_with_text["id"], pj)
 
         result = validate_project(sample_project_with_text["id"])
-        assert any("target_lufs" in f.lower() or "lufs" in f.lower() for f in result.failures)
+        assert any(
+            "target_lufs" in f.lower() or "lufs" in f.lower() for f in result.failures
+        )
 
     def test_dialect_voice_mismatch_warns(
         self, sample_project_with_text, isolate_projects: Path

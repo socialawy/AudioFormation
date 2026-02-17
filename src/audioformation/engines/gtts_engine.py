@@ -89,8 +89,18 @@ class GTTSEngine(TTSEngine):
     async def list_voices(self, language: str | None = None) -> list[dict[str, str]]:
         """gTTS doesn't have selectable voices."""
         voices = [
-            {"id": "ar", "name": "Arabic (Google)", "locale": "ar", "gender": "Unknown"},
-            {"id": "en", "name": "English (Google)", "locale": "en", "gender": "Unknown"},
+            {
+                "id": "ar",
+                "name": "Arabic (Google)",
+                "locale": "ar",
+                "gender": "Unknown",
+            },
+            {
+                "id": "en",
+                "name": "English (Google)",
+                "locale": "en",
+                "gender": "Unknown",
+            },
         ]
         if language:
             voices = [v for v in voices if v["locale"].startswith(language)]
@@ -100,6 +110,7 @@ class GTTSEngine(TTSEngine):
         """Test gTTS availability."""
         try:
             from gtts import gTTS
+
             # Quick test — just instantiate, don't generate
             gTTS(text="test", lang="en")
             return True
@@ -111,6 +122,7 @@ def _mp3_to_wav(mp3_path: Path, wav_path: Path) -> bool:
     """Convert MP3 to WAV using pydub."""
     try:
         from pydub import AudioSegment
+
         audio = AudioSegment.from_mp3(str(mp3_path))
         audio.export(str(wav_path), format="wav")
         return wav_path.exists() and wav_path.stat().st_size > 0
@@ -122,6 +134,7 @@ def _get_duration(path: Path) -> float:
     """Get audio duration in seconds."""
     try:
         from pydub import AudioSegment
+
         audio = AudioSegment.from_file(str(path))
         return len(audio) / 1000.0
     except Exception:

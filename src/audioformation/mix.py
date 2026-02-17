@@ -1,4 +1,3 @@
-
 """
 Mix pipeline node logic.
 
@@ -37,6 +36,7 @@ def mix_project(
     Returns:
         True if all chapters mixed successfully.
     """
+
     def _notify(msg: str, level: str = "info") -> None:
         if level == "error":
             logger.error(msg)
@@ -44,7 +44,7 @@ def mix_project(
             logger.warning(msg)
         else:
             logger.info(msg)
-        
+
         if progress_callback:
             progress_callback(msg)
 
@@ -59,7 +59,7 @@ def mix_project(
     processed_dir = project_path / "03_GENERATED" / "processed"
     mix_dir = project_path / "06_MIX" / "renders"
     music_dir = project_path / "05_MUSIC" / "generated"
-    
+
     mix_dir.mkdir(parents=True, exist_ok=True)
 
     # Determine background music path
@@ -72,14 +72,16 @@ def mix_project(
     else:
         # Auto-detect latest music
         if music_dir.exists():
-            candidates = sorted(music_dir.glob("*.wav"), key=lambda f: f.stat().st_mtime, reverse=True)
+            candidates = sorted(
+                music_dir.glob("*.wav"), key=lambda f: f.stat().st_mtime, reverse=True
+            )
             if candidates:
                 bg_music_path = candidates[0]
                 _notify(f"  Using background music: {bg_music_path.name}")
             else:
                 _notify("  No background music found. Mixing voice only.")
         else:
-             _notify("  No music directory found. Mixing voice only.")
+            _notify("  No music directory found. Mixing voice only.")
 
     # Find processed chapters
     def _is_chunk_file(f: Path) -> bool:
@@ -91,8 +93,7 @@ def mix_project(
     chapter_files = []
     if processed_dir.exists():
         chapter_files = sorted(
-            f for f in processed_dir.glob("ch*.wav")
-            if not _is_chunk_file(f)
+            f for f in processed_dir.glob("ch*.wav") if not _is_chunk_file(f)
         )
 
     if not chapter_files:
@@ -100,10 +101,9 @@ def mix_project(
         raw_dir = project_path / "03_GENERATED" / "raw"
         if raw_dir.exists():
             chapter_files = sorted(
-                f for f in raw_dir.glob("ch*.wav")
-                if not _is_chunk_file(f)
+                f for f in raw_dir.glob("ch*.wav") if not _is_chunk_file(f)
             )
-        
+
         if chapter_files:
             _notify("⚠ Using RAW audio (process step skipped?)", "warning")
         else:
@@ -117,10 +117,10 @@ def mix_project(
 
     for voice_path in chapter_files:
         output_path = mix_dir / voice_path.name
-        
+
         _notify(f"  Mixing {voice_path.name}...")
         ok = mixer.mix_chapter(voice_path, bg_music_path, output_path)
-        
+
         if ok:
             success_count += 1
         else:

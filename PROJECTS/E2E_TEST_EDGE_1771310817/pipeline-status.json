@@ -1,0 +1,39 @@
+{
+  "project_id": "E2E_TEST_EDGE_1771310817",
+  "nodes": {
+    "bootstrap": {
+      "status": "complete",
+      "timestamp": "2026-02-17T06:46:59.481670+00:00"
+    },
+    "ingest": {
+      "status": "complete",
+      "timestamp": "2026-02-17T06:47:00.080193+00:00",
+      "files_ingested": 2,
+      "files_skipped": 0
+    },
+    "validate": {
+      "status": "pending"
+    },
+    "generate": {
+      "status": "pending"
+    },
+    "qc_scan": {
+      "status": "pending"
+    },
+    "process": {
+      "status": "pending"
+    },
+    "compose": {
+      "status": "pending"
+    },
+    "mix": {
+      "status": "pending"
+    },
+    "qc_final": {
+      "status": "pending"
+    },
+    "export": {
+      "status": "pending"
+    }
+  }
+}

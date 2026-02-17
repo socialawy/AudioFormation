@@ -1,4 +1,3 @@
-
 """
 QC Final — Validation of mixed audio before export (Pipeline Node 7).
 
@@ -34,6 +33,7 @@ from audioformation.pipeline import update_node_status
 @dataclass
 class FinalMixResult:
     """QC result for a single mixed file."""
+
     filename: str
     duration_sec: float
     lufs: float
@@ -48,6 +48,7 @@ class FinalMixResult:
 @dataclass
 class FinalQCReport:
     """Full report for QC Final."""
+
     project_id: str
     target_lufs: float
     true_peak_limit: float
@@ -70,25 +71,25 @@ def _detect_silence_gaps(audio_path: Path, max_gap_sec: float = 2.0) -> dict:
     """Detect silence gaps between audio segments."""
     try:
         import soundfile as sf
-        
+
         # Load audio
         data, sr = sf.read(str(audio_path))
         if data.ndim > 1:
             data = data[:, 0]  # Use first channel
-        
+
         # Simple silence detection: energy below threshold
         frame_size = int(sr * 0.01)  # 10ms frames
         hop_size = int(sr * 0.005)  # 5ms hop
-        
+
         energy_threshold = 0.01  # Adjust based on testing
         silence_frames = []
         in_silence = False
         gap_start = None
-        
+
         for i in range(0, len(data) - frame_size, hop_size):
-            frame = data[i:i + frame_size]
-            energy = np.mean(frame ** 2)
-            
+            frame = data[i : i + frame_size]
+            energy = np.mean(frame**2)
+
             if energy < energy_threshold:
                 if not in_silence:
                     in_silence = True
@@ -102,13 +103,13 @@ def _detect_silence_gaps(audio_path: Path, max_gap_sec: float = 2.0) -> dict:
                         return {
                             "has_long_gaps": True,
                             "longest_gap_sec": gap_duration,
-                            "gap_positions": [(gap_start, gap_end)]
+                            "gap_positions": [(gap_start, gap_end)],
                         }
                     in_silence = False
                     gap_start = None
-        
+
         return {"has_long_gaps": False, "longest_gap_sec": 0.0, "gap_positions": []}
-        
+
     except Exception:
         return {"has_long_gaps": False, "longest_gap_sec": 0.0, "gap_positions": []}
 
@@ -117,51 +118,55 @@ def _check_boundary_artifacts(audio_path: Path) -> dict:
     """Check for energy discontinuities at potential boundaries."""
     try:
         import soundfile as sf
-        
+
         # Load audio
         data, sr = sf.read(str(audio_path))
         if data.ndim > 1:
             data = data[:, 0]  # Use first channel
-        
+
         # Simple energy discontinuity detection
         frame_size = int(sr * 0.1)  # 100ms frames
         hop_size = int(sr * 0.05)  # 50ms hop
-        
+
         energy_levels = []
         for i in range(0, len(data) - frame_size, hop_size):
-            frame = data[i:i + frame_size]
-            energy = np.mean(frame ** 2)
+            frame = data[i : i + frame_size]
+            energy = np.mean(frame**2)
             energy_levels.append(energy)
-        
+
         # Look for large jumps in energy
         if len(energy_levels) < 2:
-            return {"has_artifacts": False, "worst_position_sec": 0.0, "worst_jump_db": 0.0}
-        
+            return {
+                "has_artifacts": False,
+                "worst_position_sec": 0.0,
+                "worst_jump_db": 0.0,
+            }
+
         energy_array = np.array(energy_levels)
-        
+
         # Find discontinuities (jumps > 6dB)
         jumps_db = []
         positions_sec = []
-        
+
         for i in range(1, len(energy_array)):
-            prev_energy = energy_array[i-1]
+            prev_energy = energy_array[i - 1]
             curr_energy = energy_array[i]
-            
+
             if curr_energy > 0 and prev_energy > 0:
                 jump_db = 20 * np.log10(curr_energy / prev_energy)
                 if abs(jump_db) > 6.0:  # 6dB threshold
                     jumps_db.append(abs(jump_db))
                     positions_sec.append(i * 0.05)  # 50ms steps
-        
+
         if jumps_db:
             return {
                 "has_artifacts": True,
                 "worst_position_sec": max(positions_sec) if positions_sec else 0.0,
-                "worst_jump_db": max(jumps_db)
+                "worst_jump_db": max(jumps_db),
             }
-        
+
         return {"has_artifacts": False, "worst_position_sec": 0.0, "worst_jump_db": 0.0}
-        
+
     except Exception:
         return {"has_artifacts": False, "worst_position_sec": 0.0, "worst_jump_db": 0.0}
 
@@ -175,29 +180,33 @@ def scan_final_mix(project_id: str) -> FinalQCReport:
     project_path = get_project_path(project_id)
     pj = load_project_json(project_id)
     mix_config = pj.get("mix", {})
-    
+
     target_lufs = mix_config.get("target_lufs", -16.0)
     true_peak_limit = mix_config.get("true_peak_limit_dbtp", -1.0)
-    
+
     # Tolerance for LUFS (usually strict for final mix)
     lufs_tolerance = 1.0  # ±1 LUFS
 
     mix_dir = project_path / "06_MIX" / "renders"
     if not mix_dir.exists():
-        update_node_status(project_id, "qc_final", "failed", error="No mix directory found")
+        update_node_status(
+            project_id, "qc_final", "failed", error="No mix directory found"
+        )
         return FinalQCReport(project_id, target_lufs, true_peak_limit)
 
     files = sorted(mix_dir.glob("*.wav"))
-    
+
     report = FinalQCReport(
         project_id=project_id,
         target_lufs=target_lufs,
         true_peak_limit=true_peak_limit,
-        total_files=len(files)
+        total_files=len(files),
     )
 
     if not files:
-        update_node_status(project_id, "qc_final", "failed", error="No mixed files found")
+        update_node_status(
+            project_id, "qc_final", "failed", error="No mixed files found"
+        )
         return report
 
     update_node_status(project_id, "qc_final", "running")
@@ -208,21 +217,25 @@ def scan_final_mix(project_id: str) -> FinalQCReport:
             duration = get_duration(f)
             lufs = measure_lufs(f)
             tp = measure_true_peak(f)
-            clip_info = detect_clipping(f, threshold_dbfs=0.0) # Check for hard clipping > 0dBFS
+            clip_info = detect_clipping(
+                f, threshold_dbfs=0.0
+            )  # Check for hard clipping > 0dBFS
             clipped = clip_info["clipped"]
         except Exception as e:
             # Measurement failed
-            report.results.append(FinalMixResult(
-                filename=f.name,
-                duration_sec=0.0,
-                lufs=0.0,
-                true_peak=0.0,
-                clipped=False,
-                status="fail",
-                messages=[f"Measurement error: {e}"],
-                longest_silence_sec=0.0,
-                worst_boundary_jump_db=0.0
-            ))
+            report.results.append(
+                FinalMixResult(
+                    filename=f.name,
+                    duration_sec=0.0,
+                    lufs=0.0,
+                    true_peak=0.0,
+                    clipped=False,
+                    status="fail",
+                    messages=[f"Measurement error: {e}"],
+                    longest_silence_sec=0.0,
+                    worst_boundary_jump_db=0.0,
+                )
+            )
             report.failed_files += 1
             continue
 
@@ -238,17 +251,15 @@ def scan_final_mix(project_id: str) -> FinalQCReport:
             )
 
         # Check True Peak
-        if tp > true_peak_limit + 0.1: # Small tolerance for floating point
+        if tp > true_peak_limit + 0.1:  # Small tolerance for floating point
             status = "fail"
-            messages.append(
-                f"True Peak {tp:.2f} exceeds limit {true_peak_limit}."
-            )
+            messages.append(f"True Peak {tp:.2f} exceeds limit {true_peak_limit}.")
 
         # Check Clipping
         if clipped:
             status = "fail"
             messages.append("Digital clipping detected (samples >= 0 dBFS).")
-        
+
         # Check silence gaps
         max_silence_sec = mix_config.get("gap_between_chapters_sec", 2.0) * 2
         silence_info = _detect_silence_gaps(f, max_gap_sec=max_silence_sec)
@@ -268,17 +279,19 @@ def scan_final_mix(project_id: str) -> FinalQCReport:
             )
             # Warning only — don't fail on boundary artifacts
 
-        report.results.append(FinalMixResult(
-            filename=f.name,
-            duration_sec=duration,
-            lufs=lufs,
-            true_peak=tp,
-            clipped=clipped,
-            status=status,
-            messages=messages,
-            longest_silence_sec=silence_info["longest_gap_sec"],
-            worst_boundary_jump_db=boundary_info["worst_jump_db"],
-        ))
+        report.results.append(
+            FinalMixResult(
+                filename=f.name,
+                duration_sec=duration,
+                lufs=lufs,
+                true_peak=tp,
+                clipped=clipped,
+                status=status,
+                messages=messages,
+                longest_silence_sec=silence_info["longest_gap_sec"],
+                worst_boundary_jump_db=boundary_info["worst_jump_db"],
+            )
+        )
 
         if status == "fail":
             report.failed_files += 1
@@ -294,9 +307,11 @@ def scan_final_mix(project_id: str) -> FinalQCReport:
         update_node_status(project_id, "qc_final", "complete")
     else:
         update_node_status(
-            project_id, "qc_final", "failed",
+            project_id,
+            "qc_final",
+            "failed",
             failed_count=report.failed_files,
-            total_count=report.total_files
+            total_count=report.total_files,
         )
 
     return report
@@ -322,7 +337,7 @@ def _detect_silence_gaps(
         current_gap_ms = 0
 
         for i in range(0, len(audio), chunk_ms):
-            chunk = audio[i:i + chunk_ms]
+            chunk = audio[i : i + chunk_ms]
             if chunk.dBFS < threshold_dbfs or chunk.dBFS == float("-inf"):
                 current_gap_ms += chunk_ms
             else:
@@ -365,7 +380,7 @@ def _check_boundary_artifacts(
         prev_dbfs = None
 
         for i in range(0, len(audio) - window_ms, window_ms):
-            chunk = audio[i:i + window_ms]
+            chunk = audio[i : i + window_ms]
             dbfs = chunk.dBFS
 
             if dbfs == float("-inf"):

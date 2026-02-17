@@ -37,7 +37,9 @@ def mix_project(tmp_path):
         sf.write(str(processed / name), samples, sr)
 
     # Create a music file (3s)
-    music_samples = np.random.default_rng(7).uniform(-0.1, 0.1, sr * 3).astype(np.float32)
+    music_samples = (
+        np.random.default_rng(7).uniform(-0.1, 0.1, sr * 3).astype(np.float32)
+    )
     sf.write(str(music / "pad_contemplative.wav"), music_samples, sr)
 
     # Write project.json
@@ -90,11 +92,18 @@ class TestAudioMixer:
         """Mixing voice + music produces output."""
         from audioformation.audio.mixer import AudioMixer
 
-        mixer = AudioMixer({
-            "master_volume": 0.9,
-            "ducking": {"method": "energy", "attenuation_db": -12,
-                        "attack_ms": 100, "release_ms": 500, "look_ahead_ms": 200},
-        })
+        mixer = AudioMixer(
+            {
+                "master_volume": 0.9,
+                "ducking": {
+                    "method": "energy",
+                    "attenuation_db": -12,
+                    "attack_ms": 100,
+                    "release_ms": 500,
+                    "look_ahead_ms": 200,
+                },
+            }
+        )
         voice = mix_project / "03_GENERATED" / "processed" / "ch01.wav"
         music = mix_project / "05_MUSIC" / "generated" / "pad_contemplative.wav"
         output = mix_project / "06_MIX" / "renders" / "ch01.wav"
@@ -112,11 +121,18 @@ class TestAudioMixer:
         """Short music file is looped to cover voice duration."""
         from audioformation.audio.mixer import AudioMixer
 
-        mixer = AudioMixer({
-            "master_volume": 1.0,
-            "ducking": {"method": "energy", "attenuation_db": -12,
-                        "attack_ms": 50, "release_ms": 200, "look_ahead_ms": 100},
-        })
+        mixer = AudioMixer(
+            {
+                "master_volume": 1.0,
+                "ducking": {
+                    "method": "energy",
+                    "attenuation_db": -12,
+                    "attack_ms": 50,
+                    "release_ms": 200,
+                    "look_ahead_ms": 100,
+                },
+            }
+        )
 
         # Create a longer voice file (5s) than music (3s)
         sr = 24000
@@ -147,15 +163,17 @@ class TestAudioMixer:
         """Energy-based ducking produces a valid envelope."""
         from audioformation.audio.mixer import AudioMixer
 
-        mixer = AudioMixer({
-            "ducking": {
-                "method": "energy",
-                "attenuation_db": -12,
-                "attack_ms": 100,
-                "release_ms": 500,
-                "look_ahead_ms": 200,
-            },
-        })
+        mixer = AudioMixer(
+            {
+                "ducking": {
+                    "method": "energy",
+                    "attenuation_db": -12,
+                    "attack_ms": 100,
+                    "release_ms": 500,
+                    "look_ahead_ms": 200,
+                },
+            }
+        )
 
         voice = AudioSegment.from_file(
             str(mix_project / "03_GENERATED" / "processed" / "ch01.wav")
@@ -202,9 +220,7 @@ class TestMixProject:
         )
         monkeypatch.setattr(
             "audioformation.mix.load_project_json",
-            lambda pid: json.loads(
-                (mix_project / "project.json").read_text()
-            ),
+            lambda pid: json.loads((mix_project / "project.json").read_text()),
         )
         monkeypatch.setattr(
             "audioformation.mix.update_node_status",
@@ -236,9 +252,7 @@ class TestMixProject:
         )
         monkeypatch.setattr(
             "audioformation.mix.load_project_json",
-            lambda pid: json.loads(
-                (mix_project / "project.json").read_text()
-            ),
+            lambda pid: json.loads((mix_project / "project.json").read_text()),
         )
         monkeypatch.setattr(
             "audioformation.mix.update_node_status",
@@ -264,9 +278,7 @@ class TestMixProject:
         )
         monkeypatch.setattr(
             "audioformation.mix.load_project_json",
-            lambda pid: json.loads(
-                (mix_project / "project.json").read_text()
-            ),
+            lambda pid: json.loads((mix_project / "project.json").read_text()),
         )
         monkeypatch.setattr(
             "audioformation.mix.update_node_status",
@@ -289,7 +301,9 @@ class TestQCFinalIntegration:
         renders = mix_project / "06_MIX" / "renders"
         sr = 24000
         # Generate audio at roughly -16 LUFS (moderate level)
-        samples = np.random.default_rng(42).uniform(-0.1, 0.1, sr * 2).astype(np.float32)
+        samples = (
+            np.random.default_rng(42).uniform(-0.1, 0.1, sr * 2).astype(np.float32)
+        )
         sf.write(str(renders / "ch01.wav"), samples, sr)
 
         monkeypatch.setattr(
@@ -298,9 +312,7 @@ class TestQCFinalIntegration:
         )
         monkeypatch.setattr(
             "audioformation.qc.final.load_project_json",
-            lambda pid: json.loads(
-                (mix_project / "project.json").read_text()
-            ),
+            lambda pid: json.loads((mix_project / "project.json").read_text()),
         )
         monkeypatch.setattr(
             "audioformation.qc.final.update_node_status",
@@ -328,9 +340,7 @@ class TestQCFinalIntegration:
         )
         monkeypatch.setattr(
             "audioformation.qc.final.load_project_json",
-            lambda pid: json.loads(
-                (mix_project / "project.json").read_text()
-            ),
+            lambda pid: json.loads((mix_project / "project.json").read_text()),
         )
         monkeypatch.setattr(
             "audioformation.qc.final.update_node_status",

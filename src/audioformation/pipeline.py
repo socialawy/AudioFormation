@@ -20,6 +20,7 @@ from audioformation.project import (
 # Configure pipeline logging
 pipeline_logger = logging.getLogger("audioformation.pipeline")
 
+
 class PipelineError(Exception):
     """Raised when a pipeline gate fails."""
 
@@ -65,15 +66,17 @@ def update_node_status(
     node_data.update(extra)
     pipeline["nodes"][node] = node_data
     save_pipeline_status(project_id, pipeline)
-    
+
     # Enhanced logging
     log_msg = f"Node {node} status: {old_status} -> {status}"
     if extra:
         log_msg += f" (extra: {extra})"
     pipeline_logger.info(f"[{project_id}] {log_msg}")
-    
+
     if status == "failed":
-        pipeline_logger.error(f"[{project_id}] Node {node} failed: {extra.get('error', 'Unknown error')}")
+        pipeline_logger.error(
+            f"[{project_id}] Node {node} failed: {extra.get('error', 'Unknown error')}"
+        )
     elif status == "complete":
         pipeline_logger.info(f"[{project_id}] Node {node} completed successfully")
 

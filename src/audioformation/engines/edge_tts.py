@@ -54,14 +54,11 @@ class EdgeTTSEngine(TTSEngine):
         """
         voice = request.voice or "ar-SA-HamedNeural"
         output_path = request.output_path
-        
+
         # Create unique temp file to avoid conflicts
         temp_id = uuid.uuid4().hex[:8]
-        mp3_temp = (
-            output_path.parent
-            / f"{output_path.stem}_tmp_{temp_id}.mp3"
-        )
-        
+        mp3_temp = output_path.parent / f"{output_path.stem}_tmp_{temp_id}.mp3"
+
         try:
             # Build SSML or plain text
             use_ssml = (
@@ -69,18 +66,20 @@ class EdgeTTSEngine(TTSEngine):
                 and request.params
                 and request.params.get("ssml", True)
             )
-            
+
             if use_ssml:
                 # Add unicode safeguard for direction config values
-                direction = {k: v for k, v in request.direction.items() if isinstance(v, str)}
+                direction = {
+                    k: v for k, v in request.direction.items() if isinstance(v, str)
+                }
                 text = direction_to_ssml(request.text, direction)
             else:
                 text = request.text
-            
+
             # Edge-tts communication and save
             communicate = edge_tts.Communicate(text, voice)
             await communicate.save(str(mp3_temp))
-            
+
             # Convert MP3 → WAV if needed
             if output_path.suffix.lower() == ".wav":
                 ok = _mp3_to_wav(mp3_temp, output_path)
@@ -94,25 +93,25 @@ class EdgeTTSEngine(TTSEngine):
             else:
                 # Just move MP3 to final location
                 shutil.move(str(mp3_temp), str(output_path))
-            
+
             # Get duration
             duration = _get_duration(output_path)
-            
+
             return GenerationResult(
                 success=True,
                 output_path=output_path,
                 duration_sec=duration,
                 sample_rate=24000,
             )
-            
+
         except Exception as e:
             # Clean up any temp files on failure
-            if 'mp3_temp' in locals():
+            if "mp3_temp" in locals():
                 try:
                     mp3_temp.unlink(missing_ok=True)
                 except:
                     pass
-            
+
             return GenerationResult(
                 success=False,
                 error=f"edge-tts error: {type(e).__name__}: {e}",
@@ -126,12 +125,14 @@ class EdgeTTSEngine(TTSEngine):
         for v in voices:
             if language and not v["Locale"].startswith(language):
                 continue
-            results.append({
-                "id": v["ShortName"],
-                "name": v["FriendlyName"],
-                "locale": v["Locale"],
-                "gender": v["Gender"],
-            })
+            results.append(
+                {
+                    "id": v["ShortName"],
+                    "name": v["FriendlyName"],
+                    "locale": v["Locale"],
+                    "gender": v["Gender"],
+                }
+            )
 
         return results
 
@@ -161,9 +162,9 @@ def _mp3_to_wav(mp3_path: Path, wav_path: Path) -> bool:
         # Load MP3 and convert to WAV
         audio = AudioSegment.from_mp3(str(mp3_path))
         audio.export(str(wav_path), format="wav")
-        
+
         return wav_path.exists() and wav_path.stat().st_size > 0
-            
+
     except Exception:
         return False
 
@@ -241,11 +242,11 @@ def direction_to_ssml(text: str, direction: dict[str, str]) -> str:
 
     if attrs:
         attr_str = " ".join(attrs)
-        body = f'<prosody {attr_str}>{processed}</prosody>'
+        body = f"<prosody {attr_str}>{processed}</prosody>"
     else:
         body = processed
 
-    return f'<speak>{body}</speak>'
+    return f"<speak>{body}</speak>"
 
 
 def _process_inline_markers(text: str) -> str:

@@ -7,10 +7,7 @@ from audioformation.ingest import ingest_text
 
 
 class TestIngestText:
-
-    def test_ingest_creates_chapters(
-        self, sample_project, isolate_projects, tmp_path
-    ):
+    def test_ingest_creates_chapters(self, sample_project, isolate_projects, tmp_path):
         source = tmp_path / "source_chapters"
         source.mkdir()
         (source / "ch01.txt").write_text(
@@ -29,9 +26,7 @@ class TestIngestText:
         assert (chapters_dir / "ch01.txt").exists()
         assert (chapters_dir / "ch02.txt").exists()
 
-    def test_auto_detects_arabic(
-        self, sample_project, isolate_projects, tmp_path
-    ):
+    def test_auto_detects_arabic(self, sample_project, isolate_projects, tmp_path):
         source = tmp_path / "source"
         source.mkdir()
         (source / "ch02.txt").write_text(
@@ -46,7 +41,8 @@ class TestIngestText:
             (sample_project["dir"] / "project.json").read_text(encoding="utf-8")
         )
         ar_chapters = [
-            ch for ch in config.get("chapters", [])
+            ch
+            for ch in config.get("chapters", [])
             if ch.get("id") == "ch02" and ch.get("language") == "ar"
         ]
         assert len(ar_chapters) >= 1, (
@@ -54,9 +50,7 @@ class TestIngestText:
             f"Chapters: {config.get('chapters', [])}"
         )
 
-    def test_auto_detects_english(
-        self, sample_project, isolate_projects, tmp_path
-    ):
+    def test_auto_detects_english(self, sample_project, isolate_projects, tmp_path):
         source = tmp_path / "source"
         source.mkdir()
         (source / "ch02.txt").write_text(
@@ -71,7 +65,8 @@ class TestIngestText:
             (sample_project["dir"] / "project.json").read_text(encoding="utf-8")
         )
         en_chapters = [
-            ch for ch in config.get("chapters", [])
+            ch
+            for ch in config.get("chapters", [])
             if ch.get("id") == "ch02" and ch.get("language") == "en"
         ]
         assert len(en_chapters) >= 1, (
@@ -79,9 +74,7 @@ class TestIngestText:
             f"Chapters: {config.get('chapters', [])}"
         )
 
-    def test_language_override(
-        self, sample_project, isolate_projects, tmp_path
-    ):
+    def test_language_override(self, sample_project, isolate_projects, tmp_path):
         source = tmp_path / "source"
         source.mkdir()
         (source / "ch02.txt").write_text("Some text.", encoding="utf-8")
@@ -93,17 +86,14 @@ class TestIngestText:
             (sample_project["dir"] / "project.json").read_text(encoding="utf-8")
         )
         ch02_entries = [
-            ch for ch in config.get("chapters", [])
-            if ch.get("id") == "ch02"
+            ch for ch in config.get("chapters", []) if ch.get("id") == "ch02"
         ]
         assert len(ch02_entries) >= 1, "ch02 not found in project.json"
-        assert ch02_entries[0].get("language") == "ar", (
-            f"Expected language='ar' (override), got: {ch02_entries[0].get('language')}"
-        )
+        assert (
+            ch02_entries[0].get("language") == "ar"
+        ), f"Expected language='ar' (override), got: {ch02_entries[0].get('language')}"
 
-    def test_copies_files_to_project(
-        self, sample_project, isolate_projects, tmp_path
-    ):
+    def test_copies_files_to_project(self, sample_project, isolate_projects, tmp_path):
         source = tmp_path / "source"
         source.mkdir()
         (source / "ch01.txt").write_text("Hello world.", encoding="utf-8")
@@ -130,9 +120,7 @@ class TestIngestText:
         dest = sample_project_with_text["dir"] / "01_TEXT" / "chapters" / "ch04.txt"
         assert dest.exists()
 
-    def test_updates_pipeline_status(
-        self, sample_project, isolate_projects, tmp_path
-    ):
+    def test_updates_pipeline_status(self, sample_project, isolate_projects, tmp_path):
         source = tmp_path / "source"
         source.mkdir()
         (source / "ch01.txt").write_text("Test.", encoding="utf-8")
@@ -143,19 +131,17 @@ class TestIngestText:
         status = json.loads(status_file.read_text(encoding="utf-8"))
         assert status["nodes"]["ingest"]["status"] == "complete"
 
-    def test_missing_source_dir_raises(
-        self, sample_project, isolate_projects
-    ):
+    def test_missing_source_dir_raises(self, sample_project, isolate_projects):
         with pytest.raises(FileNotFoundError):
             ingest_text(sample_project["id"], Path("/nonexistent/path"))
 
-    def test_empty_source_dir_raises(
-        self, sample_project, isolate_projects, tmp_path
-    ):
+    def test_empty_source_dir_raises(self, sample_project, isolate_projects, tmp_path):
         source = tmp_path / "empty"
         source.mkdir()
 
-        with pytest.raises(ValueError, match="[Nn]o .txt files|[Nn]o text files|[Ee]mpty"):
+        with pytest.raises(
+            ValueError, match="[Nn]o .txt files|[Nn]o text files|[Ee]mpty"
+        ):
             ingest_text(sample_project["id"], source)
 
     def test_detects_diacritization_level(
@@ -172,6 +158,7 @@ class TestIngestText:
         assert result["ingested"] >= 1
 
         from audioformation.utils.arabic import detect_diacritization_level
+
         text = (sample_project["dir"] / "01_TEXT" / "chapters" / "ch02.txt").read_text(
             encoding="utf-8"
         )

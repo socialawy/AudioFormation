@@ -1,4 +1,3 @@
-
 """
 FastAPI application entry point.
 
@@ -15,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     # dotenv not available, continue without it
@@ -41,10 +41,12 @@ app.add_middleware(
 
 app.include_router(router, prefix="/api")
 
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "ok", "version": __version__}
+
 
 # Mount projects directory for audio streaming (e.g., /projects/MY_NOVEL/...)
 # Ensure directory exists so mount doesn't fail or get skipped

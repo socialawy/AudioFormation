@@ -88,7 +88,9 @@ def redact_api_keys(config: dict[str, Any]) -> dict[str, Any]:
         if isinstance(obj, dict):
             result = {}
             for k, v in obj.items():
-                if any(p in k.lower() for p in sensitive_patterns) and isinstance(v, str):
+                if any(p in k.lower() for p in sensitive_patterns) and isinstance(
+                    v, str
+                ):
                     result[k] = "***REDACTED***"
                 else:
                     result[k] = _redact(v)

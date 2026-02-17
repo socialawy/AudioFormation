@@ -39,10 +39,11 @@ class Chunk:
 # Text normalization for TTS
 # ──────────────────────────────────────────────
 
+
 def normalize_text_for_tts(text: str) -> str:
     """
     Normalize text before TTS generation to remove problematic unicode characters.
-    
+
     Handles:
     - Unicode normalization (NFD → NFC)
     - Removes zero-width characters (zero-width space, joiner, non-joiner)
@@ -51,63 +52,63 @@ def normalize_text_for_tts(text: str) -> str:
     - Removes control characters (except newline, tab)
     - Collapses multiple spaces into one
     - Strips leading/trailing whitespace
-    
+
     Args:
         text: Raw text, potentially with hidden unicode.
-        
+
     Returns:
         Cleaned, TTS-safe text.
     """
     if not text:
         return text
-    
+
     # Step 1: Unicode normalization (NFC = composed form, most TTS-friendly)
-    text = unicodedata.normalize('NFC', text)
-    
+    text = unicodedata.normalize("NFC", text)
+
     # Step 2: Remove zero-width characters
     zero_width_chars = [
-        '\u200b',  # Zero-width space
-        '\u200c',  # Zero-width non-joiner
-        '\u200d',  # Zero-width joiner
-        '\u200e',  # Left-to-right mark
-        '\u200f',  # Right-to-left mark
-        '\ufeff',  # Zero-width no-break space (BOM)
-        '\u202a',  # Left-to-right embedding
-        '\u202b',  # Right-to-left embedding
-        '\u202c',  # Pop directional formatting
-        '\u202d',  # Left-to-right override
-        '\u202e',  # Right-to-left override
+        "\u200b",  # Zero-width space
+        "\u200c",  # Zero-width non-joiner
+        "\u200d",  # Zero-width joiner
+        "\u200e",  # Left-to-right mark
+        "\u200f",  # Right-to-left mark
+        "\ufeff",  # Zero-width no-break space (BOM)
+        "\u202a",  # Left-to-right embedding
+        "\u202b",  # Right-to-left embedding
+        "\u202c",  # Pop directional formatting
+        "\u202d",  # Left-to-right override
+        "\u202e",  # Right-to-left override
     ]
     for char in zero_width_chars:
-        text = text.replace(char, '')
-    
+        text = text.replace(char, "")
+
     # Step 3: Normalize dashes (em-dash, en-dash → hyphen)
-    text = text.replace('\u2014', '-')  # Em-dash (—) → hyphen
-    text = text.replace('\u2013', '-')  # En-dash (–) → hyphen
-    text = text.replace('\u2010', '-')  # Hyphen (‐) → hyphen
-    
+    text = text.replace("\u2014", "-")  # Em-dash (—) → hyphen
+    text = text.replace("\u2013", "-")  # En-dash (–) → hyphen
+    text = text.replace("\u2010", "-")  # Hyphen (‐) → hyphen
+
     # Step 4: Normalize quotes (smart/curly quotes → regular quotes)
-    text = text.replace('\u201c', '"')  # Left double quote (" → ")
-    text = text.replace('\u201d', '"')  # Right double quote (" → ")
-    text = text.replace('\u2018', "'")  # Left single quote (' → ')
-    text = text.replace('\u2019', "'")  # Right single quote (' → ')
-    text = text.replace('\u201b', "'")  # Single high-reversed-9 quote ‛ → '
-    
+    text = text.replace("\u201c", '"')  # Left double quote (" → ")
+    text = text.replace("\u201d", '"')  # Right double quote (" → ")
+    text = text.replace("\u2018", "'")  # Left single quote (' → ')
+    text = text.replace("\u2019", "'")  # Right single quote (' → ')
+    text = text.replace("\u201b", "'")  # Single high-reversed-9 quote ‛ → '
+
     # Step 5: Remove other problematic control characters (keep newline, tab)
     cleaned = []
     for char in text:
         code = ord(char)
         # Keep: printable, newline (10), tab (9), common punctuation
-        if char in '\n\t' or unicodedata.category(char)[0] != 'C':
+        if char in "\n\t" or unicodedata.category(char)[0] != "C":
             cleaned.append(char)
-    text = ''.join(cleaned)
-    
+    text = "".join(cleaned)
+
     # Step 6: Collapse multiple spaces into one
-    text = re.sub(r' +', ' ', text)
-    
+    text = re.sub(r" +", " ", text)
+
     # Step 7: Strip leading/trailing whitespace
     text = text.strip()
-    
+
     return text
 
 
@@ -117,12 +118,12 @@ def normalize_text_for_tts(text: str) -> str:
 
 # Arabic sentence terminators + standard Latin ones
 _SENTENCE_RE = re.compile(
-    r'(?<=[.!?؟。])\s+'  # Split after sentence-ending punctuation + whitespace
+    r"(?<=[.!?؟。])\s+"  # Split after sentence-ending punctuation + whitespace
 )
 
 # Arabic comma and semicolon for breath-group splitting
 _BREATH_RE = re.compile(
-    r'(?<=[,،;؛:])\s+'  # Split after clause-level punctuation + whitespace
+    r"(?<=[,،;؛:])\s+"  # Split after clause-level punctuation + whitespace
 )
 
 
@@ -152,7 +153,7 @@ def _is_speaker_tag(line: str) -> tuple[bool, str, str]:
     if not all(c.isalnum() or c in ("_", "-") for c in tag_content):
         return False, "", stripped
 
-    remaining = stripped[close + 1:].strip()
+    remaining = stripped[close + 1 :].strip()
     return True, tag_content, remaining
 
 
@@ -308,11 +309,13 @@ def parse_chapter_segments(
         nonlocal index
         combined = " ".join(current_text_parts).strip()
         if combined:
-            segments.append(Segment(
-                character=current_character,
-                text=combined,
-                index=index,
-            ))
+            segments.append(
+                Segment(
+                    character=current_character,
+                    text=combined,
+                    index=index,
+                )
+            )
             index += 1
 
     for line in text.split("\n"):
@@ -376,7 +379,5 @@ def validate_speaker_tags(
     for line_num, line in enumerate(text.split("\n"), start=1):
         is_tag, char_id, _ = _is_speaker_tag(line)
         if is_tag and char_id not in known_characters:
-            warnings.append(
-                f"Line {line_num}: Unknown speaker tag [{char_id}]."
-            )
+            warnings.append(f"Line {line_num}: Unknown speaker tag [{char_id}].")
     return warnings

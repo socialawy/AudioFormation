@@ -8,9 +8,11 @@ import pytest
 from audioformation.cli import main
 from audioformation.project import load_project_json
 
+
 @pytest.fixture
 def runner():
     return CliRunner()
+
 
 def test_cast_list(runner, sample_project, isolate_projects):
     """Test listing characters."""
@@ -20,17 +22,28 @@ def test_cast_list(runner, sample_project, isolate_projects):
     assert "edge" in result.output
     assert "ar-SA-HamedNeural" in result.output
 
+
 def test_cast_add_new(runner, sample_project, isolate_projects):
     """Test adding a new character."""
-    result = runner.invoke(main, [
-        "cast", "add", sample_project["id"],
-        "--id", "hero",
-        "--name", "Hero Character",
-        "--engine", "edge",
-        "--voice", "en-US-GuyNeural",
-        "--dialect", "msa"
-    ])
-    
+    result = runner.invoke(
+        main,
+        [
+            "cast",
+            "add",
+            sample_project["id"],
+            "--id",
+            "hero",
+            "--name",
+            "Hero Character",
+            "--engine",
+            "edge",
+            "--voice",
+            "en-US-GuyNeural",
+            "--dialect",
+            "msa",
+        ],
+    )
+
     assert result.exit_code == 0
     assert "Added character: hero" in result.output
 
@@ -40,16 +53,25 @@ def test_cast_add_new(runner, sample_project, isolate_projects):
     assert pj["characters"]["hero"]["name"] == "Hero Character"
     assert pj["characters"]["hero"]["voice"] == "en-US-GuyNeural"
 
+
 def test_cast_update_existing(runner, sample_project, isolate_projects):
     """Test updating an existing character."""
     # Narrator exists from fixture
-    result = runner.invoke(main, [
-        "cast", "add", sample_project["id"],
-        "--id", "narrator",
-        "--name", "Updated Narrator",
-        "--engine", "elevenlabs"
-    ])
-    
+    result = runner.invoke(
+        main,
+        [
+            "cast",
+            "add",
+            sample_project["id"],
+            "--id",
+            "narrator",
+            "--name",
+            "Updated Narrator",
+            "--engine",
+            "elevenlabs",
+        ],
+    )
+
     assert result.exit_code == 0
     assert "Updated character: narrator" in result.output
 
@@ -57,17 +79,25 @@ def test_cast_update_existing(runner, sample_project, isolate_projects):
     assert pj["characters"]["narrator"]["name"] == "Updated Narrator"
     assert pj["characters"]["narrator"]["engine"] == "elevenlabs"
 
+
 def test_cast_clone_workflow(runner, sample_project, isolate_projects, tmp_path):
     """Test the clone command for XTTS setup."""
     # Create a dummy reference file outside the project
     ref_file = tmp_path / "original_ref.wav"
     ref_file.write_text("fake audio content")
 
-    result = runner.invoke(main, [
-        "cast", "clone", sample_project["id"],
-        "--id", "cloned_hero",
-        "--reference", str(ref_file)
-    ])
+    result = runner.invoke(
+        main,
+        [
+            "cast",
+            "clone",
+            sample_project["id"],
+            "--id",
+            "cloned_hero",
+            "--reference",
+            str(ref_file),
+        ],
+    )
 
     assert result.exit_code == 0
     assert "Copied reference" in result.output
@@ -86,14 +116,22 @@ def test_cast_clone_workflow(runner, sample_project, isolate_projects, tmp_path)
     assert char["engine"] == "xtts"
     assert char["reference_audio"] == "02_VOICES/references/original_ref.wav"
 
+
 def test_cast_clone_missing_file(runner, sample_project, isolate_projects):
     """Test clone with non-existent file."""
-    result = runner.invoke(main, [
-        "cast", "clone", sample_project["id"],
-        "--id", "fail_hero",
-        "--reference", "nonexistent.wav"
-    ])
-    
+    result = runner.invoke(
+        main,
+        [
+            "cast",
+            "clone",
+            sample_project["id"],
+            "--id",
+            "fail_hero",
+            "--reference",
+            "nonexistent.wav",
+        ],
+    )
+
     assert result.exit_code != 0
     # Click's default error message for type=Path(exists=True)
     assert "does not exist" in result.output

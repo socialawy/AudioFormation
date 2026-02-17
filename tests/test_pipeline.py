@@ -20,6 +20,7 @@ from audioformation.config import PIPELINE_NODES
 
 class TestNodeStatus:
     """Tests for reading and updating node status."""
+
     # ... (rest of the code remains the same)
 
     def test_initial_status_is_pending(self, sample_project) -> None:
@@ -304,8 +305,9 @@ class TestPipelineStatusWiring:
         project_dir = isolate_projects / "TEST_MN6"
         project_dir.mkdir()
 
-        mark_node(project_dir, "export", "complete",
-                  formats=["mp3", "m4b"], checksum="abc123")
+        mark_node(
+            project_dir, "export", "complete", formats=["mp3", "m4b"], checksum="abc123"
+        )
 
         data = json.loads((project_dir / "pipeline-status.json").read_text())
         assert data["nodes"]["export"]["formats"] == ["mp3", "m4b"]

@@ -105,9 +105,7 @@ class TestListProjects:
         self, sample_project_with_text, isolate_projects: Path
     ) -> None:
         projects = list_projects()
-        project = next(
-            p for p in projects if p["id"] == sample_project_with_text["id"]
-        )
+        project = next(p for p in projects if p["id"] == sample_project_with_text["id"])
 
         # sample_project_with_text has 3 chapters (ch01, ch02, ch03)
         assert project["chapters"] >= 2

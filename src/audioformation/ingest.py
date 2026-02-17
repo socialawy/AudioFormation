@@ -84,12 +84,14 @@ def ingest_text(
 
         # Skip if already exists
         if ch_id in existing_ids:
-            results.append({
-                "file": safe_name,
-                "chapter_id": ch_id,
-                "status": "skipped",
-                "reason": "Already exists in project.json",
-            })
+            results.append(
+                {
+                    "file": safe_name,
+                    "chapter_id": ch_id,
+                    "status": "skipped",
+                    "reason": "Already exists in project.json",
+                }
+            )
             continue
 
         # Create chapter entry
@@ -108,14 +110,16 @@ def ingest_text(
         }
 
         new_chapters.append(chapter_entry)
-        results.append({
-            "file": safe_name,
-            "chapter_id": ch_id,
-            "status": "ingested",
-            "language": detected_lang,
-            "characters": len(content),
-            "diacritization": diacrit_info,
-        })
+        results.append(
+            {
+                "file": safe_name,
+                "chapter_id": ch_id,
+                "status": "ingested",
+                "language": detected_lang,
+                "characters": len(content),
+                "diacritization": diacrit_info,
+            }
+        )
 
     # Update project.json
     if new_chapters:
@@ -124,7 +128,9 @@ def ingest_text(
 
     # Update pipeline status
     update_node_status(
-        project_id, "ingest", "complete",
+        project_id,
+        "ingest",
+        "complete",
         files_ingested=len([r for r in results if r["status"] == "ingested"]),
         files_skipped=len([r for r in results if r["status"] == "skipped"]),
     )

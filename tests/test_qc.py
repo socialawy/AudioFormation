@@ -21,7 +21,7 @@ def clean_wav(tmp_path: Path) -> Path:
     """Generate a clean sine wave WAV for testing."""
     import numpy as np
     import soundfile as sf
-    
+
     path = tmp_path / "clean.wav"
     sr = 24000
     duration = 2.0  # 2 seconds
@@ -50,15 +50,17 @@ class TestScanChunk:
 
     def test_clean_audio_passes(self, clean_wav: Path, default_qc_config: dict) -> None:
         # Mock sub-checks to pass
-        with patch("audioformation.qc.scanner._check_snr") as m_snr, \
-             patch("audioformation.qc.scanner._check_clipping") as m_clip, \
-             patch("audioformation.qc.scanner._check_lufs") as m_lufs:
-            
+        with patch("audioformation.qc.scanner._check_snr") as m_snr, patch(
+            "audioformation.qc.scanner._check_clipping"
+        ) as m_clip, patch("audioformation.qc.scanner._check_lufs") as m_lufs:
+
             m_snr.return_value = {"status": "pass"}
             m_clip.return_value = {"status": "pass"}
             m_lufs.return_value = {"status": "pass"}
-            
-            result = scan_chunk(clean_wav, "test_001", default_qc_config, target_lufs=-16.0)
+
+            result = scan_chunk(
+                clean_wav, "test_001", default_qc_config, target_lufs=-16.0
+            )
             assert result.status == "pass"
             assert "snr" in result.checks
 
@@ -80,10 +82,10 @@ class TestSNRCheck:
         # Simulate high energy speech and low energy noise
         # 1.0 vs 0.01 -> 20 * log10(100) = 40dB
         data = np.concatenate([np.full(1000, 0.01), np.full(1000, 1.0)])
-        
+
         with patch("soundfile.read") as mock_read:
             mock_read.return_value = (data, 24000)
-            
+
             result = _check_snr(clean_wav, min_db=20.0)
             assert result["status"] == "pass"
             assert result["snr_db"] > 30.0
@@ -103,14 +105,14 @@ class TestClippingCheck:
 
     def test_clean_audio_no_clipping(self, clean_wav: Path) -> None:
         with patch("soundfile.read") as mock_read:
-            mock_read.return_value = (np.array([0.5]*1000), 24000)
+            mock_read.return_value = (np.array([0.5] * 1000), 24000)
             result = _check_clipping(clean_wav, threshold_dbfs=-0.5)
             assert result["status"] == "pass"
 
     def test_clipped_audio_detected(self, clean_wav: Path) -> None:
         with patch("soundfile.read") as mock_read:
             # 1.5 exceeds typical clipping threshold
-            mock_read.return_value = (np.array([1.5]*1000), 24000)
+            mock_read.return_value = (np.array([1.5] * 1000), 24000)
             result = _check_clipping(clean_wav, threshold_dbfs=-0.5)
             assert result["status"] in ("warn", "fail")
 
@@ -191,6 +193,7 @@ class TestQCReport:
         assert output.exists()
 
         import json
+
         data = json.loads(output.read_text())
         assert data["project_id"] == "TEST"
         assert data["chapter_id"] == "ch01"

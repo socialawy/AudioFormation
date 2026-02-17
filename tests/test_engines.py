@@ -88,11 +88,14 @@ class TestDirectionToSSML:
         assert 'pitch="+5%"' in result
 
     def test_combined_direction(self) -> None:
-        result = direction_to_ssml("Hello", {
-            "pace": "slow",
-            "energy": "quiet",
-            "emotion": "sadness",
-        })
+        result = direction_to_ssml(
+            "Hello",
+            {
+                "pace": "slow",
+                "energy": "quiet",
+                "emotion": "sadness",
+            },
+        )
         assert 'rate="slow"' in result
         assert 'volume="soft"' in result
         assert 'pitch="-5%"' in result
@@ -107,10 +110,13 @@ class TestDirectionToSSML:
         assert "prosody" not in result
 
     def test_unknown_values_ignored(self) -> None:
-        result = direction_to_ssml("Hello", {
-            "pace": "unknown_pace",
-            "emotion": "unknown_emotion",
-        })
+        result = direction_to_ssml(
+            "Hello",
+            {
+                "pace": "unknown_pace",
+                "emotion": "unknown_emotion",
+            },
+        )
         # Unknown values produce no attributes → no prosody tag
         assert "prosody" not in result
 

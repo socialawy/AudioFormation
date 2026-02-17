@@ -40,11 +40,13 @@ def generate_manifest(
 
     for path in sorted(export_dir.rglob("*")):
         if path.is_file() and path.name != "manifest.json":
-            files.append({
-                "path": str(path.relative_to(export_dir)),
-                "size_bytes": path.stat().st_size,
-                "sha256": sha256_file(path),
-            })
+            files.append(
+                {
+                    "path": str(path.relative_to(export_dir)),
+                    "size_bytes": path.stat().st_size,
+                    "sha256": sha256_file(path),
+                }
+            )
 
     manifest = {
         "project_id": project_id,

@@ -1,4 +1,3 @@
-
 """
 Generation pipeline — run TTS per chapter with chunking, crossfade,
 QC scanning, retry logic, and per-chapter engine fallback.
@@ -30,7 +29,11 @@ from audioformation.pipeline import (
 )
 from audioformation.engines.base import GenerationRequest
 from audioformation.engines.registry import registry
-from audioformation.utils.text import chunk_text, parse_chapter_segments, normalize_text_for_tts
+from audioformation.utils.text import (
+    chunk_text,
+    parse_chapter_segments,
+    normalize_text_for_tts,
+)
 from audioformation.audio.processor import crossfade_stitch
 from audioformation.qc.scanner import scan_chunk, QCReport
 from audioformation.qc.report import save_report
@@ -57,6 +60,7 @@ async def generate_project(
 
     Returns generation results dict.
     """
+
     def _notify(msg: str) -> None:
         logger.info(msg)
         if progress_callback:
@@ -80,7 +84,9 @@ async def generate_project(
     fallback_chain = gen_config.get("fallback_chain", ["edge", "gtts"])
 
     update_node_status(
-        project_id, "generate", "running",
+        project_id,
+        "generate",
+        "running",
         engine=engine_name or "per-character",
     )
 
@@ -103,9 +109,7 @@ async def generate_project(
         # Build engine attempt list for this chapter
         if project_engine_failed and fallback_scope == "project":
             # Primary is dead for entire project — start from fallback
-            engines_to_try = [
-                e for e in fallback_chain if e != primary_engine
-            ]
+            engines_to_try = [e for e in fallback_chain if e != primary_engine]
             if not engines_to_try:
                 engines_to_try = [primary_engine]  # last resort
         else:
@@ -176,7 +180,9 @@ async def generate_project(
 
     if overall_fail_rate > fail_threshold:
         update_node_status(
-            project_id, "generate", "failed",
+            project_id,
+            "generate",
+            "failed",
             error=(
                 f"Fail rate {overall_fail_rate:.1f}% exceeds "
                 f"threshold {fail_threshold}%"
@@ -226,7 +232,7 @@ async def _generate_chapter(
     progress_callback: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
     """Generate audio for a single chapter with a single engine."""
-    
+
     def _notify(msg: str) -> None:
         logger.info(msg)
         if progress_callback:
@@ -234,9 +240,7 @@ async def _generate_chapter(
 
     ch_id = chapter["id"]
     mode = chapter.get("mode", "single")
-    char_id = chapter.get(
-        "character", chapter.get("default_character", "narrator")
-    )
+    char_id = chapter.get("character", chapter.get("default_character", "narrator"))
     char_data = characters.get(char_id, {})
     direction = chapter.get("direction", {})
     language = chapter.get("language", "ar")
@@ -258,9 +262,7 @@ async def _generate_chapter(
     text = source_path.read_text(encoding="utf-8").strip()
 
     # Parse segments
-    segments = parse_chapter_segments(
-        text, mode=mode, default_character=char_id
-    )
+    segments = parse_chapter_segments(text, mode=mode, default_character=char_id)
 
     # Determine engine
     engine_name = engine_override or char_data.get("engine", "edge")
@@ -284,9 +286,7 @@ async def _generate_chapter(
     leading_silence_ms = gen_config.get(
         "leading_silence_ms", DEFAULT_LEADING_SILENCE_MS
     )
-    max_retries = gen_config.get(
-        "max_retries_per_chunk", DEFAULT_MAX_RETRIES
-    )
+    max_retries = gen_config.get("max_retries_per_chunk", DEFAULT_MAX_RETRIES)
 
     # Generate chunks for each segment
     chunk_paths: list[Path] = []
@@ -325,9 +325,7 @@ async def _generate_chapter(
 
         engines_used.add(seg_engine_name)
 
-        chunks = chunk_text(
-            segment.text, max_chars=max_chars, strategy=strategy
-        )
+        chunks = chunk_text(segment.text, max_chars=max_chars, strategy=strategy)
 
         for chunk_text_item in chunks:
             chunk_id = f"{ch_id}_{chunk_index:03d}"
@@ -339,7 +337,7 @@ async def _generate_chapter(
             for attempt in range(max_retries + 1):
                 # Normalize text before TTS (remove unicode artifacts, dashes, etc.)
                 clean_text = normalize_text_for_tts(chunk_text_item)
-                
+
                 request = GenerationRequest(
                     text=clean_text,
                     output_path=chunk_path,
@@ -372,13 +370,8 @@ async def _generate_chapter(
                     )
                     qc_report.chunks.append(qc_result)
 
-                    if (
-                        qc_result.status == "fail"
-                        and attempt < max_retries
-                    ):
-                        last_error = (
-                            f"QC failed: {_qc_failure_summary(qc_result)}"
-                        )
+                    if qc_result.status == "fail" and attempt < max_retries:
+                        last_error = f"QC failed: {_qc_failure_summary(qc_result)}"
                         _notify(
                             f"    \u26a0 {chunk_id}: QC fail, "
                             f"retry {attempt + 1}/{max_retries}"
@@ -405,13 +398,9 @@ async def _generate_chapter(
 
             if not success:
                 failed_chunks += 1
-                _notify(
-                    f"    \u2717 {chunk_id}: FAILED — {last_error}"
-                )
+                _notify(f"    \u2717 {chunk_id}: FAILED — {last_error}")
                 qc_report.chunks.append(
-                    _make_failure_result(
-                        chunk_id, f"Generation failed: {last_error}"
-                    )
+                    _make_failure_result(chunk_id, f"Generation failed: {last_error}")
                 )
 
             chunk_index += 1
@@ -504,7 +493,5 @@ def _qc_failure_summary(qc_result) -> str:
     failures = []
     for check_name, check_data in qc_result.checks.items():
         if check_data.get("status") == "fail":
-            failures.append(
-                f"{check_name}: {check_data.get('message', '')}"
-            )
+            failures.append(f"{check_name}: {check_data.get('message', '')}")
     return "; ".join(failures) if failures else "Unknown QC failure"

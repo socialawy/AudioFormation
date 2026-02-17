@@ -129,9 +129,15 @@ def normalize_lufs(
     """
     # Pass 1: Measure
     measure_cmd = [
-        "ffmpeg", "-hide_banner", "-i", str(input_path),
-        "-af", f"loudnorm=I={target_lufs}:TP={true_peak}:print_format=json",
-        "-f", "null", "-"
+        "ffmpeg",
+        "-hide_banner",
+        "-i",
+        str(input_path),
+        "-af",
+        f"loudnorm=I={target_lufs}:TP={true_peak}:print_format=json",
+        "-f",
+        "null",
+        "-",
     ]
 
     try:
@@ -151,9 +157,13 @@ def normalize_lufs(
 
     # Pass 2: Apply normalization
     normalize_cmd = [
-        "ffmpeg", "-hide_banner", "-y",
-        "-i", str(input_path),
-        "-af", (
+        "ffmpeg",
+        "-hide_banner",
+        "-y",
+        "-i",
+        str(input_path),
+        "-af",
+        (
             f"loudnorm=I={target_lufs}:TP={true_peak}"
             f":measured_I={measured['input_i']}"
             f":measured_LRA={measured['input_lra']}"
@@ -220,9 +230,13 @@ def trim_silence(
     Returns True on success.
     """
     cmd = [
-        "ffmpeg", "-hide_banner", "-y",
-        "-i", str(input_path),
-        "-af", (
+        "ffmpeg",
+        "-hide_banner",
+        "-y",
+        "-i",
+        str(input_path),
+        "-af",
+        (
             f"silenceremove=start_periods=1:start_threshold={threshold_db}dB"
             f":start_duration={min_silence_ms / 1000},"
             f"areverse,"
@@ -235,7 +249,10 @@ def trim_silence(
 
     try:
         result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60,
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=60,
         )
         return result.returncode == 0
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -322,28 +339,23 @@ def _format_from_path(path: Path) -> str:
 def batch_process_project(project_id: str) -> dict[str, Any]:
     """
     Batch process all generated audio files in a project.
-    
+
     Applies normalization and silence trimming to all chunks.
     Returns processing statistics.
     """
     from audioformation.project import get_project_path
-    
+
     project_path = get_project_path(project_id)
     gen_dir = project_path / "03_GENERATED"
     processed_dir = project_path / "03_GENERATED" / "processed"
     processed_dir.mkdir(exist_ok=True)
-    
-    stats = {
-        "total_files": 0,
-        "processed": 0,
-        "failed": 0,
-        "errors": []
-    }
-    
+
+    stats = {"total_files": 0, "processed": 0, "failed": 0, "errors": []}
+
     # Find all audio chunks
     audio_files = list(gen_dir.glob("*.wav"))
     stats["total_files"] = len(audio_files)
-    
+
     for audio_file in audio_files:
         try:
             # Skip if already processed
@@ -351,7 +363,7 @@ def batch_process_project(project_id: str) -> dict[str, Any]:
             if processed_file.exists():
                 stats["processed"] += 1
                 continue
-            
+
             # Apply normalization
             temp_file = processed_file.with_suffix(".temp.wav")
             if normalize_lufs(audio_file, temp_file):
@@ -360,16 +372,18 @@ def batch_process_project(project_id: str) -> dict[str, Any]:
                     stats["processed"] += 1
                 else:
                     stats["failed"] += 1
-                    stats["errors"].append(f"Silence trimming failed: {audio_file.name}")
-                
+                    stats["errors"].append(
+                        f"Silence trimming failed: {audio_file.name}"
+                    )
+
                 # Clean up temp file
                 temp_file.unlink(missing_ok=True)
             else:
                 stats["failed"] += 1
                 stats["errors"].append(f"Normalization failed: {audio_file.name}")
-                
+
         except Exception as e:
             stats["failed"] += 1
             stats["errors"].append(f"Processing error {audio_file.name}: {str(e)}")
-    
+
     return stats

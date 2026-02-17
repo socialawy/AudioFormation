@@ -27,7 +27,9 @@ class TestMultiSpeakerParsing:
 
     def test_single_narrator_no_tags(self):
         text = "Line one.\nLine two.\nLine three."
-        segments = parse_chapter_segments(text, mode="multi", default_character="narrator")
+        segments = parse_chapter_segments(
+            text, mode="multi", default_character="narrator"
+        )
         assert len(segments) == 1
         assert segments[0].character == "narrator"
         assert "Line one." in segments[0].text
@@ -40,7 +42,9 @@ class TestMultiSpeakerParsing:
             "\n"
             "Back to narration."
         )
-        segments = parse_chapter_segments(text, mode="multi", default_character="narrator")
+        segments = parse_chapter_segments(
+            text, mode="multi", default_character="narrator"
+        )
         assert len(segments) == 3
         assert segments[0].character == "narrator"
         assert segments[1].character == "hero"
@@ -56,36 +60,37 @@ class TestMultiSpeakerParsing:
             "\n"
             "Narrator closes."
         )
-        segments = parse_chapter_segments(text, mode="multi", default_character="narrator")
+        segments = parse_chapter_segments(
+            text, mode="multi", default_character="narrator"
+        )
         assert len(segments) == 4
         chars = [s.character for s in segments]
         assert chars == ["narrator", "hero", "villain", "narrator"]
 
     def test_consecutive_same_speaker_merges(self):
-        text = (
-            "[hero] First line.\n"
-            "[hero] Second line."
+        text = "[hero] First line.\n" "[hero] Second line."
+        segments = parse_chapter_segments(
+            text, mode="multi", default_character="narrator"
         )
-        segments = parse_chapter_segments(text, mode="multi", default_character="narrator")
         assert len(segments) == 1
         assert segments[0].character == "hero"
         assert "First line." in segments[0].text
         assert "Second line." in segments[0].text
 
     def test_blank_line_reverts_to_default(self):
-        text = (
-            "[hero] Hero speaks.\n"
-            "\n"
-            "This should be narrator."
+        text = "[hero] Hero speaks.\n" "\n" "This should be narrator."
+        segments = parse_chapter_segments(
+            text, mode="multi", default_character="narrator"
         )
-        segments = parse_chapter_segments(text, mode="multi", default_character="narrator")
         assert len(segments) == 2
         assert segments[0].character == "hero"
         assert segments[1].character == "narrator"
 
     def test_inline_text_after_tag(self):
         text = "[hero] I refuse!"
-        segments = parse_chapter_segments(text, mode="multi", default_character="narrator")
+        segments = parse_chapter_segments(
+            text, mode="multi", default_character="narrator"
+        )
         assert len(segments) == 1
         assert segments[0].character == "hero"
         assert "I refuse!" in segments[0].text
@@ -100,7 +105,9 @@ class TestMultiSpeakerParsing:
             "\n"
             "عاد الصمت."
         )
-        segments = parse_chapter_segments(text, mode="multi", default_character="narrator")
+        segments = parse_chapter_segments(
+            text, mode="multi", default_character="narrator"
+        )
         assert len(segments) == 4
         assert segments[0].character == "narrator"
         assert segments[1].character == "hero"
@@ -109,12 +116,10 @@ class TestMultiSpeakerParsing:
         assert segments[3].character == "narrator"
 
     def test_single_mode_ignores_tags(self):
-        text = (
-            "Narrator line.\n"
-            "[hero] Hero line.\n"
-            "More narration."
+        text = "Narrator line.\n" "[hero] Hero line.\n" "More narration."
+        segments = parse_chapter_segments(
+            text, mode="single", default_character="narrator"
         )
-        segments = parse_chapter_segments(text, mode="single", default_character="narrator")
         assert len(segments) == 1
         assert segments[0].character == "narrator"
         # Tag is stripped, but text after tag is preserved
@@ -145,7 +150,9 @@ def multi_project(tmp_path):
 
     # Create reference audio for hero
     ref_wav = voices_dir / "hero.wav"
-    sf.write(str(ref_wav), [0.0]*24000, 24000) # Mocked sf.write works via conftest side_effect
+    sf.write(
+        str(ref_wav), [0.0] * 24000, 24000
+    )  # Mocked sf.write works via conftest side_effect
 
     # Write chapter text with speaker tags
     chapter_text = (
@@ -267,6 +274,7 @@ class TestMultiSpeakerGeneration:
         Narrator segments → edge engine
         Hero segments → xtts engine
         """
+
         async def _test():
             from audioformation.generate import _generate_chapter
             from audioformation.engines.registry import registry as real_registry
@@ -296,42 +304,52 @@ class TestMultiSpeakerGeneration:
             )
 
             result = await _generate_chapter(
-                    project_id=proj["id"],
-                    project_path=proj["dir"],
-                    chapter=pj["chapters"][0],
-                    characters=pj["characters"],
-                    gen_config=pj["generation"],
-                    qc_config=pj["qc"],
-                    target_lufs=-16.0,
-                    raw_dir=proj["dir"] / "03_GENERATED" / "raw",
-                    engine_override=None,
-                )
+                project_id=proj["id"],
+                project_path=proj["dir"],
+                chapter=pj["chapters"][0],
+                characters=pj["characters"],
+                gen_config=pj["generation"],
+                qc_config=pj["qc"],
+                target_lufs=-16.0,
+                raw_dir=proj["dir"] / "03_GENERATED" / "raw",
+                engine_override=None,
+            )
 
             assert result["status"] in ("complete", "partial")
             assert result["total_chunks"] > 0
 
             # Verify both engines were called
-            assert edge_mock.generate.call_count > 0, "Edge should handle narrator segments"
+            assert (
+                edge_mock.generate.call_count > 0
+            ), "Edge should handle narrator segments"
             assert xtts_mock.generate.call_count > 0, "XTTS should handle hero segments"
 
             # Verify edge got narrator text, xtts got hero text
             edge_texts = [
-                call.args[0].text if call.args else call.kwargs.get("request", call[0][0]).text
+                call.args[0].text
+                if call.args
+                else call.kwargs.get("request", call[0][0]).text
                 for call in edge_mock.generate.call_args_list
             ]
             xtts_texts = [
-                call.args[0].text if call.args else call.kwargs.get("request", call[0][0]).text
+                call.args[0].text
+                if call.args
+                else call.kwargs.get("request", call[0][0]).text
                 for call in xtts_mock.generate.call_args_list
             ]
 
-            assert any("narrator" in t.lower() for t in edge_texts), \
-                f"Edge should get narrator text, got: {edge_texts}"
-            assert any("hero" in t.lower() for t in xtts_texts), \
-                f"XTTS should get hero text, got: {xtts_texts}"
+            assert any(
+                "narrator" in t.lower() for t in edge_texts
+            ), f"Edge should get narrator text, got: {edge_texts}"
+            assert any(
+                "hero" in t.lower() for t in xtts_texts
+            ), f"XTTS should get hero text, got: {xtts_texts}"
+
         asyncio.run(_test())
 
     def test_engine_override_forces_all_segments(self, multi_project, monkeypatch):
         """When --engine flag is set, ALL segments use that engine."""
+
         async def _test():
             from audioformation.generate import _generate_chapter
             from audioformation.engines.registry import registry as real_registry
@@ -359,25 +377,27 @@ class TestMultiSpeakerGeneration:
             )
 
             result = await _generate_chapter(
-                    project_id=proj["id"],
-                    project_path=proj["dir"],
-                    chapter=pj["chapters"][0],
-                    characters=pj["characters"],
-                    gen_config=pj["generation"],
-                    qc_config=pj["qc"],
-                    target_lufs=-16.0,
-                    raw_dir=proj["dir"] / "03_GENERATED" / "raw",
-                    engine_override="edge",  # force all to edge
-                )
+                project_id=proj["id"],
+                project_path=proj["dir"],
+                chapter=pj["chapters"][0],
+                characters=pj["characters"],
+                gen_config=pj["generation"],
+                qc_config=pj["qc"],
+                target_lufs=-16.0,
+                raw_dir=proj["dir"] / "03_GENERATED" / "raw",
+                engine_override="edge",  # force all to edge
+            )
 
             assert result["total_chunks"] > 0
             # Only edge should be called — override trumps character config
             assert edge_mock.generate.call_count > 0
             assert xtts_mock.generate.call_count == 0
+
         asyncio.run(_test())
 
     def test_xtts_vram_released_after_multi_chapter(self, multi_project, monkeypatch):
         """XTTS release_vram is called when XTTS was used in a chapter."""
+
         async def _test():
             from audioformation.generate import _generate_chapter
             from audioformation.engines.registry import registry as real_registry
@@ -405,23 +425,25 @@ class TestMultiSpeakerGeneration:
             )
 
             await _generate_chapter(
-                    project_id=proj["id"],
-                    project_path=proj["dir"],
-                    chapter=pj["chapters"][0],
-                    characters=pj["characters"],
-                    gen_config=pj["generation"],
-                    qc_config=pj["qc"],
-                    target_lufs=-16.0,
-                    raw_dir=proj["dir"] / "03_GENERATED" / "raw",
-                    engine_override=None,
-                )
+                project_id=proj["id"],
+                project_path=proj["dir"],
+                chapter=pj["chapters"][0],
+                characters=pj["characters"],
+                gen_config=pj["generation"],
+                qc_config=pj["qc"],
+                target_lufs=-16.0,
+                raw_dir=proj["dir"] / "03_GENERATED" / "raw",
+                engine_override=None,
+            )
 
             # XTTS was used → release_vram should have been called
             xtts_mock.release_vram.assert_called()
+
         asyncio.run(_test())
 
     def test_single_mode_unchanged(self, multi_project, monkeypatch):
         """Single mode still works — all segments use chapter character."""
+
         async def _test():
             from audioformation.generate import _generate_chapter
             from audioformation.engines.registry import registry as real_registry
@@ -454,28 +476,29 @@ class TestMultiSpeakerGeneration:
             )
 
             result = await _generate_chapter(
-                    project_id=proj["id"],
-                    project_path=proj["dir"],
-                    chapter=chapter,
-                    characters=pj["characters"],
-                    gen_config=pj["generation"],
-                    qc_config=pj["qc"],
-                    target_lufs=-16.0,
-                    raw_dir=proj["dir"] / "03_GENERATED" / "raw",
-                    engine_override=None,
-                )
+                project_id=proj["id"],
+                project_path=proj["dir"],
+                chapter=chapter,
+                characters=pj["characters"],
+                gen_config=pj["generation"],
+                qc_config=pj["qc"],
+                target_lufs=-16.0,
+                raw_dir=proj["dir"] / "03_GENERATED" / "raw",
+                engine_override=None,
+            )
 
             assert result["total_chunks"] > 0
             # Only edge (narrator's engine) should be called
             assert edge_mock.generate.call_count > 0
             assert xtts_mock.generate.call_count == 0
+
         asyncio.run(_test())
 
 
 class TestMultiSpeakerEdgeCases:
-
     def test_unknown_character_falls_back(self, multi_project, monkeypatch):
         """Segment with unknown character falls back to chapter defaults."""
+
         async def _test():
             from audioformation.generate import _generate_chapter
             from audioformation.engines.registry import registry as real_registry
@@ -512,17 +535,18 @@ class TestMultiSpeakerEdgeCases:
 
             # Should not crash — unknown character gets empty char_data → default engine
             result = await _generate_chapter(
-                    project_id=proj["id"],
-                    project_path=proj["dir"],
-                    chapter=pj["chapters"][0],
-                    characters=pj["characters"],
-                    gen_config=pj["generation"],
-                    qc_config=pj["qc"],
-                    target_lufs=-16.0,
-                    raw_dir=proj["dir"] / "03_GENERATED" / "raw",
-                    engine_override=None,
-                )
+                project_id=proj["id"],
+                project_path=proj["dir"],
+                chapter=pj["chapters"][0],
+                characters=pj["characters"],
+                gen_config=pj["generation"],
+                qc_config=pj["qc"],
+                target_lufs=-16.0,
+                raw_dir=proj["dir"] / "03_GENERATED" / "raw",
+                engine_override=None,
+            )
 
             assert result["total_chunks"] > 0
             assert result["status"] in ("complete", "partial")
+
         asyncio.run(_test())
