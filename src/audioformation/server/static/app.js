@@ -183,6 +183,7 @@ const app = {
             this.renderEngineSettings();
             this.renderForm(); // Chapters
             this.renderJson();
+            this.fetchAssets(); // Populate assets tab
             
             // Initial view
             this.showEditor();
@@ -430,6 +431,7 @@ const app = {
             if (res.ok) {
                 alert("Background music uploaded!");
                 this.fetchMusicFiles();
+                this.fetchAssets();
             } else {
                 const err = await res.json();
                 alert(`Upload failed: ${err.detail}`);
@@ -633,20 +635,23 @@ const app = {
     switchTab(targetTab, skipSync = false) {
         if (!skipSync) this.updateDataFromForm(); // Always sync from form before switching
 
-        ['overview', 'cast', 'chapters', 'engine', 'json'].forEach(t => {
+        ['overview', 'cast', 'chapters', 'engine', 'json', 'assets'].forEach(t => {
             const el = document.getElementById(`tab-${t}`);
             const btn = document.getElementById(`tab-btn-${t}`);
+            if (!el) return;
+            
             if (t === targetTab) {
                 el.classList.remove('hidden');
-                btn.classList.add('active');
+                if (btn) btn.classList.add('active');
             } else {
                 el.classList.add('hidden');
-                btn.classList.remove('active');
+                if (btn) btn.classList.remove('active');
             }
         });
         
         // If switching to JSON tab, refresh it
         if (targetTab === 'json') this.renderJson();
+        if (targetTab === 'assets') this.fetchAssets();
     },
 
     async saveProject() {
@@ -888,6 +893,117 @@ const app = {
             `;
             container.appendChild(el);
         }
+    },
+
+    // ──────────────────────────────────────────────
+    // Assets (SFX/Music)
+    // ──────────────────────────────────────────────
+
+    async fetchAssets() {
+        const list = document.getElementById('assets-list');
+        list.innerHTML = '<div class="card loading">Loading assets...</div>';
+        
+        try {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/files`);
+            if (res.ok) {
+                const files = await res.json();
+                // Filter only sfx and music
+                const assets = files.filter(f => f.category === 'sfx' || f.category === 'music');
+                this.renderAssetsList(assets);
+            } else {
+                list.innerHTML = '<div class="card" style="color:red">Failed to load assets</div>';
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    },
+
+    renderAssetsList(files) {
+        const list = document.getElementById('assets-list');
+        list.innerHTML = '';
+        
+        if (files.length === 0) {
+            list.innerHTML = '<div class="card">No assets generated yet. Use the tools above.</div>';
+            return;
+        }
+        
+        files.forEach(f => {
+            const el = document.createElement('div');
+            el.className = 'file-download';
+            
+            const sizeMB = (f.size / (1024*1024)).toFixed(2);
+            const date = new Date(f.modified * 1000).toLocaleString();
+            const badgeClass = f.category === 'sfx' ? 'warning' : 'complete'; // reuse colors
+            
+            el.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:0.2rem;">
+                    <a href="/projects/${this.currentProject}/${f.path}" target="_blank">${f.name}</a>
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <span class="status-badge ${badgeClass}">${f.category.toUpperCase()}</span>
+                        <span class="file-size">${date} • ${sizeMB} MB</span>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <button class="btn small" onclick="app.playAsset('${f.path}')">▶</button>
+                    <a href="/projects/${this.currentProject}/${f.path}" target="_blank" download class="btn small">⬇</a>
+                </div>
+            `;
+            list.appendChild(el);
+        });
+    },
+
+    playAsset(path) {
+        const url = `/projects/${this.currentProject}/${path}`;
+        const audio = new Audio(url);
+        audio.play();
+    },
+
+    async generateSFX() {
+        const type = document.getElementById('sfx-type').value;
+        const duration = parseFloat(document.getElementById('sfx-duration').value);
+        
+        try {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/sfx`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ type: type, duration: duration })
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                alert(`Generated: ${data.message}`);
+                this.fetchAssets();
+            } else {
+                const err = await res.json();
+                alert(`Failed: ${err.detail}`);
+            }
+        } catch(e) { alert(e.message); }
+    },
+
+    async composeMusic() {
+        const preset = document.getElementById('music-preset').value;
+        const duration = parseFloat(document.getElementById('music-duration').value);
+        
+        try {
+            const res = await fetch(`${API_BASE}/projects/${this.currentProject}/compose`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ preset: preset, duration: duration })
+            });
+            
+            if (res.ok) {
+                // Compose is async, so we just alert started. 
+                // In real app, we'd poll or wait. For now, simple UX.
+                alert(`Composition started for ${preset}. Check back in a moment.`);
+                
+                // Poll a few times to auto-refresh list
+                setTimeout(() => this.fetchAssets(), 2000);
+                setTimeout(() => this.fetchAssets(), 5000);
+            } else {
+                const err = await res.json();
+                alert(`Failed: ${err.detail}`);
+            }
+        } catch(e) { alert(e.message); }
     },
 
     // ──────────────────────────────────────────────

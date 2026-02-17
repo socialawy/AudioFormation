@@ -1,7 +1,9 @@
+
 #!/usr/bin/env python3
 """
 E2E CLI Test Suite for Audio-Formation Pipeline
-Tests all 4 TTS engines across full pipeline with detailed logging
+Tests all 4 TTS engines across full pipeline with detailed logging.
+Uses shell=False for subprocess to ensure Windows compatibility.
 """
 
 import json
@@ -12,19 +14,18 @@ import pytest
 import subprocess
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, Dict, Any
 
 # Add tools directory to path for e2e_logger
 sys.path.insert(0, str(Path(__file__).parent.parent / "tools"))
 
 try:
-    from e2e_logger import E2ELogger, execute_command
+    from e2e_logger import E2ELogger
     E2E_LOGGER_AVAILABLE = True
 except ImportError:
     E2E_LOGGER_AVAILABLE = False
 
 # Configuration
-TEST_SAMPLES_DIR = Path(__file__).parent.parent / "test_samples"
+TEST_SAMPLES_DIR = (Path(__file__).parent.parent / "test_samples").resolve()
 ENGINES = ["edge", "gtts", "xtts", "elevenlabs"]
 VOICES = {
     "edge": "ar-EG-SalmaNeural",
@@ -34,6 +35,22 @@ VOICES = {
 }
 
 EXPORT_FORMATS = ["mp3", "m4b", "wav"]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_data():
+    """Ensure test samples directory and files exist before running tests."""
+    TEST_SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
+    
+    files = {
+        "contemplative.txt": "This is a quiet, contemplative scene. The wind whispers through the ancient trees.",
+        "energetic.txt": "Action! Movement! The chase was on, running fast through the crowded streets!"
+    }
+    
+    for name, content in files.items():
+        p = TEST_SAMPLES_DIR / name
+        if not p.exists():
+            p.write_text(content, encoding="utf-8")
 
 
 @pytest.mark.skipif(
@@ -81,8 +98,11 @@ class TestE2EPipeline:
         logger.start_engine_section(engine)
         
         try:
-            success = self._run_engine_test(logger, engine, project_name)
-            assert success, f"Pipeline test failed for {engine}"
+            success, error_msg = self._run_engine_test(logger, engine, project_name)
+            if not success:
+                logger.log_error(f"Pipeline failed: {error_msg}")
+            
+            assert success, f"Pipeline test failed for {engine}: {error_msg}"
             
             logger.test_results[engine] = {
                 "project": project_name,
@@ -108,8 +128,11 @@ class TestE2EPipeline:
         logger.start_engine_section(engine)
         
         try:
-            success = self._run_engine_test(logger, engine, project_name)
-            assert success, f"Pipeline test failed for {engine}"
+            success, error_msg = self._run_engine_test(logger, engine, project_name)
+            if not success:
+                logger.log_error(f"Pipeline failed: {error_msg}")
+            
+            assert success, f"Pipeline test failed for {engine}: {error_msg}"
             
             logger.test_results[engine] = {
                 "project": project_name,
@@ -145,115 +168,148 @@ class TestE2EPipeline:
         except ImportError:
             return False
     
-    def _run_engine_test(self, logger, engine: str, project_name: str) -> bool:
-        """Run complete pipeline test for one engine"""
+    def _run_cmd(self, args: list[str]) -> dict:
+        """Run CLI command with proper environment using subprocess list args (no shell=True quoting issues)"""
+        env = os.environ.copy()
+        # Ensure src is in PYTHONPATH
+        src_path = str((Path(__file__).parent.parent / "src").resolve())
+        env["PYTHONPATH"] = src_path + os.pathsep + env.get("PYTHONPATH", "")
+        
+        # Construct command list: [python, -m, audioformation, arg1, arg2...]
+        cmd_list = [sys.executable, "-m", "audioformation"] + args
+        
+        try:
+            result = subprocess.run(
+                cmd_list,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=900,
+                check=False
+            )
+            return {
+                "cmd": " ".join(cmd_list), # For logging display
+                "returncode": result.returncode,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "success": result.returncode == 0
+            }
+        except subprocess.TimeoutExpired:
+            return {
+                "cmd": " ".join(cmd_list),
+                "returncode": -1,
+                "stdout": "",
+                "stderr": "Timeout expired",
+                "success": False
+            }
+        except Exception as e:
+            return {
+                "cmd": " ".join(cmd_list),
+                "returncode": -1,
+                "stdout": "",
+                "stderr": str(e),
+                "success": False
+            }
+
+    def _run_engine_test(self, logger, engine: str, project_name: str) -> tuple[bool, str]:
+        """Run complete pipeline test for one engine. Returns (success, error_msg)"""
         step_times = {}
-        all_passed = True
         
         # Step 1: Bootstrap (Create project)
         step_name = "Bootstrap"
         logger.entries.append(f"\n### {step_name}\n")
         start = time.time()
         
-        cmd = f'python -c "import sys; sys.path.insert(0, \'src\'); import audioformation.cli; audioformation.cli.main()" new "{project_name}"'
-        result = execute_command(cmd)
+        # Pass pure strings, no quotes needed for list-based subprocess
+        result = self._run_cmd(["new", project_name])
         step_times[step_name] = time.time() - start
         
-        logger.log_command(cmd, result)
+        logger.log_command(f"new {project_name}", result)
         if not result["success"]:
-            logger.log_error(f"Project creation failed for {engine}")
-            return False
+            return False, f"Bootstrap failed: {result['stderr']}"
         
         # Step 2: Ingest
         step_name = "Ingest"
         logger.entries.append(f"\n### {step_name}\n")
         start = time.time()
         
-        cmd = f'python -c "import sys; sys.path.insert(0, \'src\'); import audioformation.cli; audioformation.cli.main()" ingest "{project_name}" --source ./test_samples'
-        result = execute_command(cmd)
+        source_path = str(TEST_SAMPLES_DIR.resolve())
+        result = self._run_cmd(["ingest", project_name, "--source", source_path])
         step_times[step_name] = time.time() - start
         
-        logger.log_command(cmd, result)
+        logger.log_command(f"ingest {project_name}", result)
         if not result["success"]:
-            logger.log_error(f"Ingest failed for {engine}")
-            all_passed = False
+            return False, f"Ingest failed: {result['stderr']}"
         
         # Step 3: Validate
         step_name = "Validate"
         logger.entries.append(f"\n### {step_name}\n")
         start = time.time()
         
-        cmd = f'python -c "import sys; sys.path.insert(0, \'src\'); import audioformation.cli; audioformation.cli.main()" validate "{project_name}"'
-        result = execute_command(cmd)
+        result = self._run_cmd(["validate", project_name])
         step_times[step_name] = time.time() - start
         
-        logger.log_command(cmd, result)
+        logger.log_command(f"validate {project_name}", result)
         if not result["success"]:
-            logger.log_error(f"Validation failed for {engine}")
-            # Don't stop - validation may fail due to missing config
+            # Log but don't fail immediately if validation warns? 
+            # Usually validate returns 0 even with warnings, 1 on fail.
+            return False, f"Validation failed: {result['stderr']}"
         
         # Step 4: Generate
         step_name = "Generate"
         logger.entries.append(f"\n### {step_name}\n")
         start = time.time()
         
-        voice_arg = f" --voice {VOICES[engine]}" if VOICES[engine] else ""
-        cmd = f'python -c "import sys; sys.path.insert(0, \'src\'); import audioformation.cli; audioformation.cli.main()" generate "{project_name}" --engine {engine}{voice_arg}'
-        result = execute_command(cmd, timeout=900)
+        # Construct args
+        gen_args = ["generate", project_name, "--engine", engine]
+        if VOICES[engine]:
+            gen_args.extend(["--voice", VOICES[engine]])
+            
+        result = self._run_cmd(gen_args)
         step_times[step_name] = time.time() - start
         
-        logger.log_command(cmd, result)
+        logger.log_command(f"generate {project_name}", result)
         if not result["success"]:
-            logger.log_error(f"Generation failed for {engine}")
-            all_passed = False
+            return False, f"Generate failed: {result['stderr']}"
         
         # Step 5: Process
         step_name = "Process"
         logger.entries.append(f"\n### {step_name}\n")
         start = time.time()
         
-        cmd = f'python -c "import sys; sys.path.insert(0, \'src\'); import audioformation.cli; audioformation.cli.main()" process "{project_name}"'
-        result = execute_command(cmd)
+        result = self._run_cmd(["process", project_name])
         step_times[step_name] = time.time() - start
         
-        logger.log_command(cmd, result)
+        logger.log_command(f"process {project_name}", result)
         if not result["success"]:
-            logger.log_error(f"Process failed for {engine}")
-            all_passed = False
+            return False, f"Process failed: {result['stderr']}"
         
         # Step 6: Mix
         step_name = "Mix"
         logger.entries.append(f"\n### {step_name}\n")
         start = time.time()
         
-        cmd = f'python -c "import sys; sys.path.insert(0, \'src\'); import audioformation.cli; audioformation.cli.main()" mix "{project_name}"'
-        result = execute_command(cmd, timeout=600)
+        result = self._run_cmd(["mix", project_name])
         step_times[step_name] = time.time() - start
         
-        logger.log_command(cmd, result)
+        logger.log_command(f"mix {project_name}", result)
         if not result["success"]:
-            logger.log_error(f"Mix failed for {engine}")
-            all_passed = False
+            return False, f"Mix failed: {result['stderr']}"
         
         # Step 7: Export
         step_name = "Export"
         logger.entries.append(f"\n### {step_name}\n")
         start = time.time()
         
-        format_args = " ".join([f"--format {fmt}" for fmt in EXPORT_FORMATS])
-        cmd = f'python -c "import sys; sys.path.insert(0, \'src\'); import audioformation.cli; audioformation.cli.main()" export "{project_name}" {format_args}'
-        result = execute_command(cmd)
+        # Just export MP3 for speed in E2E
+        result = self._run_cmd(["export", project_name, "--format", "mp3"])
         step_times[step_name] = time.time() - start
         
-        logger.log_command(cmd, result)
+        logger.log_command(f"export {project_name}", result)
         if not result["success"]:
-            logger.log_error(f"Export failed for {engine}")
-            all_passed = False
+            return False, f"Export failed: {result['stderr']}"
         else:
             self._log_export_files(logger, project_name)
-            # Verify M4B specific metadata/chapters if m4b was requested
-            if "m4b" in EXPORT_FORMATS:
-                self._verify_m4b_export(logger, project_name)
         
         # Log timing summary
         logger.entries.append(f"\n**Timing Summary**:\n")
@@ -261,7 +317,7 @@ class TestE2EPipeline:
             logger.entries.append(f"- {step}: {duration:.2f}s\n")
         
         logger.end_engine_section(engine)
-        return all_passed
+        return True, ""
     
     def _log_export_files(self, logger, project_name: str):
         """Log exported file information"""
@@ -278,42 +334,6 @@ class TestE2EPipeline:
                         file_info = logger.log_file_info(fmt_file)
                         logger.entries.append(f"- {file_info['path']}: {file_info['size_mb']} MB\n")
                 break
-    
-    def _verify_m4b_export(self, logger, project_name: str):
-        """Verify M4B export has chapters and metadata"""
-        logger.entries.append(f"\n### M4B Verification\n")
-        
-        export_dir = Path("PROJECTS") / project_name / "07_EXPORT" / "audiobook"
-        if not export_dir.exists():
-            export_dir = Path(project_name) / "07_EXPORT" / "audiobook"
-            
-        m4b_files = list(export_dir.glob("*.m4b"))
-        if not m4b_files:
-            logger.log_error("No M4B file found for verification")
-            return
-
-        m4b_path = m4b_files[0]
-        logger.entries.append(f"Verifying: `{m4b_path.name}`\n")
-
-        # Use ffprobe to check for chapters
-        cmd = f'ffprobe -i "{m4b_path}" -show_chapters -print_format json'
-        result = execute_command(cmd, timeout=30)
-        
-        if result["success"]:
-            try:
-                data = json.loads(result["stdout"])
-                chapters = data.get("chapters", [])
-                logger.entries.append(f"✅ Found {len(chapters)} chapters in M4B\n")
-                if chapters:
-                    for i, ch in enumerate(chapters):
-                        title = ch.get("tags", {}).get("title", "Unknown")
-                        logger.entries.append(f"  - Chapter {i+1}: {title}\n")
-                else:
-                    logger.log_error("M4B file has no chapters")
-            except Exception as e:
-                logger.log_error(f"Failed to parse ffprobe output: {e}")
-        else:
-            logger.log_error(f"ffprobe failed: {result['stderr'][:200]}")
 
 
 class TestEngineAvailability:

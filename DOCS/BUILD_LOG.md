@@ -6,7 +6,7 @@
 **Date:** February 16, 2026  
 **Hardware Reference:** NVIDIA GTX 1650 Ti (4GB VRAM)
 
-**Phase 4:** Final Polish & Export UI (Feb 16, 2026)
+**Phase 4:** Final Polish & Export UI (Feb 16-17, 2026)
 # Dashboard v2 Implementation Log
 
 Tracking progress against `docs/New-Dashboard.md`.
@@ -17,7 +17,10 @@ Tracking progress against `docs/New-Dashboard.md`.
 - **Cast Panel (4c)**: Complete. Character editing, engine selection, and dynamic voice lists. Added file upload for XTTS reference audio and voice preview.
 - **Engine Settings (4d)**: Complete. Settings are mapped to project configuration.
 - **Pipeline Visualization (4e)**: Complete. Interactive stepper and hardware status.
-- **Mix Controls (4f)**: Complete. Added advanced mix configuration (Ducking, Music Selection, LUFS) to the Mix View. Added BGM upload.
+- **Mix Controls (4f)**: Complete.
+- **Engine Settings (4d)**: Upgraded. Added specific controls for XTTS (Temperature, Repetition Penalty, VRAM Strategy) in collapsible panels.
+- **Chapters List**: Upgraded. Converted simple list to rich grid with inline status badges and "Play" / "Generate" actions.
+- **Assets Tab (SFX/Music)**: Added new Editor tab to generate SFX (whoosh, impact, etc.) and compose ambient music.
 
 ### Changes (Upload & Preview)
 1.  **API**:
@@ -37,6 +40,17 @@ Tracking progress against `docs/New-Dashboard.md`.
 6.  **Logic**: 
     - Wired XTTS parameters to `project.json` generation config.
     - Added inline audio playback for generated chapters.
+
+7.  **UI Styles**: Added collapsible components and action button groups.
+8.  **Editor**: 
+    - Added XTTS advanced configuration section.
+    - Added ElevenLabs placeholder section.
+    - Enhanced Chapter list with immediate feedback and controls.
+    - Added "Assets" tab for SFX/Music generation and management.
+9.  **Logic**: 
+    - Wired XTTS parameters to `project.json` generation config.
+    - Added inline audio playback for generated chapters.
+    - Added SFX/Music generation API endpoints and UI logic.
 
 ### Next Steps
 - **Validation**: Perform full end-to-end test of the new dashboard flows.

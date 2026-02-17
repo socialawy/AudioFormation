@@ -63,6 +63,7 @@
                         <div class="nav-item" onclick="app.switchTab('cast')" id="tab-btn-cast">Cast</div>
                         <div class="nav-item" onclick="app.switchTab('chapters')" id="tab-btn-chapters">Chapters</div>
                         <div class="nav-item" onclick="app.switchTab('engine')" id="tab-btn-engine">Engine Settings</div>
+                        <div class="nav-item" onclick="app.switchTab('assets')" id="tab-btn-assets">Assets (SFX/Music)</div>
                         <div class="nav-item" onclick="app.switchTab('json')" id="tab-btn-json">Raw JSON</div>
                     </aside>
                     
@@ -269,6 +270,59 @@
                                         </select>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Assets Tab -->
+                        <div id="tab-assets" class="tab-content hidden">
+                            <div class="flex-row" style="gap:2rem;">
+                                <div class="form-group" style="flex:1;">
+                                    <h3>Generate SFX (FXForge)</h3>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Type</label>
+                                            <select id="sfx-type">
+                                                <option value="whoosh">Whoosh</option>
+                                                <option value="impact">Impact</option>
+                                                <option value="ui_click">UI Click</option>
+                                                <option value="static">Static</option>
+                                                <option value="drone">Drone</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Duration (s)</label>
+                                            <input type="number" id="sfx-duration" value="1.0" step="0.1">
+                                        </div>
+                                    </div>
+                                    <button class="btn primary" onclick="app.generateSFX()">Generate SFX</button>
+                                </div>
+                                
+                                <div class="form-group" style="flex:1; border-left:1px solid var(--border); padding-left:2rem;">
+                                    <h3>Compose Music (Ambient)</h3>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Preset</label>
+                                            <select id="music-preset">
+                                                <option value="contemplative">Contemplative</option>
+                                                <option value="tense">Tense</option>
+                                                <option value="wonder">Wonder</option>
+                                                <option value="melancholy">Melancholy</option>
+                                                <option value="triumph">Triumph</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Duration (s)</label>
+                                            <input type="number" id="music-duration" value="60" step="1">
+                                        </div>
+                                    </div>
+                                    <button class="btn primary" onclick="app.composeMusic()">Compose</button>
+                                </div>
+                            </div>
+                            
+                            <h3 style="margin-top:2rem;">Asset Library</h3>
+                            <button class="btn small" onclick="app.fetchAssets()">↻ Refresh List</button>
+                            <div id="assets-list" class="list-group" style="margin-top:1rem;">
+                                <div class="card loading">Loading assets...</div>
                             </div>
                         </div>
 

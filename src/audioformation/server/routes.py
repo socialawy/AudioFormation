@@ -34,6 +34,7 @@ from audioformation.mix import mix_project
 from audioformation.validation import validate_project
 from audioformation.audio.processor import batch_process_project
 from audioformation.audio.composer import generate_pad
+from audioformation.audio.sfx import generate_sfx
 from audioformation.export.mp3 import export_project_mp3
 from audioformation.export.m4b import export_project_m4b_auto
 from audioformation.qc.final import scan_final_mix
@@ -72,6 +73,11 @@ class GenerateRequest(BaseModel):
 class ComposeRequest(BaseModel):
     preset: str = "contemplative"
     duration: int = 60
+
+class SFXRequest(BaseModel):
+    type: str
+    duration: float = 1.0
+    name: Optional[str] = None
 
 class ExportRequest(BaseModel):
     format: str = "mp3"
@@ -383,8 +389,12 @@ async def trigger_compose(
     project_path = get_project_path(project_id)
     output_dir = project_path / "05_MUSIC" / "generated"
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / f"pad_{request.preset}.wav"
-
+    
+    # Use timestamp to avoid overwriting unless specified? 
+    # For now, unique name per preset + timestamp is good
+    import time
+    timestamp = str(int(time.time()))
+    output_path = output_dir / f"pad_{request.preset}_{timestamp}.wav"
 
     background_tasks.add_task(
         _run_with_status,
@@ -401,6 +411,52 @@ async def trigger_compose(
         "message": f"Composing '{request.preset}' pad ({request.duration}s)",
         "status": "running",
     }
+
+
+@router.post("/projects/{project_id}/sfx")
+async def trigger_sfx(
+    project_id: str,
+    request: SFXRequest,
+    background_tasks: BackgroundTasks,
+):
+    """Generate procedural sound effects (Node 5)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project_path = get_project_path(project_id)
+    output_dir = project_path / "04_SFX" / "procedural"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    import time
+    timestamp = str(int(time.time()))
+    filename = request.name if request.name else f"{request.type}_{timestamp}.wav"
+    if not filename.endswith(".wav"):
+        filename += ".wav"
+        
+    output_path = output_dir / filename
+
+    # Simple wrapper to match _run_with_status signature
+    def _gen_sfx():
+        generate_sfx(
+            request.type,
+            output_path=output_path,
+            duration=request.duration
+        )
+
+    # Use 'compose' node status for now, or maybe we need a dedicated 'sfx' node?
+    # Architecture has 'FXForge' but pipeline.py nodes are linear. 
+    # Let's treat it as part of 'compose' or just a side effect without blocking pipeline.
+    # We'll log it but maybe not block the main pipeline status.
+    # Actually, let's just run it. The UI can poll for files.
+    
+    try:
+        _gen_sfx()
+        return {
+            "message": f"Generated SFX: {filename}",
+            "path": str(output_path.relative_to(project_path))
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/projects/{project_id}/export")
@@ -592,6 +648,7 @@ async def list_project_files(project_id: str):
     project_path = get_project_path(project_id)
     export_dir = project_path / "07_EXPORT"
     music_dir = project_path / "05_MUSIC" / "generated"
+    sfx_dir = project_path / "04_SFX" / "procedural"
     
     files = []
     
@@ -610,6 +667,7 @@ async def list_project_files(project_id: str):
     scan_dir(export_dir / "audiobook", "audiobook")
     scan_dir(export_dir / "chapters", "chapter")
     scan_dir(music_dir, "music")
+    scan_dir(sfx_dir, "sfx")
     
     manifest = export_dir / "manifest.json"
     if manifest.exists():

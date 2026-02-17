@@ -105,6 +105,14 @@ The dashboard (`audioformation serve`) provides a visual interface for:
 *   **Mix & Review**: Visualize audio waveforms (`wavesurfer.js`), play back generated/mixed audio, trigger the mixing pipeline.
 *   **Run All Pipeline**: Single-click execution of entire audiobook workflow (validate → generate → QC scan → process → compose → mix → export).
 
+### Workflow Overview
+
+![AudioFormation Workflow](docs/AF-workflow.png)
+
+### Dashboard Interface
+
+![AudioFormation Dashboard](docs/AF-Screen5.png)
+
 ## Testing
 ```bash
 pip install -e ".[dev]"

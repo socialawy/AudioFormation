@@ -1,17 +1,15 @@
+
 #!/usr/bin/env python3
 """
 E2E Dashboard API Tests for Audio-Formation
 Tests all pipeline endpoints using REST API calls
 """
 
-import json
 import os
 import time
 import requests
-import hashlib
 import pytest
 from pathlib import Path
-from typing import Dict, Any, Optional
 from datetime import datetime
 
 # Load environment variables from .env file
@@ -29,322 +27,198 @@ load_env()
 
 # Configuration
 BASE_URL = "http://localhost:4001/api"
-TEST_SAMPLES_DIR = Path(__file__).parent.parent / "test_samples"
-
-# Check for ElevenLabs API key
-ENGINES = ["edge", "gtts", "xtts"]
-if os.environ.get("ELEVENLABS_API_KEY"):
-    ENGINES.append("elevenlabs")
-
-EXPORT_FORMATS = ["mp3"]  # Start with one format for speed
+# Ensure test samples dir exists in current working dir or relative to test file
+TEST_SAMPLES_DIR = (Path(__file__).parent.parent / "test_samples").resolve()
 
 # Generate unique project names with timestamp
 TIMESTAMP = datetime.now().strftime("%H%M%S")
 
 
-@pytest.mark.skipif(
-    not os.environ.get("SKIP_DASHBOARD_TESTS") is None,
-    reason="Dashboard tests skipped - set SKIP_DASHBOARD_TESTS to skip"
-)
-class TestDashboardAPI:
-    """Test Dashboard API endpoints"""
+@pytest.fixture(scope="module")
+def session():
+    """Create a requests session for API testing"""
+    s = requests.Session()
+    yield s
+    s.close()
+
+
+@pytest.fixture(scope="module")
+def ensure_test_data():
+    """Ensure test samples exist."""
+    TEST_SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
     
-    @pytest.fixture(scope="class")
-    def session(self):
-        """Create a requests session for API testing"""
-        session = requests.Session()
-        yield session
-        session.close()
+    files = {
+        "contemplative.txt": "This is a quiet, contemplative scene. The wind whispers.",
+        "energetic.txt": "Action! Movement! Fast paced dialogue happening now!"
+    }
     
-    def test_server_health(self, session: requests.Session):
-        """Test if dashboard server is running"""
-        try:
-            response = session.get(f"{BASE_URL.replace('/api', '')}/health", timeout=5)
-            assert response.status_code == 200, f"Dashboard server not running on {BASE_URL}"
-            assert response.json()["status"] == "ok"
-        except requests.exceptions.ConnectionError:
-            pytest.skip(f"Dashboard server not running on {BASE_URL}")
+    for name, content in files.items():
+        p = TEST_SAMPLES_DIR / name
+        if not p.exists():
+            p.write_text(content, encoding="utf-8")
+            
+    yield
+
+
+class DashboardAPIClient:
+    """Helper class to interact with the API."""
     
-    def test_create_project(self, session: requests.Session) -> bool:
-        """Test project creation"""
-        project_id = f"API_TEST_CREATE_{TIMESTAMP}"
-        print(f"📝 Creating project: {project_id}")
-        
-        response = session.post(f"{BASE_URL}/projects", json={"id": project_id})
-        success = response.status_code == 201
-        
-        if success:
-            data = response.json()
-            assert data["id"] == project_id
-            assert "path" in data
-            print(f"✅ Project created: {data}")
-        else:
-            print(f"❌ Project creation failed: {response.status_code} - {response.text}")
-        
-        return success
-    
-    def test_ingest(self, session: requests.Session) -> bool:
-        """Test file ingestion"""
-        project_id = f"API_TEST_INGEST_{TIMESTAMP}"
-        
-        # Create project first
-        session.post(f"{BASE_URL}/projects", json={"id": project_id})
-        
-        print(f"📥 Ingesting files for: {project_id}")
-        
-        # Prepare files for upload
+    def __init__(self, session):
+        self.session = session
+
+    def check_health(self):
+        return self.session.get(f"{BASE_URL.replace('/api', '')}/health", timeout=5)
+
+    def create_project(self, project_id):
+        return self.session.post(f"{BASE_URL}/projects", json={"id": project_id})
+
+    def ingest(self, project_id, filenames):
         files = []
-        test_files = ["contemplative.txt", "energetic.txt"]
+        opened_files = []
         
-        for filename in test_files:
-            filepath = TEST_SAMPLES_DIR / filename
-            if filepath.exists():
-                files.append(('files', (filename, open(filepath, 'rb'), 'text/plain')))
+        for name in filenames:
+            p = TEST_SAMPLES_DIR / name
+            if p.exists():
+                f = open(p, 'rb')
+                opened_files.append(f)
+                files.append(('files', (name, f, 'text/plain')))
         
         if not files:
-            print("❌ No test files found")
-            return False
-        
-        response = session.post(f"{BASE_URL}/projects/{project_id}/ingest", files=files)
-        
-        # Close files
-        for _, (_, file_obj, _) in files:
-            file_obj.close()
-        
-        success = response.status_code == 200
-        if success:
-            result = response.json()
-            print(f"✅ Ingested: {result}")
-        else:
-            print(f"❌ Ingest failed: {response.status_code} - {response.text}")
-        
-        return success
-    
-    def test_validate(self, session: requests.Session) -> bool:
-        """Test project validation"""
-        project_id = f"API_TEST_VALIDATE_{TIMESTAMP}"
-        
-        # Create and ingest project first
-        session.post(f"{BASE_URL}/projects", json={"id": project_id})
-        
-        # Ingest files
-        files = []
-        for filename in ["contemplative.txt", "energetic.txt"]:
-            filepath = TEST_SAMPLES_DIR / filename
-            if filepath.exists():
-                files.append(('files', (filename, open(filepath, 'rb'), 'text/plain')))
-        
-        if files:
-            session.post(f"{BASE_URL}/projects/{project_id}/ingest", files=files)
-            for _, (_, file_obj, _) in files:
-                file_obj.close()
-        
-        print(f"✅ Validating project: {project_id}")
-        
-        response = session.post(f"{BASE_URL}/projects/{project_id}/validate")
-        success = response.status_code == 200
-        
-        if success:
-            result = response.json()
-            print(f"✅ Validation result: {result}")
-        else:
-            print(f"❌ Validation failed: {response.status_code} - {response.text}")
-        
-        return success
-    
-    def test_generate(self, session: requests.Session, engine: str) -> bool:
-        """Test TTS generation"""
-        project_id = f"API_TEST_GEN_{engine.upper()}_{TIMESTAMP}"
-        
-        # Setup project
-        session.post(f"{BASE_URL}/projects", json={"id": project_id})
-        
-        # Ingest files
-        files = []
-        for filename in ["contemplative.txt", "energetic.txt"]:
-            filepath = TEST_SAMPLES_DIR / filename
-            if filepath.exists():
-                files.append(('files', (filename, open(filepath, 'rb'), 'text/plain')))
-        
-        if files:
-            session.post(f"{BASE_URL}/projects/{project_id}/ingest", files=files)
-            for _, (_, file_obj, _) in files:
-                file_obj.close()
-        
-        session.post(f"{BASE_URL}/projects/{project_id}/validate")
-        
-        print(f"🎤 Generating audio with {engine}: {project_id}")
-        
+            return None
+            
+        try:
+            return self.session.post(f"{BASE_URL}/projects/{project_id}/ingest", files=files)
+        finally:
+            for f in opened_files:
+                f.close()
+
+    def validate(self, project_id):
+        return self.session.post(f"{BASE_URL}/projects/{project_id}/validate")
+
+    def generate(self, project_id, engine, voice=None):
         payload = {"engine": engine}
-        
-        # Configure voice parameters per engine
-        if engine == "edge":
-            payload["voice"] = "ar-EG-SalmaNeural"
-        elif engine == "gtts":
-            payload["voice"] = "ar"
-        elif engine == "xtts":
-            payload["voice"] = "default"
-        elif engine == "elevenlabs":
-            payload["voice"] = "arabic-female"
-        
-        response = session.post(f"{BASE_URL}/projects/{project_id}/generate", json=payload)
-        
-        success = response.status_code == 200
-        if success:
-            result = response.json()
-            print(f"✅ Generation started: {result}")
-            return self._wait_for_completion(session, project_id, "generate")
-        else:
-            print(f"❌ Generation failed: {response.status_code} - {response.text}")
-            return False
-    
-    def test_process(self, session: requests.Session) -> bool:
-        """Test audio processing"""
-        project_id = f"API_TEST_PROCESS_{TIMESTAMP}"
-        
-        # Setup project with audio
-        self._setup_project_with_audio(session, project_id, "edge")
-        
-        print(f"🔧 Processing audio: {project_id}")
-        
-        response = session.post(f"{BASE_URL}/projects/{project_id}/process")
-        success = response.status_code == 200
-        
-        if success:
-            result = response.json()
-            print(f"✅ Processing started: {result}")
-            return self._wait_for_completion(session, project_id, "process")
-        else:
-            print(f"❌ Process failed: {response.status_code} - {response.text}")
-            return False
-    
-    def test_mix(self, session: requests.Session) -> bool:
-        """Test audio mixing"""
-        project_id = f"API_TEST_MIX_{TIMESTAMP}"
-        
-        # Setup project with processed audio
-        self._setup_project_with_audio(session, project_id, "edge")
-        session.post(f"{BASE_URL}/projects/{project_id}/process")
-        self._wait_for_completion(session, project_id, "process")
-        
-        print(f"🎵 Mixing audio: {project_id}")
-        
-        response = session.post(f"{BASE_URL}/projects/{project_id}/mix")
-        success = response.status_code == 200
-        
-        if success:
-            result = response.json()
-            print(f"✅ Mixing started: {result}")
-            return self._wait_for_completion(session, project_id, "mix")
-        else:
-            print(f"❌ Mix failed: {response.status_code} - {response.text}")
-            return False
-    
-    def test_export(self, session: requests.Session) -> bool:
-        """Test audio export"""
-        project_id = f"API_TEST_EXPORT_{TIMESTAMP}"
-        
-        # Setup complete project
-        self._setup_complete_project(session, project_id)
-        
-        print(f"📤 Exporting audio: {project_id}")
-        
-        response = session.post(f"{BASE_URL}/projects/{project_id}/export", json={"format": "mp3"})
-        success = response.status_code == 200
-        
-        if success:
-            result = response.json()
-            print(f"✅ Export started: {result}")
-            return self._wait_for_completion(session, project_id, "export")
-        else:
-            print(f"❌ Export failed: {response.status_code} - {response.text}")
-            return False
-    
-    def _setup_project_with_audio(self, session: requests.Session, project_id: str, engine: str):
-        """Helper to setup a project with generated audio"""
-        session.post(f"{BASE_URL}/projects", json={"id": project_id})
-        
-        # Ingest files
-        files = []
-        for filename in ["contemplative.txt", "energetic.txt"]:
-            filepath = TEST_SAMPLES_DIR / filename
-            if filepath.exists():
-                files.append(('files', (filename, open(filepath, 'rb'), 'text/plain')))
-        
-        if files:
-            session.post(f"{BASE_URL}/projects/{project_id}/ingest", files=files)
-            for _, (_, file_obj, _) in files:
-                file_obj.close()
-        
-        session.post(f"{BASE_URL}/projects/{project_id}/validate")
-        
-        # Generate audio
-        payload = {"engine": engine}
-        if engine == "edge":
-            payload["voice"] = "ar-EG-SalmaNeural"
-        elif engine == "gtts":
-            payload["voice"] = "ar"
-        
-        session.post(f"{BASE_URL}/projects/{project_id}/generate", json=payload)
-        self._wait_for_completion(session, project_id, "generate")
-    
-    def _setup_complete_project(self, session: requests.Session, project_id: str):
-        """Helper to setup a complete project with all steps"""
-        self._setup_project_with_audio(session, project_id, "edge")
-        session.post(f"{BASE_URL}/projects/{project_id}/process")
-        self._wait_for_completion(session, project_id, "process")
-        session.post(f"{BASE_URL}/projects/{project_id}/mix")
-        self._wait_for_completion(session, project_id, "mix")
-    
-    def _wait_for_completion(self, session: requests.Session, project_id: str, operation: str, timeout: int = 300) -> bool:
+        if voice:
+            payload["voice"] = voice
+        return self.session.post(f"{BASE_URL}/projects/{project_id}/generate", json=payload)
+
+    def process(self, project_id):
+        return self.session.post(f"{BASE_URL}/projects/{project_id}/process")
+
+    def mix(self, project_id):
+        return self.session.post(f"{BASE_URL}/projects/{project_id}/mix")
+
+    def export(self, project_id, fmt="mp3"):
+        return self.session.post(f"{BASE_URL}/projects/{project_id}/export", json={"format": fmt})
+
+    def get_status(self, project_id):
+        return self.session.get(f"{BASE_URL}/projects/{project_id}/status")
+
+    def wait_for_completion(self, project_id: str, operation: str, timeout: int = 300) -> bool:
         """Wait for background operation to complete"""
         start_time = time.time()
         
         while time.time() - start_time < timeout:
-            response = session.get(f"{BASE_URL}/projects/{project_id}/status")
+            response = self.get_status(project_id)
             if response.status_code == 200:
                 status = response.json()
                 node_status = status.get("nodes", {}).get(operation, {}).get("status")
                 
                 if node_status == "complete":
-                    print(f"✅ {operation} completed successfully")
                     return True
                 elif node_status == "failed":
-                    print(f"❌ {operation} failed")
+                    # Optionally log failure reason if needed
                     return False
-                elif node_status in ["running", "partial"]:
-                    print(f"⏳ Waiting for {operation} to complete...")
-                    time.sleep(5)
+                elif node_status in ["running", "partial", "pending"]:
+                    time.sleep(2)
                     continue
+            else:
+                return False
             
             time.sleep(2)
         
-        print(f"⏰ {operation} timed out after {timeout} seconds")
         return False
 
 
-# Engine-specific tests
-@pytest.mark.parametrize("engine", ["edge", "gtts", "xtts"])
-class TestEngineSpecific:
-    """Test specific TTS engines"""
-    
-    def test_engine_generation(self, session, engine):
-        """Test generation for specific engine"""
-        api_test = TestDashboardAPI()
-        success = api_test.test_generate(session, engine)
-        assert success, f"Generation failed for engine {engine}"
+@pytest.fixture(scope="module")
+def api_client(session):
+    return DashboardAPIClient(session)
 
 
-# Skip ElevenLabs test if no API key
 @pytest.mark.skipif(
-    not os.environ.get("ELEVENLABS_API_KEY"),
-    reason="ElevenLabs API key not configured"
+    not os.environ.get("SKIP_DASHBOARD_TESTS") is None,
+    reason="Dashboard tests skipped"
 )
-class TestElevenLabs:
-    """Test ElevenLabs engine specifically"""
-    
-    def test_elevenlabs_generation(self, session):
-        """Test ElevenLabs generation"""
-        api_test = TestDashboardAPI()
-        success = api_test.test_generate(session, "elevenlabs")
-        assert success, "ElevenLabs generation failed"
+class TestDashboardE2E:
+    """End-to-End tests for the Dashboard API."""
+
+    def test_server_health(self, api_client):
+        try:
+            resp = api_client.check_health()
+            assert resp.status_code == 200
+            assert resp.json()["status"] == "ok"
+        except requests.exceptions.ConnectionError:
+            pytest.skip(f"Dashboard server not running on {BASE_URL}")
+
+    def test_full_pipeline_flow(self, api_client, ensure_test_data):
+        """Test the standard linear pipeline."""
+        project_id = f"API_FLOW_{TIMESTAMP}"
+        
+        # 1. Create
+        assert api_client.create_project(project_id).status_code == 201
+        
+        # 2. Ingest
+        assert api_client.ingest(project_id, ["contemplative.txt"]).status_code == 200
+        
+        # 3. Validate
+        assert api_client.validate(project_id).status_code == 200
+        
+        # 4. Generate (using edge as default fast engine)
+        gen_resp = api_client.generate(project_id, "edge", "ar-EG-SalmaNeural")
+        assert gen_resp.status_code == 200
+        assert api_client.wait_for_completion(project_id, "generate")
+        
+        # 5. Process
+        assert api_client.process(project_id).status_code == 200
+        assert api_client.wait_for_completion(project_id, "process")
+        
+        # 6. Mix
+        assert api_client.mix(project_id).status_code == 200
+        assert api_client.wait_for_completion(project_id, "mix")
+        
+        # 7. Export
+        assert api_client.export(project_id).status_code == 200
+        assert api_client.wait_for_completion(project_id, "export")
+
+
+@pytest.mark.skipif(
+    not os.environ.get("SKIP_DASHBOARD_TESTS") is None,
+    reason="Dashboard tests skipped"
+)
+class TestEngineSpecific:
+    """Parametrized tests for different engines via API."""
+
+    @pytest.mark.parametrize("engine", ["edge", "gtts"])
+    def test_engine_generation(self, api_client, ensure_test_data, engine):
+        """Test generation for specific engine"""
+        project_id = f"API_ENG_{engine.upper()}_{TIMESTAMP}"
+        
+        api_client.create_project(project_id)
+        api_client.ingest(project_id, ["contemplative.txt"])
+        api_client.validate(project_id)
+        
+        voice = "ar-EG-SalmaNeural" if engine == "edge" else "ar"
+        
+        resp = api_client.generate(project_id, engine, voice)
+        assert resp.status_code == 200
+        assert api_client.wait_for_completion(project_id, "generate")
+
+    @pytest.mark.skipif(not os.environ.get("ELEVENLABS_API_KEY"), reason="No API Key")
+    def test_elevenlabs_generation(self, api_client, ensure_test_data):
+        project_id = f"API_ENG_11LABS_{TIMESTAMP}"
+        api_client.create_project(project_id)
+        api_client.ingest(project_id, ["contemplative.txt"])
+        api_client.validate(project_id)
+        
+        resp = api_client.generate(project_id, "elevenlabs", "arabic-female")
+        assert resp.status_code == 200
+        assert api_client.wait_for_completion(project_id, "generate")

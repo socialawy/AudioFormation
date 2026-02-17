@@ -73,13 +73,13 @@ def new(name: str) -> None:
     try:
         project_path = create_project(name)
     except (FileExistsError, ValueError) as e:
-        click.secho(f"✗ {e}", fg="red")
+        click.secho(f"ERROR {e}", fg="red")
         sys.exit(1)
 
     click.echo("  Detecting hardware...")
     hw = write_hardware_json(project_path)
 
-    click.secho(f"✓ Created project: {project_path.name}", fg="green")
+    click.secho(f"OK Created project: {project_path.name}", fg="green")
     click.echo(f"  Path: {project_path.resolve()}")
 
     # Write pipeline status — bootstrap complete
@@ -92,9 +92,9 @@ def new(name: str) -> None:
         click.echo("  GPU:  None detected (CPU mode)")
 
     if hw.get("ffmpeg_available"):
-        click.echo("  ffmpeg: ✓")
+        click.echo("  ffmpeg: OK")
     else:
-        click.secho("  ffmpeg: ✗ NOT FOUND — install ffmpeg and add to PATH", fg="yellow")
+        click.secho("  ffmpeg: ERROR NOT FOUND — install ffmpeg and add to PATH", fg="yellow")
 
     click.echo()
     click.echo("Next steps:")
@@ -142,7 +142,7 @@ def status(project_id: str) -> None:
         pj = load_project_json(project_id)
         ps = load_pipeline_status(project_id)
     except FileNotFoundError as e:
-        click.secho(f"✗ {e}", fg="red")
+        click.secho(f"ERROR {e}", fg="red")
         sys.exit(1)
 
     click.secho(f"Project: {pj['id']}", fg="cyan", bold=True)
@@ -166,7 +166,7 @@ def status(project_id: str) -> None:
         elif node_status == "running":
             icon = click.style("▶", fg="blue")
         elif node_status == "failed":
-            icon = click.style("✗", fg="red")
+            icon = click.style("X", fg="red")
         elif node_status == "skipped":
             icon = click.style("⊘", fg="white")
         else:
@@ -215,7 +215,7 @@ def hardware() -> None:
         click.echo(f"    Path:    {hw['ffmpeg_path']}")
         click.echo(f"    Version: {hw.get('ffmpeg_version', 'unknown')}")
     else:
-        click.secho("  ffmpeg: ✗ NOT FOUND", fg="red")
+        click.secho("  ffmpeg: ERROR NOT FOUND", fg="red")
         click.echo("    Install: https://ffmpeg.org/download.html")
         click.echo("    Required for audio processing and export.")
 
@@ -243,7 +243,7 @@ def cast_list(project_id: str) -> None:
     try:
         pj = load_project_json(project_id)
     except FileNotFoundError:
-        click.secho("✗ project.json not found.", fg="red")
+        click.secho("ERROR project.json not found.", fg="red")
         sys.exit(1)
 
     characters = pj.get("characters", {})
@@ -410,7 +410,7 @@ def sfx_generate(project_id: str, sfx_type: str, duration: float, filename: str 
         generate_sfx(sfx_type, output_path=output_path, duration=duration)
         click.secho(f"✓ Generated {sfx_type}: {output_path.name}", fg="green")
     except Exception as e:
-        click.secho(f"✗ Failed: {e}", fg="red")
+        click.secho(f"ERROR Failed: {e}", fg="red")
         sys.exit(1)
 
 
@@ -436,11 +436,11 @@ def validate(project_id: str) -> None:
     summary = result.summary()
 
     for msg in summary["details"]["passed"]:
-        click.echo(f"  {click.style('✓', fg='green')} {msg}")
+        click.echo(f"  {click.style('OK', fg='green')} {msg}")
     for msg in summary["details"]["warnings"]:
         click.echo(f"  {click.style('⚠', fg='yellow')} {msg}")
     for msg in summary["details"]["failures"]:
-        click.echo(f"  {click.style('✗', fg='red')} {msg}")
+        click.echo(f"  {click.style('X', fg='red')} {msg}")
 
     click.echo()
     click.echo(
@@ -450,10 +450,10 @@ def validate(project_id: str) -> None:
     )
 
     if result.ok:
-        click.secho("✓ Validation PASSED", fg="green", bold=True)
+        click.secho("OK Validation PASSED", fg="green", bold=True)
         update_node_status(project_id, "validate", "complete")
     else:
-        click.secho("✗ Validation FAILED — fix issues and retry", fg="red", bold=True)
+        click.secho("ERROR Validation FAILED — fix issues and retry", fg="red", bold=True)
         update_node_status(project_id, "validate", "failed")
         sys.exit(1)
 
@@ -477,7 +477,7 @@ def ingest(project_id: str, source: Path, language: str | None) -> None:
     try:
         result = ingest_text(project_id, source, language=language)
     except (FileNotFoundError, ValueError) as e:
-        click.secho(f"✗ {e}", fg="red")
+        click.secho(f"ERROR {e}", fg="red")
         sys.exit(1)
 
     click.echo()
@@ -529,7 +529,7 @@ def generate(project_id: str, engine: str | None, device: str | None, chapters: 
     # Check gate
     can, reason = can_proceed_to(project_id, "generate")
     if not can:
-        click.secho(f"✗ Cannot generate: {reason}", fg="red")
+        click.secho(f"ERROR Cannot generate: {reason}", fg="red")
         click.echo("  Run: audioformation validate " + project_id)
         sys.exit(1)
 
@@ -554,7 +554,7 @@ def generate(project_id: str, engine: str | None, device: str | None, chapters: 
             progress_callback=_cli_progress,
         ))
     except Exception as e:
-        click.secho(f"✗ Generation error: {e}", fg="red")
+        click.secho(f"ERROR Generation error: {e}", fg="red")
         sys.exit(1)
 
     # Display results
@@ -569,7 +569,7 @@ def generate(project_id: str, engine: str | None, device: str | None, chapters: 
         elif ch_status == "partial":
             icon = click.style("◐", fg="yellow")
         else:
-            icon = click.style("✗", fg="red")
+            icon = click.style("X", fg="red")
 
         click.echo(f"  {icon} {ch_id}: {total} chunks, {failed} failed")
 
@@ -580,7 +580,7 @@ def generate(project_id: str, engine: str | None, device: str | None, chapters: 
     elif fail_rate <= 5:
         click.secho(f"✓ Generation complete with {fail_rate:.1f}% failures.", fg="yellow")
     else:
-        click.secho(f"✗ Generation had {fail_rate:.1f}% failures — review QC report.", fg="red")
+        click.secho(f"ERROR Generation had {fail_rate:.1f}% failures — review QC report.", fg="red")
         sys.exit(1)
 
     click.echo(f"  Next: audioformation qc {project_id} --report")
@@ -625,7 +625,7 @@ def qc(project_id: str, report: bool) -> None:
             for chunk in data.get("chunks", []):
                 status = chunk.get("status", "pass")
                 if status == "fail":
-                    click.echo(f"    {click.style('✗', fg='red')} {chunk['chunk_id']}")
+                    click.echo(f"    {click.style('X', fg='red')} {chunk['chunk_id']}")
                     for check_name, check_data in chunk.get("checks", {}).items():
                         if check_data.get("status") == "fail":
                             click.echo(f"      └─ {check_name}: {check_data.get('message', '')}")
@@ -684,7 +684,7 @@ def process_audio(project_id: str) -> None:
     )
 
     if not chapter_wavs:
-        click.secho("✗ No stitched chapter files found in raw/", fg="red")
+        click.secho("ERROR No stitched chapter files found in raw/", fg="red")
         click.echo("  Run: audioformation generate " + project_id)
         sys.exit(1)
 
@@ -710,7 +710,7 @@ def process_audio(project_id: str) -> None:
             click.echo(f"  {click.style('✓', fg='green')} {wav_path.name}")
             success_count += 1
         else:
-            click.echo(f"  {click.style('✗', fg='red')} {wav_path.name} — normalization failed")
+            click.echo(f"  {click.style('X', fg='red')} {wav_path.name} — normalization failed")
 
         # Clean up temp trimmed file
         if trimmed_path.exists() and trimmed_path != output_path:
@@ -769,7 +769,7 @@ def compose(project_id: str, preset: str, duration: float, output_filename: str 
         click.secho(f"✗ Error: {e}", fg="red")
         sys.exit(1)
     except Exception as e:
-        click.secho(f"✗ Generation failed: {e}", fg="red")
+        click.secho(f"ERROR Generation failed: {e}", fg="red")
         sys.exit(1)
 
     click.secho(f"✓ Saved: {output_path.name}", fg="green")
@@ -792,14 +792,14 @@ def mix(project_id: str, music_file: str | None) -> None:
     # Check gates
     can, reason = can_proceed_to(project_id, "mix")
     if not can:
-        click.secho(f"✗ Cannot start mixing: {reason}", fg="red")
+        click.secho(f"ERROR Cannot start mixing: {reason}", fg="red")
         sys.exit(1)
 
     click.echo(f"Starting mix for project: {project_id}")
     
     def _cli_progress(msg: str):
         # Naive color mapping
-        if "✗" in msg:
+        if "ERROR" in msg:
             click.secho(msg, fg="red")
         elif "✓" in msg:
             click.secho(msg, fg="green", bold=True)
@@ -827,7 +827,7 @@ def qc_final(project_id: str) -> None:
     # Gates check
     can, reason = can_proceed_to(project_id, "qc_final")
     if not can:
-        click.secho(f"✗ Cannot run QC Final: {reason}", fg="red")
+        click.secho(f"ERROR Cannot run QC Final: {reason}", fg="red")
         sys.exit(1)
 
     click.echo(f"Running QC Final for: {project_id}")
@@ -841,7 +841,7 @@ def qc_final(project_id: str) -> None:
     click.echo("-" * 60)
     
     for res in report.results:
-        status_icon = click.style("✓", fg="green") if res.status == "pass" else click.style("✗", fg="red")
+        status_icon = click.style("OK", fg="green") if res.status == "pass" else click.style("X", fg="red")
         click.echo(f"  {status_icon} {res.filename:<25} "
                    f"LUFS: {res.lufs:>5.1f}  TP: {res.true_peak:>5.1f}")
         
@@ -854,7 +854,7 @@ def qc_final(project_id: str) -> None:
     if report.passed:
         click.secho("✓ QC Final PASSED. Ready for export.", fg="green", bold=True)
     else:
-        click.secho("✗ QC Final FAILED. Adjust mix settings and retry.", fg="red", bold=True)
+        click.secho("ERROR QC Final FAILED. Adjust mix settings and retry.", fg="red", bold=True)
         sys.exit(1)
 
 
@@ -878,7 +878,7 @@ def export_audio(project_id: str, fmt: str, bitrate: int | None) -> None:
     # Verify gates (including QC Final)
     can, reason = can_proceed_to(project_id, "export")
     if not can:
-        click.secho(f"✗ Cannot export: {reason}", fg="red")
+        click.secho(f"ERROR Cannot export: {reason}", fg="red")
         click.echo("  Run: audioformation qc-final " + project_id)
         sys.exit(1)
 
@@ -1015,7 +1015,7 @@ def quick(text: str | None, engine: str, voice: str, output: Path | None) -> Non
     try:
         tts = registry.get(engine)
     except KeyError as e:
-        click.secho(f"✗ {e}", fg="red")
+        click.secho(f"ERROR {e}", fg="red")
         sys.exit(1)
 
     request = GenerationRequest(
@@ -1197,7 +1197,7 @@ def engines_test(engine_name: str, device: str | None) -> None:
     try:
         engine = registry.get(engine_name)
     except KeyError as e:
-        click.secho(f"✗ {e}", fg="red")
+        click.secho(f"ERROR {e}", fg="red")
         sys.exit(1)
 
     click.echo(f"Testing engine: {engine_name}...")
@@ -1221,7 +1221,7 @@ def engines_voices(engine_name: str, lang: str | None) -> None:
     try:
         engine = registry.get(engine_name)
     except KeyError as e:
-        click.secho(f"✗ {e}", fg="red")
+        click.secho(f"ERROR {e}", fg="red")
         sys.exit(1)
 
     voices = _run_async(engine.list_voices(language=lang))
