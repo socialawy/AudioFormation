@@ -107,11 +107,11 @@ The dashboard (`audioformation serve`) provides a visual interface for:
 
 ### Workflow Overview
 
-![AudioFormation Workflow](docs/AF-workflow.png)
+![AudioFormation Workflow](DOCS/AF-workflow.png)
 
 ### Dashboard Interface
 
-![AudioFormation Dashboard](docs/AF-Screen5.png)
+![AudioFormation Dashboard](DOCS/AF-Screen5.png)
 
 ## Testing
 ```bash
