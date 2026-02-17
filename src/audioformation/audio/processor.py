@@ -353,7 +353,12 @@ def batch_process_project(project_id: str) -> dict[str, Any]:
     stats = {"total_files": 0, "processed": 0, "failed": 0, "errors": []}
 
     # Find all audio chunks
-    audio_files = list(gen_dir.glob("*.wav"))
+    # Search raw/ subdirectory, fall back to root for backward compat
+    raw_dir = gen_dir / "raw"
+    if raw_dir.exists():
+        audio_files = list(raw_dir.glob("*.wav"))
+    else:
+        audio_files = list(gen_dir.glob("*.wav"))
     stats["total_files"] = len(audio_files)
 
     for audio_file in audio_files:

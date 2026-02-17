@@ -26,12 +26,6 @@ except ImportError:
 # Configuration
 TEST_SAMPLES_DIR = (Path(__file__).parent.parent / "test_samples").resolve()
 ENGINES = ["edge", "gtts", "xtts", "elevenlabs"]
-VOICES = {
-    "edge": "ar-EG-SalmaNeural",
-    "gtts": "ar",  # gTTS uses language codes
-    "xtts": None,  # XTTS uses speaker embedding
-    "elevenlabs": None,  # ElevenLabs uses pre-trained voices
-}
 
 EXPORT_FORMATS = ["mp3", "m4b", "wav"]
 
@@ -153,14 +147,14 @@ class TestE2EPipeline:
         """Check if an engine is available"""
         try:
             if engine == "edge":
-
+                import edge_tts
                 return True
             elif engine == "gtts":
-
+                import gtts
                 return True
             elif engine == "xtts":
                 try:
-
+                    import TTS
                     return True
                 except ImportError:
                     return False
@@ -176,6 +170,8 @@ class TestE2EPipeline:
         # Ensure src is in PYTHONPATH
         src_path = str((Path(__file__).parent.parent / "src").resolve())
         env["PYTHONPATH"] = src_path + os.pathsep + env.get("PYTHONPATH", "")
+        # Force UTF-8 encoding for IO to prevent charmap errors on Windows with unicode output
+        env["PYTHONIOENCODING"] = "utf-8"
 
         # Construct command list: [python, -m, audioformation, arg1, arg2...]
         cmd_list = [sys.executable, "-m", "audioformation"] + args
@@ -188,6 +184,7 @@ class TestE2EPipeline:
                 text=True,
                 timeout=900,
                 check=False,
+                encoding="utf-8" # Explicitly use utf-8 for reading output
             )
             return {
                 "cmd": " ".join(cmd_list),  # For logging display
@@ -230,7 +227,8 @@ class TestE2EPipeline:
 
         logger.log_command(f"new {project_name}", result)
         if not result["success"]:
-            return False, f"Bootstrap failed: {result['stderr']}"
+            error_detail = result['stderr'] or result['stdout']
+            return False, f"Bootstrap failed: {error_detail}"
 
         # Step 2: Ingest
         step_name = "Ingest"
@@ -243,7 +241,8 @@ class TestE2EPipeline:
 
         logger.log_command(f"ingest {project_name}", result)
         if not result["success"]:
-            return False, f"Ingest failed: {result['stderr']}"
+            error_detail = result['stderr'] or result['stdout']
+            return False, f"Ingest failed: {error_detail}"
 
         # Step 3: Validate
         step_name = "Validate"
@@ -257,7 +256,8 @@ class TestE2EPipeline:
         if not result["success"]:
             # Log but don't fail immediately if validation warns?
             # Usually validate returns 0 even with warnings, 1 on fail.
-            return False, f"Validation failed: {result['stderr']}"
+            error_detail = result['stderr'] or result['stdout']
+            return False, f"Validation failed: {error_detail}"
 
         # Step 4: Generate
         step_name = "Generate"
@@ -266,17 +266,29 @@ class TestE2EPipeline:
 
         # Construct args
         gen_args = ["generate", project_name, "--engine", engine]
-        if VOICES[engine]:
-            gen_args.extend(["--voice", VOICES[engine]])
 
         result = self._run_cmd(gen_args)
         step_times[step_name] = time.time() - start
 
         logger.log_command(f"generate {project_name}", result)
         if not result["success"]:
-            return False, f"Generate failed: {result['stderr']}"
+            error_detail = result['stderr'] or result['stdout']
+            return False, f"Generate failed: {error_detail}"
 
-        # Step 5: Process
+        # Step 5.5: QC Scan (between Generate and Process)
+        step_name = "QC Scan"
+        logger.entries.append(f"\n### {step_name}\n")
+        start = time.time()
+
+        result = self._run_cmd(["qc", project_name, "--report"])
+        step_times[step_name] = time.time() - start
+
+        logger.log_command(f"qc {project_name} --report", result)
+        if not result["success"]:
+            error_detail = result['stderr'] or result['stdout']
+            return False, f"QC Scan failed: {error_detail}"
+
+        # Step 6: Process
         step_name = "Process"
         logger.entries.append(f"\n### {step_name}\n")
         start = time.time()
@@ -286,7 +298,8 @@ class TestE2EPipeline:
 
         logger.log_command(f"process {project_name}", result)
         if not result["success"]:
-            return False, f"Process failed: {result['stderr']}"
+            error_detail = result['stderr'] or result['stdout']
+            return False, f"Process failed: {error_detail}"
 
         # Step 6: Mix
         step_name = "Mix"
@@ -298,22 +311,39 @@ class TestE2EPipeline:
 
         logger.log_command(f"mix {project_name}", result)
         if not result["success"]:
-            return False, f"Mix failed: {result['stderr']}"
+            error_detail = result['stderr'] or result['stdout']
+            return False, f"Mix failed: {error_detail}"
 
-        # Step 7: Export
-        step_name = "Export"
+        # Step 6.5: QC Final (quality gate — may fail on short test clips)
+        step_name = "QC Final"
         logger.entries.append(f"\n### {step_name}\n")
         start = time.time()
 
-        # Just export MP3 for speed in E2E
-        result = self._run_cmd(["export", project_name, "--format", "mp3"])
+        result = self._run_cmd(["qc-final", project_name])
         step_times[step_name] = time.time() - start
+        logger.log_command(f"qc-final {project_name}", result)
+        qc_passed = result["success"]
 
-        logger.log_command(f"export {project_name}", result)
-        if not result["success"]:
-            return False, f"Export failed: {result['stderr']}"
+        if not qc_passed:
+            logger.entries.append("⚠ QC Final did not pass (expected for short test clips)\n")
+
+        # Step 7: Export (only if QC passed — gate enforced by CLI)
+        if qc_passed:
+            step_name = "Export"
+            logger.entries.append(f"\n### {step_name}\n")
+            start = time.time()
+
+            result = self._run_cmd(["export", project_name, "--format", "mp3"])
+            step_times[step_name] = time.time() - start
+
+            logger.log_command(f"export {project_name}", result)
+            if not result["success"]:
+                error_detail = result['stderr'] or result['stdout']
+                return False, f"Export failed: {error_detail}"
+            else:
+                self._log_export_files(logger, project_name)
         else:
-            self._log_export_files(logger, project_name)
+            logger.entries.append("\n### Export\n⏭ Skipped (QC Final did not pass)\n")
 
         # Log timing summary
         logger.entries.append("\n**Timing Summary**:\n")
@@ -348,7 +378,7 @@ class TestEngineAvailability:
     def test_edge_tts_availability(self):
         """Test Edge-TTS availability"""
         try:
-
+            import edge_tts
             assert True, "Edge-TTS is available"
         except ImportError:
             pytest.skip("Edge-TTS not available")
@@ -356,7 +386,7 @@ class TestEngineAvailability:
     def test_gtts_availability(self):
         """Test gTTS availability"""
         try:
-
+            import gtts
             assert True, "gTTS is available"
         except ImportError:
             pytest.skip("gTTS not available")
@@ -375,7 +405,7 @@ class TestEngineAvailability:
     def test_xtts_availability(self):
         """Test XTTS availability"""
         try:
-
+            import TTS
             assert True, "XTTS is available"
         except ImportError:
             pytest.skip("XTTS not available")

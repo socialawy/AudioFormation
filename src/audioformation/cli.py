@@ -751,7 +751,7 @@ def process_audio(project_id: str) -> None:
 
     chapter_wavs = sorted(
         f
-        for f in raw_dir.glob("ch*.wav")
+        for f in raw_dir.glob("*.wav")  # ← All WAVs, filter chunks below
         if not _is_chunk_file(f)  # Exclude chunk files only
     )
 

@@ -139,19 +139,22 @@ def export_project_m4b(
     cmd.extend(["-map_metadata", "1"])
 
     # Codec settings
-    cmd.extend(
-        [
-            "-c:a",
-            "aac",
-            "-b:a",
-            f"{bitrate}k",
-            "-c:v",
-            "copy",  # Copy cover art (don't re-encode jpeg)
-            "-f",
-            "mp4",  # M4B is technically MP4 container
-            str(output_path),
-        ]
-    )
+    codec_args = [
+        "-c:a",
+        "aac",
+        "-b:a",
+        f"{bitrate}k",
+        "-f",
+        "mp4",  # M4B is technically MP4 container
+    ]
+    
+    # Only add video codec if cover art exists
+    if has_cover:
+        codec_args.insert(-2, "-c:v")
+        codec_args.insert(-2, "copy")  # Copy cover art (don't re-encode jpeg)
+    
+    codec_args.append(str(output_path))
+    cmd.extend(codec_args)
 
     try:
         result = subprocess.run(

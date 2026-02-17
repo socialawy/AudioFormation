@@ -93,7 +93,7 @@ def mix_project(
     chapter_files = []
     if processed_dir.exists():
         chapter_files = sorted(
-            f for f in processed_dir.glob("ch*.wav") if not _is_chunk_file(f)
+            f for f in processed_dir.glob("*.wav") if not _is_chunk_file(f)
         )
 
     if not chapter_files:
@@ -101,7 +101,7 @@ def mix_project(
         raw_dir = project_path / "03_GENERATED" / "raw"
         if raw_dir.exists():
             chapter_files = sorted(
-                f for f in raw_dir.glob("ch*.wav") if not _is_chunk_file(f)
+                f for f in raw_dir.glob("*.wav") if not _is_chunk_file(f)
             )
 
         if chapter_files:
