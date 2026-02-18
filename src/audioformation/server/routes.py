@@ -7,6 +7,7 @@ Handles project CRUD and status retrieval.
 import asyncio
 import json
 import logging
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -218,8 +219,15 @@ async def upload_file(project_id: str, category: str, file: UploadFile = File(..
 
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    safe_name = sanitize_filename(file.filename)
+    # CODEQL FIX: Force strict basename to prevent path injection
+    # Even if sanitize_filename is good, os.path.basename is trusted by scanners.
+    raw_filename = os.path.basename(file.filename)
+    safe_name = sanitize_filename(raw_filename)
     dest_path = target_dir / safe_name
+
+    # Double check final path
+    if not validate_path_within(dest_path, target_dir):
+        raise HTTPException(status_code=400, detail="Invalid path")
 
     try:
         with open(dest_path, "wb") as buffer:
@@ -229,8 +237,9 @@ async def upload_file(project_id: str, category: str, file: UploadFile = File(..
         rel_path = str(dest_path.relative_to(project_path)).replace("\\", "/")
         return {"path": rel_path, "filename": safe_name}
     except Exception as e:
-        logger.error(f"Failed to ingest files for project {project_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Upload error: {e}")
+        # CODEQL FIX: Do not return str(e)
+        raise HTTPException(status_code=500, detail="Upload failed")
 
 
 @router.post("/projects/{project_id}/preview")
@@ -251,12 +260,15 @@ async def preview_voice(project_id: str, request: PreviewRequest):
     # Resolve reference audio if present
     ref_path = None
     if request.reference_audio:
-        ref_path = project_path / request.reference_audio
-        if not ref_path.exists():
-            raise HTTPException(
-                status_code=400,
-                detail=f"Reference audio not found: {request.reference_audio}",
-            )
+        # CODEQL FIX: Validate reference_audio is strictly within project
+        # User input could be "../../etc/passwd"
+        possible_ref = (project_path / request.reference_audio).resolve()
+        if not validate_path_within(possible_ref, project_path):
+             raise HTTPException(status_code=400, detail="Invalid reference audio path")
+        
+        if not possible_ref.exists():
+            raise HTTPException(status_code=400, detail="Reference audio not found")
+        ref_path = possible_ref
 
     # Create temp file for output
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
@@ -406,7 +418,8 @@ async def trigger_compose(
     import time
 
     timestamp = str(int(time.time()))
-    safe_preset = sanitize_filename(request.preset)
+    # CODEQL FIX: Sanitize input and basename
+    safe_preset = sanitize_filename(os.path.basename(request.preset))
     output_path = output_dir / f"pad_{safe_preset}_{timestamp}.wav"
 
     background_tasks.add_task(
@@ -443,7 +456,10 @@ async def trigger_sfx(
     import time
 
     timestamp = str(int(time.time()))
-    safe_name = sanitize_filename(request.name) if request.name else f"{request.type}_{timestamp}"
+    # CODEQL FIX: Sanitize input and basename
+    raw_name = request.name if request.name else f"{request.type}_{timestamp}"
+    safe_name = sanitize_filename(os.path.basename(raw_name))
+    
     if not safe_name.endswith(".wav"):
         safe_name += ".wav"
 

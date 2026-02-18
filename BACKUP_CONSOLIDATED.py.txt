@@ -1,0 +1,1489 @@
+"""
+Hardware detection: GPU, VRAM, CUDA, ffmpeg.
+
+Writes results to 00_CONFIG/hardware.json.
+Used by engine selection and VRAM management strategy.
+"""
+
+import json
+import platform
+import shutil
+import subprocess
+from pathlib import Path
+from typing import Any, Dict
+
+from audioformation.utils.security import validate_path_within
+
+from audioformation.config import VRAM_STRATEGY_THRESHOLDS
+
+
+def detect_gpu() -> dict[str, Any]:
+    """
+    Detect GPU name, VRAM, and CUDA availability.
+
+    Returns a dict suitable for hardware.json.
+    """
+    result: dict[str, Any] = {
+        "gpu_available": False,
+        "gpu_name": None,
+        "vram_total_gb": None,
+        "vram_free_gb": None,
+        "cuda_available": False,
+        "cuda_version": None,
+        "recommended_vram_strategy": "cpu_only",
+    }
+
+    # Try PyTorch detection first
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            result["cuda_available"] = True
+            result["cuda_version"] = torch.version.cuda
+            result["gpu_available"] = True
+            result["gpu_name"] = torch.cuda.get_device_name(0)
+
+            vram_total = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+            vram_free = (
+                torch.cuda.get_device_properties(0).total_memory
+                - torch.cuda.memory_reserved(0)
+            ) / (1024**3)
+
+            result["vram_total_gb"] = round(vram_total, 2)
+            result["vram_free_gb"] = round(vram_free, 2)
+            result["recommended_vram_strategy"] = _recommend_strategy(vram_total)
+
+    except ImportError:
+        # PyTorch not installed — try nvidia-smi fallback
+        result.update(_detect_gpu_nvidia_smi())
+
+    return result
+
+
+def _detect_gpu_nvidia_smi() -> dict[str, Any]:
+    """Fallback GPU detection via nvidia-smi CLI."""
+    updates: dict[str, Any] = {}
+
+    try:
+        output = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=name,memory.total,memory.free",
+                "--format=csv,noheader,nounits",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if output.returncode == 0 and output.stdout.strip():
+            parts = output.stdout.strip().split(",")
+            if len(parts) >= 3:
+                name = parts[0].strip()
+                vram_total = float(parts[1].strip()) / 1024  # MiB → GiB
+                vram_free = float(parts[2].strip()) / 1024
+
+                updates["gpu_available"] = True
+                updates["gpu_name"] = name
+                updates["vram_total_gb"] = round(vram_total, 2)
+                updates["vram_free_gb"] = round(vram_free, 2)
+                updates["cuda_available"] = True
+                updates["recommended_vram_strategy"] = _recommend_strategy(vram_total)
+
+    except (FileNotFoundError, subprocess.TimeoutExpired, ValueError):
+        pass
+
+    return updates
+
+
+def _recommend_strategy(vram_gb: float) -> str:
+    """Recommend XTTS VRAM management strategy based on available VRAM."""
+    if vram_gb < VRAM_STRATEGY_THRESHOLDS["conservative"]:
+        return "conservative"
+    elif vram_gb < VRAM_STRATEGY_THRESHOLDS["comfortable"]:
+        return "empty_cache_per_chapter"
+    else:
+        return "empty_cache_per_chapter"
+
+
+def detect_ffmpeg() -> dict[str, Any]:
+    """Check if ffmpeg is available on PATH and get version."""
+    result: dict[str, Any] = {
+        "ffmpeg_available": False,
+        "ffmpeg_path": None,
+        "ffmpeg_version": None,
+    }
+
+    ffmpeg_path = shutil.which("ffmpeg")
+    if ffmpeg_path:
+        result["ffmpeg_available"] = True
+        result["ffmpeg_path"] = ffmpeg_path
+
+        try:
+            output = subprocess.run(
+                ["ffmpeg", "-version"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            if output.returncode == 0:
+                # First line: "ffmpeg version X.Y.Z ..."
+                first_line = output.stdout.split("\n")[0]
+                result["ffmpeg_version"] = first_line.strip()
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            pass
+
+    return result
+
+
+def detect_all() -> dict[str, Any]:
+    """Run all hardware detection and return combined results."""
+    gpu = detect_gpu()
+    ffmpeg = detect_ffmpeg()
+
+    return {
+        **gpu,
+        **ffmpeg,
+    }
+
+
+def write_hardware_json(project_path: Path) -> dict[str, Any]:
+    """Detect hardware and write to project's 00_CONFIG/hardware.json."""
+    hw = detect_all()
+    hw_path = project_path / "00_CONFIG" / "hardware.json"
+    
+    # Validate the path is within the project directory
+    if not validate_path_within(hw_path, project_path):
+        raise ValueError(f"Hardware config path escapes project directory: {hw_path}")
+    
+    hw_path.write_text(json.dumps(hw, indent=2, ensure_ascii=False))
+    return hw
+
+"""
+API Routes for AudioFormation.
+
+Handles project CRUD and status retrieval.
+"""
+
+import asyncio
+import json
+import logging
+import shutil
+import tempfile
+from pathlib import Path
+from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+from typing import Any, List, Optional
+from starlette.background import BackgroundTask
+
+from audioformation.project import (
+    list_projects,
+    create_project,
+    load_project_json,
+    save_project_json,
+    load_pipeline_status,
+    project_exists,
+    get_project_path,
+)
+from audioformation.utils.hardware import write_hardware_json
+from audioformation.utils.security import sanitize_filename, validate_path_within
+from audioformation.pipeline import mark_node
+from audioformation.ingest import ingest_text
+from audioformation.generate import generate_project
+from audioformation.mix import mix_project
+from audioformation.validation import validate_project
+from audioformation.audio.processor import batch_process_project
+from audioformation.audio.composer import generate_pad
+from audioformation.audio.sfx import generate_sfx
+from audioformation.export.mp3 import export_project_mp3
+from audioformation.export.m4b import export_project_m4b_auto
+from audioformation.qc.final import scan_final_mix
+from audioformation.engines.registry import registry
+from audioformation.engines.base import GenerationRequest
+
+router = APIRouter()
+logger = logging.getLogger("audioformation.api")
+
+
+async def _run_with_status(func, project_id: str, node: str):
+    """Wrapper that marks node running/complete/failed around any pipeline function.
+
+    Handles both sync and async functions by checking if the result is a coroutine.
+    """
+    path = get_project_path(project_id)
+    try:
+        mark_node(path, node, "running")
+        result = func()  # Call lambda/closure
+        # If func() returned a coroutine (async function), await it
+        if asyncio.iscoroutine(result):
+            await result
+        mark_node(path, node, "complete")
+    except Exception as e:
+        logger.exception(f"Background task '{node}' failed for {project_id}: {e}")
+        mark_node(path, node, "failed", error=str(e))
+
+
+class ProjectCreateRequest(BaseModel):
+    id: str
+
+
+class GenerateRequest(BaseModel):
+    chapters: Optional[List[str]] = None
+    engine: Optional[str] = None
+
+
+class ComposeRequest(BaseModel):
+    preset: str = "contemplative"
+    duration: int = 60
+
+
+class SFXRequest(BaseModel):
+    type: str
+    duration: float = 1.0
+    name: Optional[str] = None
+
+
+class ExportRequest(BaseModel):
+    format: str = "mp3"
+    bitrate: int = 192
+
+
+class PreviewRequest(BaseModel):
+    text: str
+    engine: str
+    voice: Optional[str] = None
+    language: str = "en"
+    reference_audio: Optional[str] = None  # Relative path in project
+
+
+@router.get("/projects")
+async def get_projects():
+    """List all projects."""
+    return list_projects()
+
+
+@router.post("/projects", status_code=201)
+async def create_new_project(request: ProjectCreateRequest):
+    """Create a new project."""
+    project_id = request.id
+    if project_exists(project_id):
+        raise HTTPException(
+            status_code=409, detail=f"Project '{project_id}' already exists."
+        )
+
+    try:
+        path = create_project(project_id)
+
+        # Initialize hardware detection and status
+        write_hardware_json(path)
+        mark_node(path, "bootstrap", "complete")
+
+        return {
+            "id": path.name,
+            "path": str(path.resolve()),
+            "message": "Project created successfully.",
+        }
+    except Exception as e:
+        logger.error(f"Failed to create project: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/projects/{project_id}")
+async def get_project_details(project_id: str):
+    """Get project configuration (project.json)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        return load_project_json(project_id)
+    except Exception as e:
+        logger.error(f"Failed to load project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.put("/projects/{project_id}")
+async def update_project(project_id: str, project_data: dict[str, Any]):
+    """Update project configuration (project.json)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Safety check: ensure ID in body matches URL if present
+    if project_data.get("id") and project_data["id"] != project_id:
+        raise HTTPException(status_code=400, detail="Project ID mismatch")
+
+    try:
+        save_project_json(project_id, project_data)
+        return {"message": "Project updated successfully"}
+    except Exception as e:
+        logger.error(f"Failed to update project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/projects/{project_id}/ingest")
+async def ingest_files(
+    project_id: str,
+    background_tasks: BackgroundTasks,
+    files: List[UploadFile] = File(...),
+):
+    """Upload text files and run ingest."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Read uploads NOW (within request lifecycle) — UploadFile handles
+    # will be closed after response returns, before background task runs.
+    tmp_dir = tempfile.mkdtemp()
+    tmp_path = Path(tmp_dir)
+    try:
+        for file in files:
+            safe_filename = sanitize_filename(file.filename)
+            dest = tmp_path / safe_filename
+            with open(dest, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
+
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: _ingest_files_sync(project_id, tmp_path),
+        project_id,
+        "ingest",
+    )
+
+    return {"message": "Ingest started", "status": "running"}
+
+
+@router.post("/projects/{project_id}/upload")
+async def upload_file(project_id: str, category: str, file: UploadFile = File(...)):
+    """
+    Upload a file to a specific project category.
+
+    Categories:
+    - 'references': Voice cloning references (02_VOICES/references)
+    - 'music': Background music (05_MUSIC/imported)
+    """
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project_path = get_project_path(project_id)
+
+    if category == "references":
+        target_dir = project_path / "02_VOICES" / "references"
+    elif category == "music":
+        target_dir = (
+            project_path / "05_MUSIC" / "generated"
+        )  # Use generated for now to show up in list
+    else:
+        raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_name = sanitize_filename(file.filename)
+    dest_path = target_dir / safe_name
+
+    try:
+        with open(dest_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Return relative path for project.json
+        rel_path = str(dest_path.relative_to(project_path)).replace("\\", "/")
+        return {"path": rel_path, "filename": safe_name}
+    except Exception as e:
+        logger.error(f"Failed to ingest files for project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/projects/{project_id}/preview")
+async def preview_voice(project_id: str, request: PreviewRequest):
+    """Generate a quick voice preview."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project_path = get_project_path(project_id)
+
+    try:
+        engine = registry.get(request.engine)
+    except KeyError:
+        raise HTTPException(
+            status_code=400, detail=f"Engine '{request.engine}' not found"
+        )
+
+    # Resolve reference audio if present
+    ref_path = None
+    if request.reference_audio:
+        ref_path = project_path / request.reference_audio
+        if not ref_path.exists():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Reference audio not found: {request.reference_audio}",
+            )
+
+    # Create temp file for output
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        output_path = Path(tmp.name)
+    
+    # Validate temp path is within system temp directory
+    temp_root = Path(tempfile.gettempdir())
+    if not validate_path_within(output_path, temp_root):
+        raise HTTPException(status_code=500, detail="Invalid temp path")
+
+    try:
+        gen_req = GenerationRequest(
+            text=request.text,
+            output_path=output_path,
+            voice=request.voice,
+            language=request.language,
+            reference_audio=ref_path,
+        )
+
+        result = await engine.generate(gen_req)
+
+        if not result.success:
+            raise Exception(result.error)
+
+        return FileResponse(
+            path=output_path,
+            media_type="audio/wav",
+            filename="preview.wav",
+            # Clean up temp file after sending
+            background=BackgroundTask(lambda: output_path.unlink(missing_ok=True)),
+        )
+
+    except Exception as e:
+        output_path.unlink(missing_ok=True)
+        logger.error(f"Failed to generate preview for project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+def _ingest_files_sync(project_id: str, tmp_path: Path) -> dict:
+    """Synchronous ingest logic for background task."""
+    try:
+        result = ingest_text(project_id, tmp_path)
+        return {"message": f"Ingested {result['ingested']} files.", "details": result}
+    finally:
+        shutil.rmtree(tmp_path, ignore_errors=True)
+
+
+@router.post("/projects/{project_id}/generate")
+async def trigger_generation(
+    project_id: str, request: GenerateRequest, background_tasks: BackgroundTasks
+):
+    """Trigger TTS generation in the background."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: generate_project(
+            project_id=project_id,
+            engine_name=request.engine,
+            chapters=request.chapters,
+        ),
+        project_id,
+        "generate",
+    )
+
+    return {"message": "Generation started", "status": "running"}
+
+
+@router.post("/projects/{project_id}/mix")
+async def trigger_mix(
+    project_id: str, background_tasks: BackgroundTasks, music: Optional[str] = None
+):
+    """Trigger mixing process in background.
+
+    Args:
+        music: Optional filename of music file to use (must exist in 05_MUSIC/generated).
+               If 'FORCE_NO_MUSIC', forces voice-only mix.
+               If None, auto-detects latest music.
+    """
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Handle the "FORCE_NO_MUSIC" hack gracefully
+    music_file = music
+    if music == "FORCE_NO_MUSIC":
+        music_file = "FORCE_NO_MUSIC"
+
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: mix_project(project_id=project_id, music_file=music_file),
+        project_id,
+        "mix",
+    )
+
+    return {"message": "Mixing started", "status": "running"}
+
+
+@router.post("/projects/{project_id}/validate")
+async def trigger_validate(project_id: str, background_tasks: BackgroundTasks):
+    """Run validation gate (Node 2)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: validate_project(project_id),
+        project_id,
+        "validate",
+    )
+
+    return {"message": "Validation started", "status": "running"}
+
+
+@router.post("/projects/{project_id}/process")
+async def trigger_process(project_id: str, background_tasks: BackgroundTasks):
+    """Run audio processing/normalization (Node 4)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: batch_process_project(project_id),
+        project_id,
+        "process",
+    )
+
+    return {"message": "Processing started", "status": "running"}
+
+
+@router.post("/projects/{project_id}/compose")
+async def trigger_compose(
+    project_id: str,
+    request: ComposeRequest,
+    background_tasks: BackgroundTasks,
+):
+    """Generate ambient background music (Node 5)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project_path = get_project_path(project_id)
+    output_dir = project_path / "05_MUSIC" / "generated"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Use timestamp to avoid overwriting unless specified?
+    # For now, unique name per preset + timestamp is good
+    import time
+
+    timestamp = str(int(time.time()))
+    safe_preset = sanitize_filename(request.preset)
+    output_path = output_dir / f"pad_{safe_preset}_{timestamp}.wav"
+
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: generate_pad(
+            request.preset,
+            duration_sec=request.duration,
+            output_path=output_path,
+        ),
+        project_id,
+        "compose",
+    )
+
+    return {
+        "message": f"Composing '{request.preset}' pad ({request.duration}s)",
+        "status": "running",
+    }
+
+
+@router.post("/projects/{project_id}/sfx")
+async def trigger_sfx(
+    project_id: str,
+    request: SFXRequest,
+    background_tasks: BackgroundTasks,
+):
+    """Generate procedural sound effects (Node 5)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project_path = get_project_path(project_id)
+    output_dir = project_path / "04_SFX" / "procedural"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    import time
+
+    timestamp = str(int(time.time()))
+    safe_name = sanitize_filename(request.name) if request.name else f"{request.type}_{timestamp}"
+    if not safe_name.endswith(".wav"):
+        safe_name += ".wav"
+
+    output_path = output_dir / safe_name
+
+    # Simple wrapper to match _run_with_status signature
+    def _gen_sfx():
+        generate_sfx(request.type, output_path=output_path, duration=request.duration)
+
+    # Use 'compose' node status for now, or maybe we need a dedicated 'sfx' node?
+    # Architecture has 'FXForge' but pipeline.py nodes are linear.
+    # Let's treat it as part of 'compose' or just a side effect without blocking pipeline.
+    # We'll log it but maybe not block the main pipeline status.
+    # Actually, let's just run it. The UI can poll for files.
+
+    try:
+        _gen_sfx()
+        return {
+            "message": f"Generated SFX: {safe_name}",
+            "path": str(output_path.relative_to(project_path)),
+        }
+    except Exception as e:
+        logger.error(f"Failed to generate SFX for project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/projects/{project_id}/export")
+async def trigger_export(
+    project_id: str,
+    request: ExportRequest,
+    background_tasks: BackgroundTasks,
+):
+    """Export project audio (Node 8)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    export_func = (
+        export_project_m4b_auto if request.format == "m4b" else export_project_mp3
+    )
+
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: export_func(project_id, bitrate=request.bitrate),
+        project_id,
+        "export",
+    )
+
+    return {
+        "message": f"Export started ({request.format})",
+        "status": "running",
+    }
+
+
+@router.post("/projects/{project_id}/qc-scan")
+async def trigger_qc_scan(project_id: str, background_tasks: BackgroundTasks):
+    """Run QC scan on generated audio (Node 3.5)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: _qc_scan_sync(project_id),
+        project_id,
+        "qc_scan",
+    )
+
+    return {"message": "QC scan started", "status": "running"}
+
+
+def _qc_scan_sync(project_id: str) -> dict:
+    """Synchronous QC scan logic for background task."""
+    from audioformation.qc.scanner import scan_chunk, QCReport, ChunkQCResult
+    from audioformation.qc.report import save_report
+
+    project_path = get_project_path(project_id)
+    project_data = load_project_json(project_id)
+    qc_config = project_data.get("qc", {})
+
+    raw_dir = project_path / "03_GENERATED" / "raw"
+
+    if not raw_dir.exists():
+        raise FileNotFoundError(f"Generated audio directory not found: {raw_dir}")
+
+    audio_files = sorted(raw_dir.glob("*.wav")) + sorted(raw_dir.glob("*.mp3"))
+
+    if not audio_files:
+        return {"message": "No audio files found to scan", "scanned": 0}
+
+    target_lufs = project_data.get("mix", {}).get("target_lufs", -16.0)
+    chunk_results: list[ChunkQCResult] = []
+
+    for audio_file in audio_files:
+        chunk_id = audio_file.stem
+        try:
+            result = scan_chunk(
+                audio_path=audio_file,
+                chunk_id=chunk_id,
+                config=qc_config,
+                target_lufs=target_lufs,
+            )
+            chunk_results.append(result)
+        except Exception as e:
+            # Create a failed ChunkQCResult for files that error
+            chunk_results.append(
+                ChunkQCResult(
+                    chunk_id=chunk_id,
+                    status="fail",
+                    checks={"scan_error": {"status": "fail", "message": str(e)}},
+                )
+            )
+
+    report = QCReport(
+        project_id=project_id,
+        chapter_id=None,
+        chunks=chunk_results,
+    )
+
+    gen_dir = project_path / "03_GENERATED"
+    report_path = save_report(report, gen_dir)
+
+    return {
+        "message": "QC scan completed",
+        "scanned": len(chunk_results),
+        "passed": report.pass_count,
+        "warned": report.warn_count,
+        "failed": report.fail_count,
+        "fail_rate": report.fail_rate,
+        "report_path": str(report_path.relative_to(project_path)),
+    }
+
+
+@router.get("/projects/{project_id}/qc")
+async def get_qc_reports(project_id: str):
+    """Get QC scan and final mix reports."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project_path = get_project_path(project_id)
+    reports = {}
+
+    # Chunk QC reports
+    gen_dir = project_path / "03_GENERATED"
+    chunk_reports = list(gen_dir.glob("qc_report_*.json"))
+    if chunk_reports:
+        reports["chunk_qc"] = [
+            json.loads(r.read_text(encoding="utf-8")) for r in sorted(chunk_reports)
+        ]
+
+    # Final mix QC report
+    final_report = project_path / "06_MIX" / "qc_final_report.json"
+    if final_report.exists():
+        reports["final_qc"] = json.loads(final_report.read_text(encoding="utf-8"))
+
+    if not reports:
+        return {"message": "No QC reports found. Run qc or qc-final first."}
+
+    return reports
+
+
+@router.post("/projects/{project_id}/qc-final")
+async def trigger_qc_final(project_id: str, background_tasks: BackgroundTasks):
+    """Run QC Final gate on mixed output (Node 7)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    background_tasks.add_task(
+        _run_with_status,
+        lambda: _qc_final_sync(project_id),
+        project_id,
+        "qc_final",
+    )
+
+    return {"message": "QC Final started", "status": "running"}
+
+
+def _qc_final_sync(project_id: str) -> dict:
+    """Synchronous QC final logic for background task."""
+    report = scan_final_mix(project_id)
+    return {
+        "passed": report.passed,
+        "total_files": report.total_files,
+        "failed_files": report.failed_files,
+        "results": [
+            {
+                "filename": r.filename,
+                "status": r.status,
+                "lufs": r.lufs,
+                "true_peak": r.true_peak,
+                "messages": r.messages,
+            }
+            for r in report.results
+        ],
+    }
+
+
+@router.get("/projects/{project_id}/status")
+async def get_project_status(project_id: str):
+    """Get project pipeline status."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        return load_pipeline_status(project_id)
+    except Exception as e:
+        logger.error(f"Failed to load pipeline status for project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/projects/{project_id}/files")
+async def list_project_files(project_id: str):
+    """List exportable files in the project."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project_path = get_project_path(project_id)
+    export_dir = project_path / "07_EXPORT"
+    music_dir = project_path / "05_MUSIC" / "generated"
+    sfx_dir = project_path / "04_SFX" / "procedural"
+
+    files = []
+
+    def scan_dir(d: Path, category: str):
+        if d.exists():
+            for f in sorted(d.glob("*")):
+                if f.is_file() and not f.name.startswith("."):
+                    files.append(
+                        {
+                            "path": str(f.relative_to(project_path)).replace("\\", "/"),
+                            "name": f.name,
+                            "category": category,
+                            "size": f.stat().st_size,
+                            "modified": f.stat().st_mtime,
+                        }
+                    )
+
+    scan_dir(export_dir / "audiobook", "audiobook")
+    scan_dir(export_dir / "chapters", "chapter")
+    scan_dir(music_dir, "music")
+    scan_dir(sfx_dir, "sfx")
+
+    manifest = export_dir / "manifest.json"
+    if manifest.exists():
+        files.append(
+            {
+                "path": str(manifest.relative_to(project_path)).replace("\\", "/"),
+                "name": "manifest.json",
+                "category": "metadata",
+                "size": manifest.stat().st_size,
+                "modified": manifest.stat().st_mtime,
+            }
+        )
+
+    return files
+
+
+@router.get("/engines")
+async def list_engines():
+    """List available TTS engines and their capabilities."""
+    engines = []
+    for name in registry.list_available():
+        try:
+            eng = registry.get(name)
+            engines.append(
+                {
+                    "id": name,
+                    "name": name,
+                    "cloning": eng.supports_cloning,
+                    "ssml": eng.supports_ssml,
+                    "gpu": eng.requires_gpu,
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to load engine {name}: {e}")
+            engines.append({"id": name, "error": str(e)})
+    return engines
+
+
+@router.get("/engines/{name}/voices")
+async def list_engine_voices(name: str, lang: Optional[str] = None):
+    """List voices for a specific engine, optionally filtered by language."""
+    try:
+        engine = registry.get(name)
+        voices = await engine.list_voices(language=lang)
+        return voices
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Engine '{name}' not found")
+    except Exception as e:
+        logger.error(f"Failed to list voices for engine {name}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/projects/{project_id}/hardware")
+async def get_project_hardware(project_id: str):
+    """Get project hardware detection info (hardware.json)."""
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    path = get_project_path(project_id) / "00_CONFIG" / "hardware.json"
+    if not path.exists():
+        return {}
+
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+"""
+Project CRUD — create, list, load, validate structure.
+
+Every project is a directory under PROJECTS_ROOT containing:
+- project.json (single source of truth)
+- pipeline-status.json (execution state)
+- Folder structure (00_CONFIG through 07_EXPORT)
+"""
+
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+from audioformation.config import (
+    PROJECTS_ROOT,
+    PROJECT_DIRS,
+    PIPELINE_NODES,
+    DEFAULT_CHUNK_MAX_CHARS,
+    DEFAULT_CROSSFADE_MS,
+    DEFAULT_CROSSFADE_MIN_MS,
+    DEFAULT_LEADING_SILENCE_MS,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_FAIL_THRESHOLD_PCT,
+    DEFAULT_EDGE_RATE_LIMIT_MS,
+    DEFAULT_EDGE_CONCURRENCY,
+    DEFAULT_XTTS_TEMPERATURE,
+    DEFAULT_XTTS_REPETITION_PENALTY,
+    DEFAULT_SNR_MIN_DB,
+    DEFAULT_MAX_DURATION_DEVIATION_PCT,
+    DEFAULT_CLIPPING_THRESHOLD_DBFS,
+    DEFAULT_LUFS_DEVIATION_MAX,
+    DEFAULT_PITCH_JUMP_MAX_ST,
+    DEFAULT_TARGET_LUFS,
+    DEFAULT_TRUE_PEAK_LIMIT,
+    DEFAULT_CHAPTER_GAP_SEC,
+    DEFAULT_VAD_THRESHOLD,
+    DEFAULT_VAD_THRESHOLD_AR,
+    DEFAULT_DUCK_LOOK_AHEAD_MS,
+    DEFAULT_DUCK_ATTACK_MS,
+    DEFAULT_DUCK_RELEASE_MS,
+    DEFAULT_DUCK_ATTENUATION_DB,
+    DEFAULT_MP3_BITRATE,
+    DEFAULT_M4B_AAC_BITRATE,
+)
+from audioformation.utils.security import sanitize_project_id, validate_path_within
+
+
+def get_project_path(project_id: str) -> Path:
+    """Resolve and validate a project directory path."""
+    safe_id = sanitize_project_id(project_id)
+    path = PROJECTS_ROOT / safe_id
+
+    # Safety check — project must resolve within PROJECTS_ROOT
+    if not validate_path_within(path, PROJECTS_ROOT):
+        raise ValueError(f"Project path escapes root: {path}")
+
+    return path
+
+
+def create_project(project_id: str) -> Path:
+    """
+    Create a new project with full directory structure,
+    default project.json, and initial pipeline-status.json.
+
+    Returns the project directory path.
+    Raises FileExistsError if project already exists.
+    """
+    project_path = get_project_path(project_id)
+    safe_id = project_path.name
+
+    if project_path.exists():
+        raise FileExistsError(f"Project already exists: {safe_id}")
+
+    # Create all directories
+    for dir_rel in PROJECT_DIRS:
+        (project_path / dir_rel).mkdir(parents=True, exist_ok=True)
+        # Add .gitkeep to keep empty dirs in version control
+        gitkeep = project_path / dir_rel / ".gitkeep"
+        if not gitkeep.exists():
+            gitkeep.touch()
+
+    # Write default project.json
+    project_json = _default_project_json(safe_id)
+    _write_json(project_path / "project.json", project_json)
+
+    # Write initial pipeline-status.json
+    pipeline_status = _initial_pipeline_status(safe_id)
+    _write_json(project_path / "pipeline-status.json", pipeline_status)
+
+    # Write .gitignore
+    _write_gitignore(project_path)
+
+    return project_path
+
+
+def list_projects() -> list[dict[str, Any]]:
+    """
+    List all projects under PROJECTS_ROOT.
+
+    Returns list of dicts with id, created, and pipeline status summary.
+    """
+    if not PROJECTS_ROOT.exists():
+        return []
+
+    projects = []
+    for entry in sorted(PROJECTS_ROOT.iterdir()):
+        if entry.is_dir() and (entry / "project.json").exists():
+            try:
+                pj = load_project_json(entry.name)
+                ps = load_pipeline_status(entry.name)
+                projects.append(
+                    {
+                        "id": pj.get("id", entry.name),
+                        "created": pj.get("created", "unknown"),
+                        "languages": pj.get("languages", []),
+                        "chapters": len(pj.get("chapters", [])),
+                        "pipeline_node": _current_node(ps),
+                    }
+                )
+            except (json.JSONDecodeError, KeyError):
+                projects.append(
+                    {
+                        "id": entry.name,
+                        "created": "unknown",
+                        "languages": [],
+                        "chapters": 0,
+                        "pipeline_node": "error",
+                    }
+                )
+
+    return projects
+
+
+def load_project_json(project_id: str) -> dict[str, Any]:
+    """Load and return project.json for the given project."""
+    path = get_project_path(project_id) / "project.json"
+    if not path.exists():
+        raise FileNotFoundError(f"project.json not found for '{project_id}'")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def save_project_json(project_id: str, data: dict[str, Any]) -> None:
+    """Write project.json for the given project."""
+    path = get_project_path(project_id) / "project.json"
+    _write_json(path, data)
+
+
+def load_pipeline_status(project_id: str) -> dict[str, Any]:
+    """Load and return pipeline-status.json for the given project."""
+    path = get_project_path(project_id) / "pipeline-status.json"
+    if not path.exists():
+        raise FileNotFoundError(f"pipeline-status.json not found for '{project_id}'")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def save_pipeline_status(project_id: str, data: dict[str, Any]) -> None:
+    """Write pipeline-status.json for the given project."""
+    path = get_project_path(project_id) / "pipeline-status.json"
+    _write_json(path, data)
+
+
+def project_exists(project_id: str) -> bool:
+    """Check if a project directory and project.json exist."""
+    try:
+        path = get_project_path(project_id)
+        return (path / "project.json").exists()
+    except ValueError:
+        return False
+
+
+# ──────────────────────────────────────────────
+# Private helpers
+# ──────────────────────────────────────────────
+
+
+def _write_json(path: Path, data: dict[str, Any]) -> None:
+    """Write JSON with consistent formatting."""
+    path.write_text(
+        json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _current_node(status: dict[str, Any]) -> str:
+    """Determine the current pipeline node from status."""
+    nodes = status.get("nodes", {})
+    for node in reversed(PIPELINE_NODES):
+        node_status = nodes.get(node, {}).get("status", "pending")
+        if node_status in ("complete", "partial"):
+            return node
+    return "new"
+
+
+def _default_project_json(project_id: str) -> dict[str, Any]:
+    """Generate the default project.json skeleton."""
+    return {
+        "id": project_id,
+        "version": "1.0",
+        "created": datetime.now(timezone.utc).isoformat(),
+        "languages": ["ar", "en"],
+        "chapters": [],
+        "characters": {
+            "narrator": {
+                "name": "Narrator",
+                "engine": "edge",
+                "voice": "ar-SA-HamedNeural",
+                "dialect": "msa",
+                "persona": "Default narrator",
+                "reference_audio": None,
+            }
+        },
+        "generation": {
+            "chunk_max_chars": DEFAULT_CHUNK_MAX_CHARS,
+            "chunk_strategy": "breath_group",
+            "crossfade_ms": DEFAULT_CROSSFADE_MS,
+            "crossfade_min_ms": DEFAULT_CROSSFADE_MIN_MS,
+            "leading_silence_ms": DEFAULT_LEADING_SILENCE_MS,
+            "max_retries_per_chunk": DEFAULT_MAX_RETRIES,
+            "fail_threshold_percent": DEFAULT_FAIL_THRESHOLD_PCT,
+            "xtts_temperature": DEFAULT_XTTS_TEMPERATURE,
+            "xtts_repetition_penalty": DEFAULT_XTTS_REPETITION_PENALTY,
+            "edge_tts_rate_limit_ms": DEFAULT_EDGE_RATE_LIMIT_MS,
+            "edge_tts_concurrency": DEFAULT_EDGE_CONCURRENCY,
+            "edge_tts_ssml": True,
+            "xtts_vram_management": "empty_cache_per_chapter",
+        },
+        "qc": {
+            "snr_method": "vad_noise_floor",
+            "snr_min_db": DEFAULT_SNR_MIN_DB,
+            "max_duration_deviation_percent": DEFAULT_MAX_DURATION_DEVIATION_PCT,
+            "clipping_threshold_dbfs": DEFAULT_CLIPPING_THRESHOLD_DBFS,
+            "lufs_deviation_max": DEFAULT_LUFS_DEVIATION_MAX,
+            "pitch_jump_max_semitones": DEFAULT_PITCH_JUMP_MAX_ST,
+            "boundary_artifact_check": True,
+        },
+        "mix": {
+            "master_volume": 0.9,
+            "target_lufs": DEFAULT_TARGET_LUFS,
+            "true_peak_limit_dbtp": DEFAULT_TRUE_PEAK_LIMIT,
+            "gap_between_chapters_sec": DEFAULT_CHAPTER_GAP_SEC,
+            "ducking": {
+                "method": "vad",
+                "vad_model": "silero-vad",
+                "vad_threshold": DEFAULT_VAD_THRESHOLD,
+                "vad_threshold_ar": DEFAULT_VAD_THRESHOLD_AR,
+                "look_ahead_ms": DEFAULT_DUCK_LOOK_AHEAD_MS,
+                "attack_ms": DEFAULT_DUCK_ATTACK_MS,
+                "release_ms": DEFAULT_DUCK_RELEASE_MS,
+                "attenuation_db": DEFAULT_DUCK_ATTENUATION_DB,
+                "frequency_aware": False,
+            },
+        },
+        "export": {
+            "formats": ["mp3", "m4b"],
+            "mp3_bitrate": DEFAULT_MP3_BITRATE,
+            "m4b_aac_bitrate": DEFAULT_M4B_AAC_BITRATE,
+            "include_cover_art": True,
+            "cover_art": "00_CONFIG/cover.jpg",
+            "chapter_transition": "silence",
+            "chapter_transition_file": None,
+            "metadata": {
+                "author": "",
+                "narrator": "",
+                "publisher": "",
+                "year": datetime.now(timezone.utc).year,
+                "description": "",
+            },
+        },
+    }
+
+
+def _initial_pipeline_status(project_id: str) -> dict[str, Any]:
+    """Generate initial pipeline-status.json with all nodes pending."""
+    nodes = {}
+    for node in PIPELINE_NODES:
+        nodes[node] = {"status": "pending"}
+
+    return {
+        "project_id": project_id,
+        "nodes": nodes,
+    }
+
+
+def _write_gitignore(project_path: Path) -> None:
+    """Write the auto-generated .gitignore for a project."""
+    content = """\
+# AudioFormation — Auto-generated .gitignore
+
+# API keys — NEVER commit
+00_CONFIG/engines.json
+
+# Generated audio (large files)
+03_GENERATED/**/*.wav
+03_GENERATED/**/*.mp3
+04_SFX/procedural/**/*.wav
+05_MUSIC/generated/**/*.wav
+06_MIX/renders/**/*.wav
+
+# Exports
+07_EXPORT/**/*.mp3
+07_EXPORT/**/*.m4b
+07_EXPORT/**/*.wav
+07_EXPORT/**/*.flac
+
+# Keep directory structure
+!**/.gitkeep
+"""
+    (project_path / ".gitignore").write_text(content, encoding="utf-8")
+
+"""
+Input sanitization and path safety.
+
+Threat model (v1.0):
+- Path traversal from user input (project IDs, file paths)
+- Injection in filenames (chapter names → file system)
+- API key exposure in version control
+- Malformed project.json causing crashes
+"""
+
+import re
+from pathlib import Path
+from typing import Any
+
+# Project IDs: alphanumeric, underscore, hyphen only
+_PROJECT_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+
+# Filenames: strip anything dangerous
+_UNSAFE_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+
+def sanitize_project_id(raw: str) -> str:
+    """
+    Sanitize a project ID to filesystem-safe characters.
+
+    Replaces spaces with underscores, strips unsafe characters,
+    converts to uppercase.
+
+    Raises ValueError if result is empty.
+    """
+    cleaned = raw.strip().replace(" ", "_").upper()
+    cleaned = re.sub(r"[^A-Za-z0-9_-]", "", cleaned)
+
+    if not cleaned:
+        raise ValueError(f"Project ID '{raw}' contains no valid characters.")
+
+    if not _PROJECT_ID_RE.match(cleaned):
+        raise ValueError(f"Project ID '{cleaned}' is invalid after sanitization.")
+
+    return cleaned
+
+
+def sanitize_filename(raw: str) -> str:
+    """
+    Sanitize a filename, stripping path separators, null bytes,
+    and other dangerous characters.
+
+    Raises ValueError if result is empty.
+    """
+    # Remove path components — only the filename part
+    name = Path(raw).name
+
+    # Strip unsafe characters
+    name = _UNSAFE_FILENAME_CHARS.sub("", name)
+
+    # No leading dots (hidden files / directory traversal)
+    name = name.lstrip(".")
+
+    if not name:
+        raise ValueError(f"Filename '{raw}' is empty after sanitization.")
+
+    return name
+
+
+def validate_path_within(path: Path, root: Path) -> bool:
+    """
+    Ensure `path` resolves to a location within `root`.
+
+    Prevents directory traversal attacks.
+    """
+    try:
+        resolved = path.resolve()
+        root_resolved = root.resolve()
+        return resolved == root_resolved or root_resolved in resolved.parents
+    except (OSError, ValueError):
+        return False
+
+
+def redact_api_keys(config: dict[str, Any]) -> dict[str, Any]:
+    """
+    Return a copy of config with API key values redacted for logging.
+
+    Matches keys containing 'key', 'secret', 'token', 'password' (case-insensitive).
+    """
+    sensitive_patterns = {"key", "secret", "token", "password"}
+
+    def _redact(obj: Any) -> Any:
+        if isinstance(obj, dict):
+            result = {}
+            for k, v in obj.items():
+                if any(p in k.lower() for p in sensitive_patterns) and isinstance(
+                    v, str
+                ):
+                    result[k] = "***REDACTED***"
+                else:
+                    result[k] = _redact(v)
+            return result
+        if isinstance(obj, list):
+            return [_redact(item) for item in obj]
+        return obj
+
+    return _redact(config)
+
+"""
+FXForge — Procedural Sound Effects Generator.
+
+Generates transient SFX (whooshes, impacts, UI sounds) using
+synthesis primitives.
+
+Pipeline Node: SFX (Optional).
+"""
+
+import numpy as np
+import soundfile as sf
+from pathlib import Path
+from typing import Optional, Literal
+
+from audioformation.audio.synthesis import (
+    generate_noise,
+    simple_lowpass,
+    apply_envelope,
+)
+from audioformation.utils.security import validate_path_within
+
+SFX_TYPES = Literal["whoosh", "impact", "ui_click", "static", "drone"]
+
+
+def generate_sfx(
+    sfx_type: SFX_TYPES,
+    output_path: Optional[Path] = None,
+    duration: float = 1.0,
+    seed: Optional[int] = None,
+    sample_rate: int = 44100,
+) -> np.ndarray:
+    """
+    Generate a procedural sound effect.
+
+    Args:
+        sfx_type: Type of effect (whoosh, impact, etc.).
+        output_path: Optional path to save WAV file.
+        duration: Duration in seconds.
+        seed: Random seed.
+        sample_rate: Audio sample rate.
+
+    Returns:
+        Numpy array of audio samples.
+    """
+    rng = np.random.default_rng(seed)
+    n_samples = int(sample_rate * duration)
+
+    # Silence default
+    audio = np.zeros(n_samples, dtype=np.float32)
+
+    if sfx_type == "whoosh":
+        audio = _gen_whoosh(n_samples, sample_rate, rng)
+    elif sfx_type == "impact":
+        audio = _gen_impact(n_samples, sample_rate, rng)
+    elif sfx_type == "ui_click":
+        # Force short duration for clicks
+        duration = 0.1
+        n_samples = int(sample_rate * duration)
+        audio = _gen_ui_click(n_samples, sample_rate, rng)
+    elif sfx_type == "static":
+        audio = generate_noise(n_samples, "white", rng)
+        audio = apply_envelope(audio, sample_rate, 0.1, 0.1)
+    elif sfx_type == "drone":
+        audio = _gen_drone(n_samples, sample_rate, rng)
+    else:
+        raise ValueError(f"Unknown SFX type: {sfx_type}")
+
+    # Final normalization
+    peak = np.max(np.abs(audio))
+    if peak > 0:
+        audio = audio / peak * 0.9
+
+    if output_path:
+        output_path = Path(output_path)
+        
+        # Validate output path is safe (prevent directory traversal)
+        # For SFX generation, we allow any path as long as it doesn't escape intended directories
+        # This is a defensive measure - the calling code should ensure proper sandboxing
+        try:
+            resolved_path = output_path.resolve()
+            # Basic safety check - don't write to system directories
+            if any(system_dir in str(resolved_path) for system_dir in ['/bin', '/sbin', '/usr', '/etc', '/Windows', '/Program Files']):
+                raise ValueError(f"Unsafe output path: {output_path}")
+        except (OSError, ValueError):
+            raise ValueError(f"Invalid output path: {output_path}")
+            
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        sf.write(str(output_path), audio, sample_rate)
+
+    return audio
+
+
+def _gen_whoosh(n: int, sr: int, rng: np.random.Generator) -> np.ndarray:
+    """Filtered pink noise with volume swell."""
+    noise = generate_noise(n, "pink", rng)
+
+    # Swell envelope (fade in 40%, hold 20%, fade out 40%)
+    fade_len = int(n * 0.4)
+    envelope = np.concatenate(
+        [
+            np.linspace(0, 1, fade_len),
+            np.ones(n - 2 * fade_len),
+            np.linspace(1, 0, fade_len),
+        ]
+    )
+
+    # Ensure lengths match due to rounding
+    if len(envelope) < n:
+        envelope = np.pad(envelope, (0, n - len(envelope)))
+    elif len(envelope) > n:
+        envelope = envelope[:n]
+
+    return noise * envelope
+
+
+def _gen_impact(n: int, sr: int, rng: np.random.Generator) -> np.ndarray:
+    """Low sine kick + noise burst."""
+    t = np.linspace(0, n / sr, n, endpoint=False)
+
+    # Pitch drop: 150Hz -> 50Hz
+    freq = np.linspace(150, 50, n)
+    phase = 2 * np.pi * np.cumsum(freq) / sr
+    kick = np.sin(phase)
+
+    # Kick envelope: fast decay
+    decay = np.exp(-10 * t)
+    kick *= decay
+
+    # Noise burst (crunch)
+    noise = generate_noise(n, "white", rng)
+    noise_env = np.exp(-20 * t)  # very fast decay
+    noise *= noise_env
+
+    return kick * 0.7 + noise * 0.3
+
+
+def _gen_ui_click(n: int, sr: int, rng: np.random.Generator) -> np.ndarray:
+    """High frequency sine blip."""
+    t = np.linspace(0, n / sr, n, endpoint=False)
+
+    # Sine blip 2000Hz
+    blip = np.sin(2 * np.pi * 2000 * t)
+
+    # Very short envelope
+    env = np.exp(-50 * t)
+
+    return blip * env
+
+
+def _gen_drone(n: int, sr: int, rng: np.random.Generator) -> np.ndarray:
+    """Deep saw wave cluster."""
+    t = np.linspace(0, n / sr, n, endpoint=False)
+
+    # Two saw waves slightly detuned
+    osc1 = 2 * (t * 55 - np.floor(t * 55 + 0.5))  # 55Hz (A1)
+    osc2 = 2 * (t * 55.5 - np.floor(t * 55.5 + 0.5))
+
+    drone = osc1 + osc2
+
+    # Lowpass to remove harshness
+    drone = simple_lowpass(drone, 200, sr)
+
+    return drone
+

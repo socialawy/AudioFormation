@@ -8,6 +8,7 @@ Every project is a directory under PROJECTS_ROOT containing:
 """
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -43,17 +44,30 @@ from audioformation.config import (
     DEFAULT_MP3_BITRATE,
     DEFAULT_M4B_AAC_BITRATE,
 )
-from audioformation.utils.security import sanitize_project_id, validate_path_within
+from audioformation.utils.security import sanitize_project_id
 
 
 def get_project_path(project_id: str) -> Path:
     """Resolve and validate a project directory path."""
-    safe_id = sanitize_project_id(project_id)
-    path = PROJECTS_ROOT / safe_id
+    # CODEQL FIX: Explicit Input Validation
+    # 1. Enforce strict character set (Alphanumeric, underscore, hyphen)
+    if not re.fullmatch(r"^[A-Za-z0-9_-]+$", project_id):
+        raise ValueError(f"Security Alert: Invalid Project ID format: {project_id}")
 
-    # Safety check — project must resolve within PROJECTS_ROOT
-    if not validate_path_within(path, PROJECTS_ROOT):
-        raise ValueError(f"Project path escapes root: {path}")
+    # 2. Construct path safely using joinpath (avoid string concatenation)
+    path = PROJECTS_ROOT.joinpath(project_id)
+
+    # 3. Resolve to absolute path to handle '..'
+    try:
+        resolved_path = path.resolve()
+        resolved_root = PROJECTS_ROOT.resolve()
+    except OSError as e:
+        raise ValueError(f"Invalid path resolution: {e}")
+
+    # 4. Strict Containment Check (Allowlist)
+    # Ensure the resolved path starts with the resolved root
+    if not resolved_path.is_relative_to(resolved_root):
+        raise ValueError(f"Security Alert: Path traversal detected: {project_id}")
 
     return path
 
@@ -66,8 +80,10 @@ def create_project(project_id: str) -> Path:
     Returns the project directory path.
     Raises FileExistsError if project already exists.
     """
-    project_path = get_project_path(project_id)
-    safe_id = project_path.name
+    # FIX: Explicitly sanitize input here so get_project_path receives a valid ID
+    safe_id = sanitize_project_id(project_id)
+    
+    project_path = get_project_path(safe_id)
 
     if project_path.exists():
         raise FileExistsError(f"Project already exists: {safe_id}")

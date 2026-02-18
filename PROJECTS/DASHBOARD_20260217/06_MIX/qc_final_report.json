@@ -1,0 +1,21 @@
+{
+  "project_id": "DASHBOARD_20260217",
+  "target_lufs": -16,
+  "true_peak_limit": -1,
+  "total_files": 1,
+  "passed_files": 1,
+  "failed_files": 0,
+  "results": [
+    {
+      "filename": "ch01_intro.wav",
+      "duration_sec": 12.626,
+      "lufs": -16.90251080694779,
+      "true_peak": -0.9155032481583973,
+      "clipped": false,
+      "status": "pass",
+      "messages": [],
+      "longest_silence_sec": 0.0,
+      "worst_boundary_jump_db": 10.9
+    }
+  ]
+}

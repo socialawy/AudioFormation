@@ -1,0 +1,24 @@
+{
+  "project_id": "12",
+  "target_lufs": -16,
+  "true_peak_limit": -1,
+  "total_files": 1,
+  "passed_files": 0,
+  "failed_files": 1,
+  "results": [
+    {
+      "filename": "test-engine.wav",
+      "duration_sec": 7.42,
+      "lufs": -17.313987291063224,
+      "true_peak": -1.3686304142412011,
+      "clipped": false,
+      "status": "fail",
+      "messages": [
+        "LUFS -17.3 deviates from target -16 by > 1.0.",
+        "Possible boundary artifact at 1.4s (18.1 dB jump)."
+      ],
+      "longest_silence_sec": 0.0,
+      "worst_boundary_jump_db": 18.1
+    }
+  ]
+}

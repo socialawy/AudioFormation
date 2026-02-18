@@ -1,0 +1,12 @@
+{
+  "gpu_available": false,
+  "gpu_name": null,
+  "vram_total_gb": null,
+  "vram_free_gb": null,
+  "cuda_available": false,
+  "cuda_version": null,
+  "recommended_vram_strategy": "cpu_only",
+  "ffmpeg_available": true,
+  "ffmpeg_path": "C:\\Users\\ahmed\\AppData\\Local\\Microsoft\\WinGet\\Links\\ffmpeg.EXE",
+  "ffmpeg_version": "ffmpeg version 8.0.1-full_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers"
+}

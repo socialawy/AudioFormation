@@ -1,0 +1,74 @@
+{
+  "project_id": "DASHBOARD_20260217",
+  "nodes": {
+    "bootstrap": {
+      "status": "complete",
+      "timestamp": "2026-02-17T10:10:43.193673+00:00"
+    },
+    "ingest": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:27:05.749473+00:00",
+      "files_ingested": 1,
+      "files_skipped": 0
+    },
+    "validate": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:15:12.030975+00:00"
+    },
+    "generate": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:34:42.028617+00:00",
+      "engine": "per-character",
+      "chapters": {
+        "ch01_intro": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DASHBOARD_20260217\\03_GENERATED\\raw\\ch01_intro.wav"
+        },
+        "test_short": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DASHBOARD_20260217\\03_GENERATED\\raw\\test_short.wav"
+        },
+        "ch01_intro_-_copy": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DASHBOARD_20260217\\03_GENERATED\\raw\\ch01_intro_-_copy.wav"
+        }
+      }
+    },
+    "qc_scan": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:15:14.354953+00:00"
+    },
+    "process": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:15:17.347902+00:00"
+    },
+    "compose": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:15:20.457213+00:00"
+    },
+    "mix": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:26:30.731618+00:00"
+    },
+    "qc_final": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:25:52.475402+00:00"
+    },
+    "export": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:26:21.146926+00:00"
+    }
+  }
+}

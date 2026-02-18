@@ -12,6 +12,7 @@ import soundfile as sf
 from pathlib import Path
 from typing import Optional, Literal
 
+from audioformation.config import PROJECTS_ROOT
 from audioformation.audio.synthesis import (
     generate_noise,
     simple_lowpass,
@@ -73,14 +74,21 @@ def generate_sfx(
     if output_path:
         output_path = Path(output_path)
         
-        # Validate output path is safe (prevent directory traversal)
-        # For SFX generation, we allow any path as long as it doesn't escape intended directories
-        # This is a defensive measure - the calling code should ensure proper sandboxing
+        # CODEQL FIX: Use Allowlist (PROJECTS_ROOT) instead of Blacklist
         try:
             resolved_path = output_path.resolve()
-            # Basic safety check - don't write to system directories
-            if any(system_dir in str(resolved_path) for system_dir in ['/bin', '/sbin', '/usr', '/etc', '/Windows', '/Program Files']):
-                raise ValueError(f"Unsafe output path: {output_path}")
+            resolved_root = PROJECTS_ROOT.resolve()
+            
+            # Allow writing to PROJECTS_ROOT or System Temp (for previews)
+            import tempfile
+            resolved_tmp = Path(tempfile.gettempdir()).resolve()
+            
+            is_safe = resolved_path.is_relative_to(resolved_root) or \
+                      resolved_path.is_relative_to(resolved_tmp)
+                      
+            if not is_safe:
+                raise ValueError(f"Security: SFX output must be in projects or temp dir")
+                
         except (OSError, ValueError):
             raise ValueError(f"Invalid output path: {output_path}")
             

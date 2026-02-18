@@ -149,10 +149,19 @@ def detect_all() -> dict[str, Any]:
 def write_hardware_json(project_path: Path) -> dict[str, Any]:
     """Detect hardware and write to project's 00_CONFIG/hardware.json."""
     hw = detect_all()
-    hw_path = project_path / "00_CONFIG" / "hardware.json"
+    
+    # CODEQL FIX: Ensure project_path is a resolved Path object first
+    safe_project_path = Path(project_path).resolve()
+    
+    # We assume safe_project_path is already validated by get_project_path caller,
+    # but we can double check:
+    if not safe_project_path.exists():
+         raise ValueError("Project path does not exist")
+
+    hw_path = safe_project_path / "00_CONFIG" / "hardware.json"
     
     # Validate the path is within the project directory
-    if not validate_path_within(hw_path, project_path):
+    if not validate_path_within(hw_path, safe_project_path):
         raise ValueError(f"Hardware config path escapes project directory: {hw_path}")
     
     hw_path.write_text(json.dumps(hw, indent=2, ensure_ascii=False))

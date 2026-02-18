@@ -167,3 +167,4 @@ Thumbs.db
 local-files/
 .windsurf/
 E2E_TEST_RESULTS_*.md
+test_samples/

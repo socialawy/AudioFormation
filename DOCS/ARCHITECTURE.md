@@ -992,25 +992,31 @@ Schema supports both now. Not using frequency-aware ducking by default.
 
 ## Notes:
 ✅ CLI Engine List Command Fix - Logged
-All actions successfully documented in memory:
 
 Problem Resolved:
 audioformation engines list command crashed when ElevenLabs API key was missing
+
 Root cause: CLI tried to instantiate engines to check capabilities
+
 Solution Implemented:
-Added requires_api_key property to TTSEngine base class
-Implemented capability checking without instantiation via get_capabilities()
-Enhanced CLI to show configuration status gracefully
-Updated all engine classes with API key requirements
-Files Modified:
-base.py - Added abstract properties
-registry.py - Added capability checking method
-cli.py - Updated engines list command
-All engine files - Added requires_api_key implementation
+
+- Added `requires_api_key` property to `TTSEngine` base class
+- Implemented capability checking without instantiation via `get_capabilities()`
+- Enhanced CLI to show configuration status gracefully
+
+Updated all engine classes with API key requirements:
+
+- `base.py` - Added abstract properties
+- `registry.py` - Added capability checking method
+- `cli.py` - Updated engines list command
+- All engine files - Added `requires_api_key` implementation
+
 Result:
-Available Engines:
-  - edge (SSML)
-  - elevenlabs (cloning, API key) [CONFIG NEEDED: API key required]
-  - gtts
-  - xtts (cloning)
+
+- Available Engines:
+  - `edge` (SSML)
+  - `elevenlabs` (cloning, API key) [CONFIG NEEDED: API key required]
+  - `gtts`
+  - `xtts` (cloning)
+
 Memory entry created with complete technical details, file changes, and benefits for future reference.

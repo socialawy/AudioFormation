@@ -8,6 +8,7 @@ Threat model (v1.0):
 - Malformed project.json causing crashes
 """
 
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -65,15 +66,22 @@ def sanitize_filename(raw: str) -> str:
 def validate_path_within(path: Path, root: Path) -> bool:
     """
     Ensure `path` resolves to a location within `root`.
-
-    Prevents directory traversal attacks.
     """
+    # CODEQL FIX: Textual check first (Guard)
+    # Prevent resolving paths that obviously try to traverse up
+    path_str = str(path)
+    if ".." in path_str.split(os.sep):
+        return False
+        
     try:
+        # Now safe to resolve
         resolved = path.resolve()
         root_resolved = root.resolve()
-        return resolved == root_resolved or root_resolved in resolved.parents
-    except (OSError, ValueError):
-        return False
+        # Python 3.9+ preferred method
+        return resolved.is_relative_to(root_resolved)
+    except (OSError, ValueError, AttributeError):
+        # Fallback for older python or error cases
+        return str(resolved).startswith(str(root_resolved))
 
 
 def redact_api_keys(config: dict[str, Any]) -> dict[str, Any]:
