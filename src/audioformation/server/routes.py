@@ -47,21 +47,19 @@ logger = logging.getLogger("audioformation.api")
 
 
 async def _run_with_status(func, project_id: str, node: str):
-    """Wrapper that marks node running/complete/failed around any pipeline function.
-
-    Handles both sync and async functions by checking if the result is a coroutine.
-    """
-    path = get_project_path(project_id)
     try:
+        path = get_project_path(project_id)
         mark_node(path, node, "running")
-        result = func()  # Call lambda/closure
-        # If func() returned a coroutine (async function), await it
-        if asyncio.iscoroutine(result):
-            await result
+        result = func()
+        if asyncio.iscoroutine(result): await result
         mark_node(path, node, "complete")
     except Exception as e:
-        logger.exception(f"Background task '{node}' failed for {project_id}: {e}")
-        mark_node(path, node, "failed", error=str(e))
+        logger.exception(f"Task failed: {e}")
+        try:
+            path = get_project_path(project_id)
+            # Use fixed string for error to prevent info leak
+            mark_node(path, node, "failed", error="Task Failed (Check Logs)")
+        except Exception: pass
 
 
 class ProjectCreateRequest(BaseModel):
@@ -198,30 +196,25 @@ async def ingest_files(
 
 @router.post("/projects/{project_id}/upload")
 async def upload_file(project_id: str, category: str, file: UploadFile = File(...)):
-    """
-    Upload a file to a specific project category.
-
-    Categories:
-    - 'references': Voice cloning references (02_VOICES/references)
-    - 'music': Background music (05_MUSIC/imported)
-    """
-    if not project_exists(project_id):
-        raise HTTPException(status_code=404, detail="Not found")
+    if not project_exists(project_id): raise HTTPException(status_code=404, detail="Not found")
     project_path = get_project_path(project_id)
     if category == "references": target_dir = project_path / "02_VOICES" / "references"
     elif category == "music": target_dir = project_path / "05_MUSIC" / "generated"
     else: raise HTTPException(status_code=400, detail="Invalid category")
     target_dir.mkdir(parents=True, exist_ok=True)
     
-    # CODEQL FIX: Safe construction. 
-    # safe_name is a strict basename. target_dir is trusted. 
-    # dest cannot be a traversal. We skip redundant validation.
+    # Secure filename handling
     safe_name = os.path.basename(file.filename)
+    # Additional strict regex guard
     if not re.fullmatch(r"^[A-Za-z0-9_.-]+$", safe_name):
          raise HTTPException(status_code=400, detail="Invalid filename characters")
          
     dest = target_dir / safe_name
     
+    # Check bounds using fixed validator
+    if not validate_path_within(dest, target_dir):
+        raise HTTPException(status_code=400, detail="Invalid path")
+        
     try:
         with open(dest, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
         return {"path": str(dest.relative_to(project_path)).replace("\\", "/"), "filename": safe_name}
