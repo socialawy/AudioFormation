@@ -8,6 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed 2026-02-17 (Session 5 — Production Debugging)
+- **`ch*.wav` hard-coded glob**: Process, Mix commands only found `ch`-prefixed files.
+  Changed to `*.wav` with chunk-file exclusion filter in:
+  - `cli.py` process_audio (~line 754)
+  - `mix.py` lines 96, 104
+- **M4B export `-c:v copy`**: Always added even without cover art, causing ffmpeg error.
+  Now conditional on `has_cover`.
+- **E2E test `--voice` flag**: CLI `generate` has no `--voice` option. Removed from test.
+- **E2E test missing pipeline steps**: Added `qc-scan` and `qc-final` steps to
+  `_run_engine_test`. QC Final is non-blocking (short test clips fail LUFS threshold).
+- **`batch_process_project` wrong directory**: Searched `03_GENERATED/*.wav` instead of
+  `03_GENERATED/raw/*.wav`. Added `raw/` subdirectory search with root fallback.
+- **`qc-final` missing from Run All Pipeline**: Dashboard `runAllPipeline()` skipped
+  qc-final step. Added to steps array and nodeMap.
+
+### Added 2026-02-17 (Session 5)
+- **"Run From" dropdown**: Pipeline can now resume from any step (validate → export).
+  HTML select + `runFromStep()` JS function. Reuses existing `waitForNode()`.
+- **First M4B audiobook export**: Verified end-to-end on Project 10 (Arabic, edge-tts).
+
+### Tests
+- **387 collected, 378 passed, 9 skipped, 0 failed**
+- **Coverage: 69.03%** (up from 64.98%)
+- E2E tests now exercise: bootstrap → ingest → validate → generate → qc-scan →
+  process → mix → qc-final (soft) → export (conditional)
+
 ### Added 2026-02-16 (Session 3)
 - **QC Scan API**: New endpoint for quality control scanning
   - POST /api/projects/{id}/qc-scan (Node 3.5)

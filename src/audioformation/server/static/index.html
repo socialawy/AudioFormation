@@ -51,7 +51,21 @@
                 <div class="view-header">
                     <h1><span id="editor-project-id">Project</span> <span style="font-weight:400; opacity:0.5;">Editor</span></h1>
                     <div class="actions">
-                        <button class="btn success" onclick="app.runAllPipeline()" id="btn-run-all">🚀 Run All Pipeline</button>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <button class="btn primary" onclick="app.runAllPipeline()" id="btn-run-all">🚀 Run All Pipeline</button>
+                            <select id="run-from-select" style="padding:0.5rem; border-radius:4px; background:var(--card-bg); color:var(--text); border:1px solid var(--border);">
+                                <option value="">Run From...</option>
+                                <option value="validate">Validate</option>
+                                <option value="generate">Generate</option>
+                                <option value="qc-scan">QC Scan</option>
+                                <option value="process">Process</option>
+                                <option value="compose">Compose</option>
+                                <option value="mix">Mix</option>
+                                <option value="qc-final">QC Final</option>
+                                <option value="export">Export</option>
+                            </select>
+                            <button class="btn" onclick="app.runFromStep()">▶ Run</button>
+                        </div>
                         <button class="btn" onclick="app.showProjects()">Close</button>
                         <button class="btn primary" onclick="app.saveProject()">Save Changes</button>
                     </div>

@@ -413,3 +413,18 @@ def sample_project_with_text(sample_project):
 
     sample_project["chapters"] = ["ch01", "ch02", "ch03"]
     return sample_project
+
+
+@pytest.fixture
+def client():
+    """Create FastAPI TestClient for server tests."""
+    try:
+        # Add src to path for imports
+        import sys
+        sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
+        
+        from audioformation.server.app import app
+        from fastapi.testclient import TestClient
+        return TestClient(app)
+    except (ImportError, ModuleNotFoundError) as e:
+        pytest.skip(f"Server dependencies not available: {e}")

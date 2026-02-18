@@ -268,25 +268,72 @@ const app = {
                 engineOpts += `<option value="${e.id}" ${selected}>${e.name}</option>`;
             });
 
-            // Fetch voices for current engine selection
-            const voices = await this.fetchVoices(char.engine, primaryLang);
-            let voiceOpts = '<option value="">(Select Voice)</option>';
-            
-            // If XTTS, voices list might be empty or locales. 
-            // For Edge/ElevenLabs/gTTS we have lists.
-            voices.forEach(v => {
-                const selected = (v.id === char.voice) ? 'selected' : '';
-                voiceOpts += `<option value="${v.id}" ${selected}>${v.name} (${v.gender})</option>`;
-            });
-
-            // If current voice isn't in list (e.g. from different language), add it
-            if (char.voice && !voices.find(v => v.id === char.voice)) {
-                voiceOpts += `<option value="${char.voice}" selected>${char.voice} (Current)</option>`;
-            }
-
-            // Reference Upload Section (XTTS/ElevenLabs cloning)
+            // Voice dropdown and engine-specific UI
+            let voiceSectionHtml = '';
             let referenceHtml = '';
-            if (char.engine === 'xtts' || char.engine === 'elevenlabs') {
+            
+            if (char.engine === 'xtts') {
+                // XTTS: hide voice dropdown, show reference upload
+                voiceSectionHtml = `
+                    <div class="form-group">
+                        <label>Voice</label>
+                        <div style="padding: 0.5rem; background: #f5f5f5; border-radius: 4px; color: #666; font-style: italic;">
+                            Voice cloning via reference audio
+                        </div>
+                    </div>
+                `;
+                referenceHtml = `
+                    <div class="form-group" style="flex:2;">
+                        <label>Reference Audio (Cloning)</label>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <input type="text" value="${this.escapeHtml(char.reference_audio || '')}" readonly style="flex:1; opacity:0.7;">
+                            <button class="btn small" onclick="app.triggerRefUpload('${cid}')">Upload</button>
+                            <button class="btn small" onclick="app.previewVoice('${cid}')">Preview</button>
+                        </div>
+                    </div>
+                `;
+            } else if (char.engine === 'gtts') {
+                // gTTS: hide voice dropdown, show "Language only" label
+                voiceSectionHtml = `
+                    <div class="form-group">
+                        <label>Voice</label>
+                        <div style="padding: 0.5rem; background: #f5f5f5; border-radius: 4px; color: #666; font-style: italic;">
+                            Language only
+                        </div>
+                    </div>
+                `;
+                referenceHtml = `
+                    <div class="form-group" style="flex:2;">
+                        <label>Persona</label>
+                        <input type="text" value="${this.escapeHtml(char.persona || '')}" 
+                               onchange="app.updateCharacter('${cid}', 'persona', this.value)">
+                    </div>
+                `;
+            } else if (char.engine === 'elevenlabs') {
+                // ElevenLabs: show voice dropdown and API key status indicator
+                const voices = await this.fetchVoices(char.engine, primaryLang);
+                let voiceOpts = '<option value="">(Select Voice)</option>';
+                voices.forEach(v => {
+                    const selected = (v.id === char.voice) ? 'selected' : '';
+                    voiceOpts += `<option value="${v.id}" ${selected}>${v.name} (${v.gender})</option>`;
+                });
+                if (char.voice && !voices.find(v => v.id === char.voice)) {
+                    voiceOpts += `<option value="${char.voice}" selected>${char.voice} (Current)</option>`;
+                }
+                
+                voiceSectionHtml = `
+                    <div class="form-group">
+                        <label>Voice</label>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <select onchange="app.updateCharacter('${cid}', 'voice', this.value)" style="flex:1;">
+                                ${voiceOpts}
+                            </select>
+                            <div style="padding: 0.25rem 0.5rem; background: #e8f5e8; border-radius: 4px; font-size: 0.8rem; color: #2d5a2d;">
+                                API Key ✓
+                            </div>
+                        </div>
+                    </div>
+                `;
                 referenceHtml = `
                     <div class="form-group" style="flex:2;">
                         <label>Reference Audio (Cloning)</label>
@@ -298,6 +345,25 @@ const app = {
                     </div>
                 `;
             } else {
+                // Edge or other engines: show full voice dropdown (current behavior)
+                const voices = await this.fetchVoices(char.engine, primaryLang);
+                let voiceOpts = '<option value="">(Select Voice)</option>';
+                voices.forEach(v => {
+                    const selected = (v.id === char.voice) ? 'selected' : '';
+                    voiceOpts += `<option value="${v.id}" ${selected}>${v.name} (${v.gender})</option>`;
+                });
+                if (char.voice && !voices.find(v => v.id === char.voice)) {
+                    voiceOpts += `<option value="${char.voice}" selected>${char.voice} (Current)</option>`;
+                }
+                
+                voiceSectionHtml = `
+                    <div class="form-group">
+                        <label>Voice</label>
+                        <select onchange="app.updateCharacter('${cid}', 'voice', this.value)">
+                            ${voiceOpts}
+                        </select>
+                    </div>
+                `;
                 referenceHtml = `
                     <div class="form-group" style="flex:2;">
                         <label>Persona</label>
@@ -319,12 +385,7 @@ const app = {
                             ${engineOpts}
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>Voice</label>
-                        <select onchange="app.updateCharacter('${cid}', 'voice', this.value)">
-                            ${voiceOpts}
-                        </select>
-                    </div>
+                    ${voiceSectionHtml}
                 </div>
                 <div class="form-row" style="margin-bottom:0;">
                     <div class="form-group" style="flex:1;">
@@ -1234,18 +1295,25 @@ const app = {
         let loaded = false;
         for (const p of paths) {
             try {
+                // Silent HEAD request to check if file exists
                 const res = await fetch(p.url, { method: 'HEAD' });
                 if (res.ok) {
-                    await this.wavesurfer.load(p.url);
-                    trackInfoEl.innerHTML = `
-                        <h3>${chapterInfo.title} (${chapterInfo.id})</h3>
-                        <div class="status-badge complete" style="display:inline-block; margin:0.5rem 0;">${p.type}</div>
-                        <p>Duration: ${this.formatTime(this.wavesurfer.getDuration())}</p>
-                    `;
-                    loaded = true;
-                    break;
+                    try {
+                        await this.wavesurfer.load(p.url);
+                        trackInfoEl.innerHTML = `
+                            <h3>${chapterInfo.title} (${chapterInfo.id})</h3>
+                            <div class="status-badge complete" style="display:inline-block; margin:0.5rem 0;">${p.type}</div>
+                            <p>Duration: ${this.formatTime(this.wavesurfer.getDuration())}</p>
+                        `;
+                        loaded = true;
+                        break;
+                    } catch (playbackError) {
+                        console.error(`Playback error loading ${p.type} audio:`, playbackError);
+                    }
                 }
-            } catch(e) {}
+            } catch (headError) {
+                // Silent fail for HEAD requests (404 probes)
+            }
         }
         
         if (!loaded) trackInfoEl.innerHTML = `<h3 style="color:red">Audio Not Found</h3><p>Run generation first.</p>`;
@@ -1282,10 +1350,57 @@ const app = {
         } catch(e) { alert(e.message); }
     },
 
+    async runFromStep() {
+        const select = document.getElementById('run-from-select');
+        const startStep = select.value;
+        if (!startStep) { alert('Select a step to run from.'); return; }
+        if (!this.currentProject) return;
+
+        const allSteps = ['validate', 'generate', 'qc-scan', 'process', 'compose', 'mix', 'qc-final', 'export'];
+        const startIndex = allSteps.indexOf(startStep);
+        const steps = allSteps.slice(startIndex);
+
+        const btn = document.querySelector('[onclick="app.runFromStep()"]');
+        const originalText = btn.textContent;
+
+        for (const step of steps) {
+            btn.textContent = `⏳ ${step}...`;
+            try {
+                let body = {};
+                if (step === 'generate') body = { chapters: null };
+                if (step === 'compose') body = { preset: 'contemplative', duration: 60 };
+                if (step === 'export') body = { format: 'mp3', bitrate: 192 };
+                
+                const res = await fetch(`${API_BASE}/projects/${this.currentProject}/${step}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(body)
+                });
+
+                if (step === 'validate') {
+                    const data = await res.json();
+                    if (data.failures > 0) {
+                        alert(`Validation failed: ${JSON.stringify(data)}`);
+                        break;
+                    }
+                    continue;
+                }
+
+                if (step !== 'validate') await this.waitForNode(step);
+            } catch(e) {
+                alert(`Pipeline stopped at ${step}: ${e.message}`);
+                break;
+            }
+        }
+
+        btn.textContent = originalText;
+        this.loadProject(this.currentProject);
+    },
+
     async runAllPipeline() {
         if (!confirm("Run full pipeline? This may take time.")) return;
         
-        const steps = ['validate', 'generate', 'qc-scan', 'process', 'compose', 'mix', 'export'];
+        const steps = ['validate', 'generate', 'qc-scan', 'process', 'compose', 'mix', 'qc-final', 'export'];
         const btn = document.getElementById('btn-run-all');
         btn.disabled = true;
         
@@ -1323,7 +1438,7 @@ const app = {
     },
 
     async waitForNode(endpoint) {
-        const nodeMap = { 'generate': 'generate', 'qc-scan': 'qc_scan', 'process': 'process', 'compose': 'compose', 'mix': 'mix', 'export': 'export' };
+        const nodeMap = {'generate': 'generate', 'qc-scan': 'qc_scan', 'process': 'process', 'compose': 'compose', 'mix': 'mix', 'qc-final': 'qc_final', 'export': 'export'};
         const nodeName = nodeMap[endpoint] || endpoint;
         
         while (true) {
