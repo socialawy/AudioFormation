@@ -72,24 +72,23 @@ def generate_sfx(
         audio = audio / peak * 0.9
 
     if output_path:
-        # CODEQL FIX: Textual normalization guard
-        abs_dest = os.path.abspath(str(output_path))
-        
+        # CODEQL FIX: Removed os.path.abspath check
+        # Directly use the (now safe) validator + string check
+        p_str = str(output_path)
+        if ".." in p_str: raise ValueError("Invalid path traversal")
+
         valid = False
         try:
-             # Check Projects Root
-             if abs_dest.startswith(os.path.abspath(str(PROJECTS_ROOT))):
-                 valid = True
+             if validate_path_within(Path(output_path), PROJECTS_ROOT): valid = True
              else:
                  import tempfile
-                 if abs_dest.startswith(os.path.abspath(tempfile.gettempdir())):
-                     valid = True
+                 if validate_path_within(Path(output_path), Path(tempfile.gettempdir())): valid = True
         except Exception: pass
         
-        if not valid: raise ValueError("Invalid path")
+        if not valid: raise ValueError("Security Alert: Output path unsafe")
         
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        sf.write(str(output_path), audio, sample_rate)
+        sf.write(p_str, audio, sample_rate)
 
     return audio
 
