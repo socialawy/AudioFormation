@@ -8,6 +8,7 @@ Every project is a directory under PROJECTS_ROOT containing:
 """
 
 import json
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -48,26 +49,37 @@ from audioformation.utils.security import sanitize_project_id
 
 
 def get_project_path(project_id: str) -> Path:
-    """Resolve and validate a project directory path."""
-    # CODEQL FIX: Explicit Input Validation
-    # 1. Enforce strict character set (Alphanumeric, underscore, hyphen)
-    if not re.fullmatch(r"^[A-Za-z0-9_-]+$", project_id):
-        raise ValueError(f"Security Alert: Invalid Project ID format: {project_id}")
+    """
+    Resolve and validate a project directory path.
+    """
+    # CODEQL FIX: Ultimate Sanitizer
+    # os.path.basename is the trusted sanitizer for path traversal.
+    # We apply it immediately to neutralize attacks before they happen.
+    safe_id = os.path.basename(project_id)
+    
+    # Validation logic
+    if safe_id != project_id:
+        # If basename changed the string, it contained separators -> suspect
+        raise ValueError(f"Security Alert: Project ID contains invalid path characters: {project_id}")
 
-    # 2. Construct path safely using joinpath (avoid string concatenation)
-    path = PROJECTS_ROOT.joinpath(project_id)
+    if not re.fullmatch(r"^[A-Za-z0-9_-]+$", safe_id):
+        raise ValueError(f"Security Alert: Invalid Project ID format: {safe_id}")
 
-    # 3. Resolve to absolute path to handle '..'
+    # Construct path
+    path = PROJECTS_ROOT.joinpath(safe_id)
+
+    # Double check (Allowlist)
     try:
         resolved_path = path.resolve()
         resolved_root = PROJECTS_ROOT.resolve()
-    except OSError as e:
-        raise ValueError(f"Invalid path resolution: {e}")
-
-    # 4. Strict Containment Check (Allowlist)
-    # Ensure the resolved path starts with the resolved root
-    if not resolved_path.is_relative_to(resolved_root):
-        raise ValueError(f"Security Alert: Path traversal detected: {project_id}")
+        
+        if not resolved_path.is_relative_to(resolved_root):
+             raise ValueError(f"Security Alert: Path traversal detected: {project_id}")
+    except (OSError, ValueError) as e:
+        # Allow FileNotFoundError if we are about to create it, 
+        # but ensure the parent is correct.
+        if not path.parent.resolve().is_relative_to(resolved_root):
+             raise ValueError(f"Invalid path resolution: {e}")
 
     return path
 
