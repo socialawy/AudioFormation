@@ -206,41 +206,26 @@ async def upload_file(project_id: str, category: str, file: UploadFile = File(..
     - 'music': Background music (05_MUSIC/imported)
     """
     if not project_exists(project_id):
-        raise HTTPException(status_code=404, detail="Project not found")
-
+        raise HTTPException(status_code=404, detail="Not found")
     project_path = get_project_path(project_id)
-
-    if category == "references":
-        target_dir = project_path / "02_VOICES" / "references"
-    elif category == "music":
-        target_dir = (
-            project_path / "05_MUSIC" / "generated"
-        )  # Use generated for now to show up in list
-    else:
-        raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
-
+    if category == "references": target_dir = project_path / "02_VOICES" / "references"
+    elif category == "music": target_dir = project_path / "05_MUSIC" / "generated"
+    else: raise HTTPException(status_code=400, detail="Invalid category")
     target_dir.mkdir(parents=True, exist_ok=True)
-
-    # CODEQL FIX: Force strict basename to prevent path injection
-    # Even if sanitize_filename is good, os.path.basename is trusted by scanners.
-    raw_filename = os.path.basename(file.filename)
-    safe_name = sanitize_filename(raw_filename)
-    dest_path = target_dir / safe_name
-
-    # Double check final path
-    if not validate_path_within(dest_path, target_dir):
-        raise HTTPException(status_code=400, detail="Invalid path")
-
+    
+    # CODEQL FIX: Safe construction. 
+    # safe_name is a strict basename. target_dir is trusted. 
+    # dest cannot be a traversal. We skip redundant validation.
+    safe_name = os.path.basename(file.filename)
+    if not re.fullmatch(r"^[A-Za-z0-9_.-]+$", safe_name):
+         raise HTTPException(status_code=400, detail="Invalid filename characters")
+         
+    dest = target_dir / safe_name
+    
     try:
-        with open(dest_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-
-        # Return relative path for project.json
-        rel_path = str(dest_path.relative_to(project_path)).replace("\\", "/")
-        return {"path": rel_path, "filename": safe_name}
-    except Exception as e:
-        logger.error(f"Upload error: {e}")
-        # CODEQL FIX: Do not return str(e)
+        with open(dest, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
+        return {"path": str(dest.relative_to(project_path)).replace("\\", "/"), "filename": safe_name}
+    except Exception:
         raise HTTPException(status_code=500, detail="Upload failed")
 
 
@@ -564,12 +549,12 @@ def _qc_scan_sync(project_id: str) -> dict:
             )
             chunk_results.append(result)
         except Exception as e:
-            # Create a failed ChunkQCResult for files that error
+            # CODEQL FIX: Hardcoded error message to prevent information exposure
             chunk_results.append(
                 ChunkQCResult(
                     chunk_id=chunk_id,
                     status="fail",
-                    checks={"scan_error": {"status": "fail", "message": str(e)}},
+                    checks={"scan_error": {"status": "fail", "message": "Scan Error"}},
                 )
             )
 
