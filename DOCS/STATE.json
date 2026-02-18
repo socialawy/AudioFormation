@@ -1,0 +1,79 @@
+{
+  "generated_at": "2026-02-16T12:37:00.000000+00:00",
+  "version": "0.3.0",
+  "test_count": 371,
+  "source_files": 40,
+  "test_files": 26,
+  "engines_registered": [
+    "edge",
+    "gtts",
+    "xtts",
+    "elevenlabs"
+  ],
+  "pipeline_nodes": {
+    "bootstrap": "built",
+    "ingest": "built",
+    "validate": "built",
+    "generate": "built",
+    "qc_scan": "built",
+    "process": "built",
+    "compose": "built",
+    "mix": "built",
+    "qc_final": "built",
+    "export": "built"
+  },
+  "dependencies": [
+    "# CLI + API",
+    "click>=8.1,<9",
+    "fastapi>=0.109,<1",
+    "uvicorn[standard]>=0.27,<1",
+    "",
+    "# Audio I/O",
+    "pydub>=0.25,<1",
+    "audioop-lts>=0.2; python_version>='3.13'",
+    "numpy>=1.26,<3",
+    "soundfile>=0.12,<1",
+    "",
+    "# TTS engines",
+    "edge-tts>=7.0\",   # v7 fixed DRM token 403s",
+    "httpx>=0.27,<1",
+    "transformers>=4.44,<5\",  # Pin to prevent breakage",
+    "",
+    "# Audio analysis",
+    "pyloudnorm>=0.2,<1",
+    "",
+    "# Music",
+    "midiutil>=1.2,<2",
+    "",
+    "# Export metadata",
+    "mutagen>=1.47,<2",
+    "",
+    "# Schema validation",
+    "jsonschema>=4.21,<5"
+  ],
+  "git": {
+    "branch": "main",
+    "clean": false,
+    "recent_commits": [
+      "2a3c83e Update architecture and add audio composer functionality",
+      "2c6a7ce Initial release: AudioFormation v0.1.0"
+    ]
+  },
+  "projects": [
+    {
+      "id": "MY_NOVEL",
+      "nodes": {
+        "bootstrap": "pending",
+        "ingest": "complete",
+        "validate": "complete",
+        "generate": "complete",
+        "qc_scan": "pending",
+        "process": "complete",
+        "compose": "pending",
+        "mix": "pending",
+        "qc_final": "pending",
+        "export": "complete"
+      }
+    }
+  ]
+}
