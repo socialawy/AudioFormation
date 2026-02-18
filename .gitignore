@@ -172,3 +172,4 @@ test_samples/
 # Security scanning exclusions
 .snyk
 *.snyk
+.env
