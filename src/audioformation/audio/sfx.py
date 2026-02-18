@@ -72,26 +72,20 @@ def generate_sfx(
         audio = audio / peak * 0.9
 
     if output_path:
-        output_path = Path(output_path)
+        # CODEQL FIX: Textual guard
+        if ".." in str(output_path): raise ValueError("Invalid path")
         
-        # CODEQL FIX: Validate destination before write
-        valid_dest = False
+        valid = False
         try:
-             # Check Projects Root
-             if validate_path_within(output_path, PROJECTS_ROOT):
-                 valid_dest = True
+             if validate_path_within(Path(output_path), PROJECTS_ROOT): valid = True
              else:
-                 # Check Temp Dir
                  import tempfile
-                 if validate_path_within(output_path, Path(tempfile.gettempdir())):
-                     valid_dest = True
-        except Exception:
-            pass
-            
-        if not valid_dest:
-            raise ValueError("Security Alert: SFX output path must be within Projects or Temp directory")
-            
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+                 if validate_path_within(Path(output_path), Path(tempfile.gettempdir())): valid = True
+        except Exception: pass
+        
+        if not valid: raise ValueError("SFX output path unsafe")
+        
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         sf.write(str(output_path), audio, sample_rate)
 
     return audio
