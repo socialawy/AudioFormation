@@ -12,7 +12,7 @@ Principle	| Implementation
 -----------|---------------
 Single Source of Truth	| project.json governs everything
 Validation Gates	| Hard gates before generation, mixing, export
-Automation First	| CLI drives pipeline; dashboard is optional
+Automation First	| CLI drives pipeline; dashboard is a bonus
 Engine Agnostic	| Swap TTS/music engines without touching project files
 Hardware Aware	| Auto-detects GPU, suggests optimal engine
 Bilingual First	| Arabic + English as primary languages
@@ -68,11 +68,11 @@ Providers (priority order):
 │ └── Pin version in pyproject.toml — community-maintained
 │
 ├── elevenlabs # ✅ BUILT: Premium cloud fallback
-│ └── Best overall quality, strong Arabic, pay-per-use, voice cloning support
+│ └── Best overall quality, strong Arabic, free tier, pay-per-use, voice cloning support
 │
-├── openai-tts # Priority 4: If Arabic quality improves (Phase 3)
+├── openai-tts # Priority 4: If Arabic quality improves (Phase 5)
 │
-└── gemini-tts # Priority 5: If rate limits ease (Phase 3)
+└── gemini-tts # Priority 5: If rate limits ease (Phase 5)
 
 #### Built Engines Summary (Phase 1–2)
 
@@ -483,16 +483,7 @@ VideoFormation API:        localhost:3001
 
 | Node | Name | Status | Description |
 |---|---|---|---|
-| 0 | Bootstrap | ✅ BUILT | Create project structure, detect hardware, write hardware.json |
-| 1 | Ingest | ✅ BUILT | Import text files, assign languages, validate encoding |
-| 2 | Validate | ✅ BUILT | Check text, characters, engines, Arabic preprocessing |
-| 3 | Generate | ✅ BUILT | TTS generation with chunking, crossfade, per-file LUFS measurement |
-| 3.5 | QC Scan | ✅ BUILT | Per-chunk quality check (SNR, pitch, duration, clipping, LUFS) |
-| 4 | Process | ✅ BUILT | Batch normalization (ffmpeg loudnorm), silence trimming |
-| 5 | Compose | ✅ BUILT | Generate ambient pads with mood presets |
-| 6 | Mix | ✅ BUILT | Multi-track layering, VAD ducking, chapter assembly |
-| 7 | QC Final | ✅ BUILT | Final mix validation (LUFS ±1, true-peak, clipping) |
-| 8 | Export | ✅ BUILT | MP3/WAV/M4B, metadata, manifest + SHA256 checksums |
+| 0–8 | All nodes | ✅ BUILT + E2E VERIFIED | Full pipeline tested end-to-end Feb 17, 2026 |
 
 ## Tech Stack
 ```text
@@ -1063,15 +1054,27 @@ Dashboard tabs:
 ├── Mix (volume sliders, ducking preview, layer toggle)
 └── Export (format selection, cover art preview, progress)
 
-### Phase 4: Polish + Distribution (If needed)
-├── PyInstaller packaging (.exe)
-├── Nuitka benchmark (if startup too slow)
-├── Algorithmic composition (Tier 3, only if Tier 1+2 insufficient)
-├── FishAudio-S1 / IndexTTS evaluation (if matured)
-├── GitHub release + README (repor is up)
-├── Handover validation
-└── VideoFormation integration (Node 3.5 dispatch)
+### Phase 4: Polish + Distribution
+Status: **In Progress**
 
+Completed:
+├── ✅ Dashboard v2 (all 6 sub-phases: 4a–4f)
+├── ✅ Export view + download links
+├── ✅ QC dashboard (basic list view)
+├── ✅ Cast panel + engine/voice dropdowns
+├── ✅ Direction dropdowns (SSML-mapped)
+├── ✅ Pipeline stepper + hardware panel
+├── ✅ Mix controls (ducking params)
+├── ✅ "Run From" dropdown (resume from any step)
+├── ✅ Assets tab (SFX + Music generation)
+└── ✅ First M4B audiobook export verified
+
+Remaining:
+├── Server test coverage (routes.py: 0% → 60%+)
+├── Cast UI engine adaptation (hide/show per engine type)
+├── Console 404 noise suppression
+├── PyInstaller packaging (.exe)
+└── Loco-Tunes integration (ComposeEngine Tier 3 — separate app, file-system handshake)
 
 ### Handover Document Structure
 ```text
@@ -1172,4 +1175,3 @@ audioformation/
 | FishAudio-S1 | Strong multilingual cloning + emotion | Promising, not mature | Test in Phase 4 |
 | IndexTTS | XTTS successor candidate, better naturalness | Paper stage, limited adoption | Monitor |
 | MeloTTS | Fast CPU inference, multilingual | Weaker voice cloning | Skip unless cloning not needed |
-s

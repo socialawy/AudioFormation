@@ -1,4 +1,49 @@
 
+## Session 5: Production Debugging & First M4B (Feb 17, 2026)
+
+**Focus:** Fix e2e pipeline failures, produce first real M4B, complete dashboard plan.
+
+### Bugs Found & Fixed
+| Bug | Root Cause | Fix |
+|-----|-----------|-----|
+| E2E: `--voice` flag | Test passed CLI flag that doesn't exist | Removed VOICES dict from test |
+| E2E: "Process failed" (empty) | `batch_process_project` searched wrong dir | Search `raw/` first, fallback to root |
+| E2E: "No chapter audio to mix" | `mix.py` glob `ch*.wav` missed non-ch-prefixed files | Changed to `*.wav` |
+| E2E: "Hard gate qc_final" | E2E test skipped qc-final step | Added step, made non-blocking |
+| M4B: ffmpeg error without cover | `-c:v copy` always added | Conditional on `has_cover` |
+| Dashboard: qc_final skipped | `runAllPipeline()` missing from steps array | Added `qc-final` + nodeMap entry |
+
+### Key Insight
+Ingest derives chapter IDs from filenames (`contemplative.txt` → `contemplative`).
+Three locations assumed all chapters start with `ch` prefix. Root cause: no convention
+enforcement at ingest time — correct fix is flexible glob, not naming constraints.
+
+### Milestones
+- **First M4B ever exported**: Project 10, Arabic, edge-tts, single chapter
+- **E2E: 0 failures** (was 4 at session start)
+- **Coverage: 69%** (was 65%)
+- **Dashboard plan: 100% complete** (Run From was last item)
+
+### Dashboard Audit Results (verified from code)
+| Feature | Status |
+|---------|--------|
+| 22 API endpoints | All wired to frontend |
+| Export downloads | Working via static file mount |
+| Cast + voice dropdowns | Working, edge returns 32 Arabic voices |
+| Direction dropdowns (SSML) | Working |
+| Pipeline stepper | Fixed (added qc-final) |
+| Mix controls + ducking | Working |
+| Run From dropdown | Implemented |
+| SFX/Music generation | Working with preview |
+
+### Remaining Technical Debt
+1. **Server test coverage**: routes.py 345 lines at 0%
+2. **Cast UI per-engine**: All engines show same UI (voice dropdown), should adapt
+3. **Console 404 noise**: Audio path probing logs errors for expected misses
+4. **Overwrite behavior**: Needs investigation — dashboard or ffmpeg prompt?
+
+---
+
 # AudioFormation Build Log
 
 **Status:** Phase 3 Complete (Mix & Review Dashboard)  
