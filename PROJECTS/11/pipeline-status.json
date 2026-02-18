@@ -1,0 +1,53 @@
+{
+  "project_id": "11",
+  "nodes": {
+    "bootstrap": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:36:19.359089+00:00"
+    },
+    "ingest": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:39:40.102644+00:00",
+      "files_ingested": 0,
+      "files_skipped": 1
+    },
+    "validate": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:36:39.056851+00:00"
+    },
+    "generate": {
+      "status": "complete",
+      "timestamp": "2026-02-17T17:39:54.677690+00:00",
+      "error": "No chapters to generate.",
+      "engine": "per-character",
+      "chapters": {
+        "test-engine": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\11\\03_GENERATED\\raw\\test-engine.wav"
+        }
+      }
+    },
+    "qc_scan": {
+      "status": "pending"
+    },
+    "process": {
+      "status": "pending"
+    },
+    "compose": {
+      "status": "pending"
+    },
+    "mix": {
+      "status": "pending"
+    },
+    "qc_final": {
+      "status": "pending"
+    },
+    "export": {
+      "status": "pending"
+    }
+  }
+}

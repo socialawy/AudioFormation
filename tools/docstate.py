@@ -45,7 +45,10 @@ def get_test_count():
     try:
         r = subprocess.run(
             [sys.executable, "-m", "pytest", "--co", "-q"],
-            capture_output=True, text=True, cwd=ROOT, timeout=30
+            capture_output=True,
+            text=True,
+            cwd=ROOT,
+            timeout=30,
         )
         # Last line: "264 tests collected"
         for line in r.stdout.strip().splitlines()[::-1]:
@@ -83,12 +86,19 @@ def get_test_files():
 
 
 def get_node_status():
-    """Aggregate node status across all projects, 
+    """Aggregate node status across all projects,
     or report built/planned from source."""
     nodes = [
-        "bootstrap", "ingest", "validate", "generate",
-        "qc_scan", "process", "compose", "mix",
-        "qc_final", "export"
+        "bootstrap",
+        "ingest",
+        "validate",
+        "generate",
+        "qc_scan",
+        "process",
+        "compose",
+        "mix",
+        "qc_final",
+        "export",
     ]
     status = {}
     for node in nodes:
@@ -106,24 +116,33 @@ def get_git_info():
     try:
         branch = subprocess.run(
             ["git", "branch", "--show-current"],
-            capture_output=True, text=True, cwd=ROOT
+            capture_output=True,
+            text=True,
+            cwd=ROOT,
         ).stdout.strip()
 
-        log = subprocess.run(
-            ["git", "log", "--oneline", "-5"],
-            capture_output=True, text=True, cwd=ROOT
-        ).stdout.strip().splitlines()
+        log = (
+            subprocess.run(
+                ["git", "log", "--oneline", "-5"],
+                capture_output=True,
+                text=True,
+                cwd=ROOT,
+            )
+            .stdout.strip()
+            .splitlines()
+        )
 
-        clean = subprocess.run(
-            ["git", "status", "--porcelain"],
-            capture_output=True, text=True, cwd=ROOT
-        ).stdout.strip() == ""
+        clean = (
+            subprocess.run(
+                ["git", "status", "--porcelain"],
+                capture_output=True,
+                text=True,
+                cwd=ROOT,
+            ).stdout.strip()
+            == ""
+        )
 
-        return {
-            "branch": branch,
-            "clean": clean,
-            "recent_commits": log
-        }
+        return {"branch": branch, "clean": clean, "recent_commits": log}
     except Exception:
         return {"branch": "unknown", "clean": False, "recent_commits": []}
 
@@ -140,11 +159,12 @@ def get_projects():
         if status_file.exists():
             data = json.loads(status_file.read_text())
             nodes = data.get("nodes", {})
-            projects.append({
-                "id": p.name,
-                "nodes": {k: v.get("status", "unknown") 
-                         for k, v in nodes.items()}
-            })
+            projects.append(
+                {
+                    "id": p.name,
+                    "nodes": {k: v.get("status", "unknown") for k, v in nodes.items()},
+                }
+            )
         else:
             projects.append({"id": p.name, "nodes": {}})
     return projects

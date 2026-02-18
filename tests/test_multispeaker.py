@@ -15,7 +15,6 @@ import soundfile as sf
 
 from audioformation.utils.text import parse_chapter_segments
 
-
 # ─────────────────────────────────────────────────────────
 # Tag parsing tests (text.py integration)
 # ─────────────────────────────────────────────────────────
@@ -325,15 +324,19 @@ class TestMultiSpeakerGeneration:
 
             # Verify edge got narrator text, xtts got hero text
             edge_texts = [
-                call.args[0].text
-                if call.args
-                else call.kwargs.get("request", call[0][0]).text
+                (
+                    call.args[0].text
+                    if call.args
+                    else call.kwargs.get("request", call[0][0]).text
+                )
                 for call in edge_mock.generate.call_args_list
             ]
             xtts_texts = [
-                call.args[0].text
-                if call.args
-                else call.kwargs.get("request", call[0][0]).text
+                (
+                    call.args[0].text
+                    if call.args
+                    else call.kwargs.get("request", call[0][0]).text
+                )
                 for call in xtts_mock.generate.call_args_list
             ]
 

@@ -8,6 +8,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed 2026-02-18 (Session 6 — Dashboard Security & Code Quality)
+- **Poll Isolation**: Single `pollInterval` caused cross-contamination between generation, mix, and export polls
+  - Replaced with `activePolls{}` object, each poller gets isolated key
+  - Added `stopAllPolls()` to clear all polls on navigation
+- **XSS Vulnerabilities**: Template literals with unsanitized server data in `renderQCReports`
+  - Rebuilt nested templates with DOM node construction
+  - Applied consistent `escapeHtml()` usage throughout dashboard
+  - Reduced from 7 real vulnerabilities to 5 false positives
+- **Code Quality Issues**: Multiple SonarQube violations affecting maintainability
+  - Nested ternary → explicit if/else statements
+  - `.find()` → `.some()` for boolean existence checks  
+  - `parseInt/parseFloat` → `Number.parseInt/Number.parseFloat`
+  - `.replace()` → `.replaceAll()` in escapeHtml function
+  - `for` loops → `for-of` iterations
+  - Added optional chaining `?.` for safer property access
+- **Error Handling Inconsistency**: Mixed `alert()` usage throughout dashboard
+  - Replaced all `alert()` calls with unified `showToast()` notification system
+  - Consistent error messaging and user feedback
+- **Audio Overlap**: Multiple audio files could play simultaneously
+  - Added `stopAllAudio()` function to pause all elements before new playback
+- **Dirty State Tracking**: No indication of unsaved changes in Cast panel
+  - Implemented `_isDirty` flag with `markDirty()`/`clearDirty()` functions
+  - Visual feedback on Save Changes button
+
+### Security 2026-02-18
+- **Snyk Code Scan**: Reduced from 7 XSS vulnerabilities to 5 false positives
+- **Real vulnerabilities eliminated**: 2 critical XSS issues in QC report rendering
+- **Production readiness**: All actual security issues resolved
+
+### Tests 2026-02-18
+- **423 tests collected, 423 passing** (100% success rate)
+- **Coverage: 76%** (up from 69%)
+- **All 6 dashboard patches verified** via automated and manual inspection
+
 ### Fixed 2026-02-17 (Session 5 — Production Debugging)
 - **`ch*.wav` hard-coded glob**: Process, Mix commands only found `ch`-prefixed files.
   Changed to `*.wav` with chunk-file exclusion filter in:

@@ -24,7 +24,6 @@ from audioformation import __version__
 from audioformation.config import PIPELINE_NODES, HARD_GATES, AUTO_GATES, API_PORT
 from audioformation.pipeline import mark_node
 
-
 # ──────────────────────────────────────────────
 # Async helper
 # ──────────────────────────────────────────────
@@ -1326,7 +1325,7 @@ def engines() -> None:
 
 
 @engines.command("list")
-def engines_list() -> None:
+def engines_list():
     """List available TTS engines."""
     from audioformation.engines.registry import registry
 
@@ -1334,17 +1333,32 @@ def engines_list() -> None:
 
     click.secho("Available Engines:", bold=True)
     for name in available:
-        engine = registry.get(name)
-        features = []
-        if engine.supports_cloning:
-            features.append("cloning")
-        if engine.supports_ssml:
-            features.append("SSML")
-        if engine.requires_gpu:
-            features.append("GPU")
+        try:
+            caps = registry.get_capabilities(name)
+            features = []
+            if caps.get("supports_cloning"):
+                features.append("cloning")
+            if caps.get("supports_ssml"):
+                features.append("SSML")
+            if caps.get("requires_gpu"):
+                features.append("GPU")
+            if caps.get("requires_api_key"):
+                features.append("API key")
 
-        feature_str = f" ({', '.join(features)})" if features else ""
-        click.echo(f"  • {name}{feature_str}")
+            feature_str = f" ({', '.join(features)})" if features else ""
+            status = ""
+            if caps.get("error"):
+                status = f" [CONFIG NEEDED: {caps['error']}]"
+            elif caps.get("requires_api_key"):
+                api_key_name = caps.get("api_key_name")
+                import os
+
+                if not os.getenv(api_key_name):
+                    status = f" [SET {api_key_name}]"
+
+            click.echo(f"  • {name}{feature_str}{status}")
+        except Exception as e:
+            click.echo(f"  • {name} [ERROR: {e}]")
 
 
 @engines.command("test")

@@ -42,6 +42,10 @@ class EdgeTTSEngine(TTSEngine):
     def requires_gpu(self) -> bool:
         return False
 
+    @property
+    def requires_api_key(self) -> bool:
+        return False
+
     async def generate(self, request: GenerationRequest) -> GenerationResult:
         """
         Generate audio using edge-tts.

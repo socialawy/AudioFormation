@@ -1,0 +1,34 @@
+{
+  "project_id": "11",
+  "chapter_id": "test-engine",
+  "total_chunks": 1,
+  "passed": 0,
+  "warnings": 1,
+  "failures": 0,
+  "fail_rate_percent": 0.0,
+  "chunks": [
+    {
+      "chunk_id": "test-engine_000",
+      "file": "PROJECTS\\11\\03_GENERATED\\raw\\test-engine_000.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "warn",
+          "snr_db": 17.9,
+          "message": "SNR slightly below target."
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.02
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.4,
+          "target": -16.0,
+          "deviation": 4.4,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    }
+  ]
+}

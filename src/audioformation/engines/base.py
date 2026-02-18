@@ -72,6 +72,19 @@ class TTSEngine(ABC):
         """Whether this engine requires (or strongly benefits from) a GPU."""
         ...
 
+    @property
+    @abstractmethod
+    def requires_api_key(self) -> bool:
+        """Whether this engine requires an API key to function."""
+        ...
+
+    @property
+    def api_key_name(self) -> str | None:
+        """Environment variable name for the API key, if required."""
+        if self.requires_api_key:
+            return f"{self.name.upper()}_API_KEY"
+        return None
+
     @abstractmethod
     async def generate(self, request: GenerationRequest) -> GenerationResult:
         """

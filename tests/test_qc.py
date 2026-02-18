@@ -50,9 +50,11 @@ class TestScanChunk:
 
     def test_clean_audio_passes(self, clean_wav: Path, default_qc_config: dict) -> None:
         # Mock sub-checks to pass
-        with patch("audioformation.qc.scanner._check_snr") as m_snr, patch(
-            "audioformation.qc.scanner._check_clipping"
-        ) as m_clip, patch("audioformation.qc.scanner._check_lufs") as m_lufs:
+        with (
+            patch("audioformation.qc.scanner._check_snr") as m_snr,
+            patch("audioformation.qc.scanner._check_clipping") as m_clip,
+            patch("audioformation.qc.scanner._check_lufs") as m_lufs,
+        ):
 
             m_snr.return_value = {"status": "pass"}
             m_clip.return_value = {"status": "pass"}

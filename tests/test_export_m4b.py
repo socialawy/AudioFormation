@@ -41,8 +41,9 @@ def test_export_m4b_success(setup_mixed_files):
     project_id = setup_mixed_files["id"]
     output_path = setup_mixed_files["dir"] / "07_EXPORT" / "audiobook" / "book.m4b"
 
-    with patch("subprocess.run") as mock_run, patch(
-        "audioformation.export.m4b.get_duration", return_value=60.0
+    with (
+        patch("subprocess.run") as mock_run,
+        patch("audioformation.export.m4b.get_duration", return_value=60.0),
     ):
 
         mock_run.return_value.returncode = 0
@@ -89,8 +90,9 @@ def test_export_with_cover_art(setup_mixed_files):
     pj["export"]["cover_art"] = "00_CONFIG/cover.jpg"
     pj_path.write_text(json.dumps(pj), encoding="utf-8")
 
-    with patch("subprocess.run") as mock_run, patch(
-        "audioformation.export.m4b.get_duration", return_value=10.0
+    with (
+        patch("subprocess.run") as mock_run,
+        patch("audioformation.export.m4b.get_duration", return_value=10.0),
     ):
 
         mock_run.return_value.returncode = 0

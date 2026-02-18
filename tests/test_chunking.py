@@ -1,6 +1,5 @@
 """Tests for text chunking, sentence splitting, and speaker tag parsing."""
 
-
 from audioformation.utils.text import (
     split_sentences,
     split_breath_groups,

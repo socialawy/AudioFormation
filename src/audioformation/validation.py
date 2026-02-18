@@ -17,7 +17,6 @@ from typing import Any
 
 from audioformation.project import load_project_json, get_project_path
 
-
 # ──────────────────────────────────────────────
 # Schema path
 # ──────────────────────────────────────────────

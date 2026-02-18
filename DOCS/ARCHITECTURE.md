@@ -1,12 +1,9 @@
-
 # 🏭 AudioFormation — Planning/ARCHITECTURE Document
 
+> Production audio pipeline: Voice, SFX, Music, Mix, Export.
+> Companion to VideoFormation (same architecture, different domain). 
 
-## Production audio pipeline: Voice, SFX, Music, Mix, Export.
-
-Companion to VideoFormation (same architecture, different domain). 
-
-### Philosophy (Mirrors VideoFormation)
+## Philosophy (Mirrors VideoFormation)
 
 Principle	| Implementation
 -----------|---------------
@@ -17,7 +14,7 @@ Engine Agnostic	| Swap TTS/music engines without touching project files
 Hardware Aware	| Auto-detects GPU, suggests optimal engine
 Bilingual First	| Arabic + English as primary languages
 
-### Architecture
+## Architecture
 ```text
 ┌─────────────────────────────────────────────────────┐
 │                 audioformation CLI                  │
@@ -36,9 +33,9 @@ Bilingual First	| Arabic + English as primary languages
 │     Projects │ Editor │ Timeline │ Mix │ Export     │
 └─────────────────────────────────────────────────────┘
 ```
-### Five Engines
-1. VoxEngine (Voice/Narration)
-```text
+## Five Engines
+### 1. VoxEngine (Voice/Narration)
+
 Providers (priority order):
 ├── edge-tts # ✅ BUILT: Free, fast, excellent Arabic
 │ ├── Voices: ar-SA-HamedNeural, ar-EG, ar-AE-FatimaNeural, etc.
@@ -98,7 +95,6 @@ Features:
 
 AudioFormation implements automatic engine fallback to ensure robust generation:
 
-```text
 Primary: edge-tts (v7+)
 │ ├── Fast, high-quality Arabic voices
 │ ├── Free, no API key required
@@ -112,11 +108,11 @@ Fallback 1: gTTS (✅ BUILT)
 │
 Fallback 2: Cloud engines (✅ BUILT)
 │ ├── ElevenLabs (Adapter ready), OpenAI TTS, Gemini TTS (Phase 3)
-│ ├── Pay-per-use, premium quality
+│ ├── Free tier / Pay-per-use, premium quality
 │ └── Configurable API keys in 00_CONFIG/engines.json
-```
 
-Implementation:
+
+#### Implementation:
 - src/audioformation/engines/registry.py: Engine priority and fallback logic
 - src/audioformation/engines/gtts_engine.py: gTTS implementation
 - src/audioformation/engines/elevenlabs.py: ElevenLabs cloud adapter (ready for API key)
@@ -125,7 +121,9 @@ Implementation:
 
 #### Test Infrastructure & Coverage
 
-**371 tests (100% passing), all isolated and mocked:**
+**Required test coverage of 60% reached. Total coverage: 75.82%**
+- 412 passed, 11 skipped, 1 warning in 107.46s (0:01:47
+- Required test coverage of 60% reached. Total coverage: 76.32% (2026-02-18)
 
 | Characteristic | Status | Notes |
 |:---|:---|:---|
@@ -146,7 +144,7 @@ Implementation:
 
 The `direction` field in chapter schema maps to SSML parameters,
 giving edge-tts actual voice control beyond plain text.
-```text
+
 Direction Field → SSML Mapping:
 
 pace:
@@ -184,7 +182,7 @@ def direction_to_ssml(text: str, direction: dict) -> str:
 and generation parameters, not SSML (XTTS doesn't support SSML).
 Direction is engine-adaptive.
 
-2. FXForge (Sound Effects)
+### 2. FXForge (Sound Effects)
 ```text
 Modes:
 ├── Procedural       # Oscillator-based synthesis
@@ -198,8 +196,8 @@ Modes:
 │
 └── Hybrid           # Layer procedural + samples
 ```
-3. ComposeEngine (Music/Composition)
-```text
+### 3. ComposeEngine (Music/Composition)
+
 Tier 1: Ambient Pad Generator ← PHASE 2 (this is what audiobooks need)
 ├── Drone + filtered noise + LFO modulation
 ├── Mood presets: contemplative, tense, wonder, melancholy, triumph
@@ -207,26 +205,23 @@ Tier 1: Ambient Pad Generator ← PHASE 2 (this is what audiobooks need)
 ├── Pure numpy synthesis → WAV output
 └── Good enough for 90% of audiobook background needs
 
-Tier 2: Import + Process ← PHASE 3
+Tier 2: Import + Process ← **TODO**
 ├── Import royalty-free music files (WAV/MP3)
 ├── Auto-trim, fade, normalize
 ├── Loop-point detection
 ├── Catalog in 05_MUSIC/catalog.json
 └── Tag with mood/tempo/key metadata
 
-Tier 3: Algorithmic Composition ← PHASE 4 (only if Tier 1+2 insufficient)
+Tier 3: Algorithmic Composition ← PHASE 5 and future (only if Tier 1+2 insufficient)
 ├── Constrained grammar + heavy preset library
 ├── Scale/key-aware generation
 ├── MIDI export for external refinement
 ├── Consider FishAudio-S1 or IndexTTS integration if mature by then
 └── NOT in v1.0 scope — code exists from prototypes, park it
+**Proposed: Loco-tunes integration (My new app)** **TODO**
 
-NOTE: Pure algorithmic music without heavy presets & rules sounds
-immediately recognizable as "AI slop." Ambient pads are the honest
-path for audiobook production. Saving composition ambitions for v2.0.
-```
-4. MixBus (Mixing/Layering)
-```text
+### 4. MixBus (Mixing/Layering)
+
 Features:
 ├── Multi-track timeline (voice + SFX + music)
 ├── Per-track volume, pan, fade in/out
@@ -243,17 +238,17 @@ Features:
 │ ├── Attenuation: -12 dB default (configurable)
 │ └── Output: gain-envelope applied to music track before mix
 └── Preview before export
-```
-5. ShipIt (Export)
-```text
-Formats:
+
+### 5. ShipIt (Export)
+
+#### Formats:
 ├── WAV (lossless, production master)
 ├── MP3 (distribution, configurable bitrate via ffmpeg)
 ├── FLAC (lossless compressed, archival)
 ├── M4B (audiobook with chapter markers) ← PRIMARY FORMAT
-└── MIDI (from ComposeEngine, if used)
+└── MIDI (from ComposeEngine)
 
-M4B Audiobook Pipeline (ffmpeg + mutagen):
+#### M4B Audiobook Pipeline (ffmpeg + mutagen):
 ├── 1. Validate cover art
 │ Required: JPEG or PNG
 │ Dimensions: 1400×1400 minimum, 3000×3000 maximum
@@ -281,9 +276,9 @@ M4B Audiobook Pipeline (ffmpeg + mutagen):
 ├── 7. Embed cover art + ID3 tags via mutagen
 │
 └── 8. Generate manifest.json with SHA256 checksums per file
-```
 
-## Project Structure
+
+## New Project Structure
 ```text
 PROJECTS/
 └── MY_NOVEL_2026/
@@ -376,7 +371,7 @@ Bootstrap creates `.gitignore` in every project:
 !**/.gitkeep
 ```
 
-Port Assignments
+#### Port Assignments
 ```text
 AudioFormation Dashboard:  localhost:4001
 AudioFormation API:        localhost:4001
@@ -486,8 +481,6 @@ VideoFormation API:        localhost:3001
 | 0–8 | All nodes | ✅ BUILT + E2E VERIFIED | Full pipeline tested end-to-end Feb 17, 2026 |
 
 ## Tech Stack
-```text
-## Tech Stack
 
 | Layer | Technology | Why | Verified Status (Feb 2026) |
 |---|---|---|---|
@@ -507,9 +500,8 @@ VideoFormation API:        localhost:3001
 | Dashboard | Vanilla HTML/JS | Zero build step, portable | ✅ No dependencies |
 | Packaging | PyInstaller (primary), Nuitka (benchmark later) | .exe distribution | ✅ PyInstaller safest for ML+audio stack. Nuitka faster startup if needed |
 | Testing | pytest | Standard Python testing | ✅ Stable |
-```
 
-## Dependency Install (Reference)
+### Dependency Install (Reference)
 
 ```bash
 pip install click fastapi uvicorn pydub edge-tts coqui-tts httpx mishkal
@@ -518,7 +510,7 @@ pip install pytest httpx[test]
 # System: ffmpeg must be on PATH
 ```
 
-## Version Pinning Strategy
+### Version Pinning Strategy
 Pin coqui-tts and silero-vad explicitly in pyproject.toml.
 These are community-maintained — treat as "stable but not guaranteed long-term."
 All other dependencies are mature ecosystem packages with standard semver.
@@ -584,7 +576,7 @@ preview	Generate first 30s (default) of a chapter with current settings. Essenti
 compare	A/B generate same text with different engines → outputs to 03_GENERATED/compare/ for listening
 --dry-run	Estimate time, chunks, API calls, cost. No generation. Uses current project.json to calculate
 echo ... | quick	Stdin support for scripting and quick tests
-
+```
 ## project.json Schema (Core)
 
 ```json
@@ -736,7 +728,7 @@ parsing is Phase 2. Schema supports both from day one.
 }
 ```
 
-**Implementation Details:**
+### **Implementation Details:**
 - **Per-segment character resolution**: Each `[speaker_id]` tag routes to specific character → engine → voice
 - **Engine tracking**: Tracks all engines used per chapter for proper VRAM cleanup
 - **Fallback handling**: Unknown characters fall back to chapter default engine
@@ -818,14 +810,13 @@ For XTTS:
 └── Always split at language boundary for XTTS
 
 ### Dialect-Voice Matching
-```text
 project.json per-character field:
-
+```json
 "narrator": {
 "dialect": "msa", ← msa | eg | sa | ae | lb | ...
 "voice": "ar-SA-HamedNeural"
 }
-
+```
 Validate gate:
 ├── WARN if dialect=eg but voice=ar-SA-*
 ├── WARN if dialect=sa but voice=ar-EG-*
@@ -837,7 +828,6 @@ Dialect mapping for edge-tts voices:
 ├── eg → ar-EG-SalmaNeural / ar-EG-ShakirNeural
 ├── ae → ar-AE-FatimaNeural / ar-AE-HamdanNeural
 └── (extensible in engines.json)
-```
 
 ### Implementation Location
 src/audioformation/utils/arabic.py:
@@ -886,7 +876,7 @@ src/audioformation/generate.py:
 files. Just [speaker_id] on its own line. Easy to write,
 easy to parse, easy to read in any text editor.*
 
-### Pipeline Status Tracking (Chunk-Level Resumability)
+## Pipeline Status Tracking (Chunk-Level Resumability)
 
 `pipeline-status.json` tracks state at **chunk level** for Generate,
 not just node level. If generation crashes at chapter 22, chunk 15,
@@ -923,13 +913,12 @@ it resumes from exactly there.
   }
 }
 ```
-- Resume behavior:
+### Resume behavior:
 
-
-Long audiobook runs (hundreds of chunks) cause PyTorch VRAM
+- Long audiobook runs (hundreds of chunks) cause PyTorch VRAM
 fragmentation. Explicit management strategy:
 
-Strategies (configurable in generation config):
+#### Strategies (configurable in generation config):
 
 "empty_cache_per_chapter" (default, recommended):
 ├── Keep model loaded for entire run
@@ -961,7 +950,7 @@ Skips chapters with "complete" status
 Resumes partial chapters from chunks_done + 1
 Re-validates completed chapters' output files exist (in case of file deletion)
 
-#### Ducking Config
+ Ducking Config
 
 ```json
 "ducking": {
@@ -989,189 +978,39 @@ at near-full volume. Set "frequency_aware": true to enable.
 v1.0 uses simple gain ducking. v1.1 adds the filter approach.
 Schema supports both now. Not using frequency-aware ducking by default.
 
-## Implementation Phases
+--
 
-### Phase 1: Foundation + First Audio Output 
-Status:  - All deliverables implemented, 218/218 tests passing (at Phase 1 completion)
-
-├── Project scaffolding (CLI: new, list, status)
-├── project.json schema + validation (jsonschema)
-├── Folder structure creation (00_CONFIG through 07_EXPORT)
-├── Hardware detection (GPU name, VRAM, CUDA availability)
-├── Text ingestion (plain text + encoding detection)
-├── Edge TTS integration (generate per-chapter)
-├── LUFS measurement on every generated file (pyloudnorm)
-├── Basic QC scan (SNR, clipping, duration sanity)
-├── qc_report.json output
-├── MP3 export (pydub + ffmpeg)
-├── pytest setup with fixtures
-├── Test with Arabic text FIRST (harder case validates easier)
-├── gTTS fallback engine integration
-├── edge-tts v7 upgrade for DRM token fix
-└── Engine fallback chain (edge-tts → gTTS)
-
-### Phase 2: XTTS + Characters + Processing
-Status: **Completed** 
-Deliverable: Voice-cloned narration with consistent quality
-
-├── ✅ XTTS v2 integration (coqui-tts, Idiap fork)
-├── ✅ Aggressive chunking (breath-group strategy)
-├── ✅ Character profile system (JSON-driven)
-├── ✅ Voice cloning workflow (reference audio → XTTS)
-├── ✅ Cloud API adapter (httpx, abstract interface)
-├── ✅ Crossfade stitching (Smart overrides: Edge 120ms, XTTS 80ms)
-├── ✅ Engine fallback scope (Per-chapter logic implemented)
-├── ✅ Arabic diacritics preprocessing (Mishkal integration)
-├── ✅ Multi-speaker dialogue (per-segment character resolution)
-├── ✅ Ambient pad generator (Numpy synthesis, mood presets)
-├── ✅ Batch normalization (ffmpeg loudnorm filter)
-└── ✅ Per-chunk retry logic on QC failure
-
-### Phase 3: Mix + Export + Dashboard
-Status: **Completed** All deliverables implemented, 371/371 tests passing 
-Deliverable: Full audiobook with chapters, mixed and exported
-
-├── ✅ Ambient pad generator (numpy synthesis, mood presets)
-├── ✅ Music/SFX import + catalog
-├── ✅ Multi-track mixer (voice + music layers)
-├── ✅ VAD-based ducking (silero-vad trigger + gain envelope)
-├── ✅ Chapter assembly (ordered concatenation)
-├── ✅ QC Final gate (LUFS, true-peak, gaps, clipping)
-├── ✅ M4B export (ffmpeg + ffmetadata chapters)
-├── ✅ Cover art + ID3 metadata (mutagen)
-├── ✅ Manifest with SHA256 checksums
-├── ✅ FastAPI server + REST endpoints
-├── ✅ Web dashboard (vanilla HTML/JS, project browser + timeline)
-└── ✅ Full test suite + documentation
-**Dashboard: Timeline View**
-Integrated `wavesurfer.js` for mix timeline.
-Single dependency, gives interactive waveform display, makes the
-mix step dramatically more intuitive than abstract timeline blocks.
-Dashboard tabs:
-├── Projects (list, create, status overview)
-├── Editor (project.json, text files)
-├── Timeline (wavesurfer.js waveform per track)
-├── Mix (volume sliders, ducking preview, layer toggle)
-└── Export (format selection, cover art preview, progress)
-
-### Phase 4: Polish + Distribution
-Status: **In Progress**
-
-Completed:
-├── ✅ Dashboard v2 (all 6 sub-phases: 4a–4f)
-├── ✅ Export view + download links
-├── ✅ QC dashboard (basic list view)
-├── ✅ Cast panel + engine/voice dropdowns
-├── ✅ Direction dropdowns (SSML-mapped)
-├── ✅ Pipeline stepper + hardware panel
-├── ✅ Mix controls (ducking params)
-├── ✅ "Run From" dropdown (resume from any step)
-├── ✅ Assets tab (SFX + Music generation)
-└── ✅ First M4B audiobook export verified
-
-Remaining:
-├── Server test coverage (routes.py: 0% → 60%+)
-├── Cast UI engine adaptation (hide/show per engine type)
-├── Console 404 noise suppression
-├── PyInstaller packaging (.exe)
-└── Loco-Tunes integration (ComposeEngine Tier 3 — separate app, file-system handshake)
-
-### Handover Document Structure
-```text
-audioformation/
-├── README.md
-├── ARCHITECTURE.md
-├── BUILD_LOG.md
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-├── pyproject.toml
-│
-├── src/audioformation/
-│   ├── __init__.py
-│   ├── __main__.py
-│   ├── cli.py
-│   ├── config.py
-│   ├── project.py
-│   ├── pipeline.py
-│   ├── validation.py
-│   ├── ingest.py
-│   ├── generate.py
-│   ├── mix.py
-│   │
-│   ├── engines/
-│   │   ├── base.py            # Abstract engine interface
-│   │   ├── registry.py        # Engine discovery + fallback
-│   │   ├── edge_tts.py        # + SSML direction mapping
-│   │   ├── gtts_engine.py     # Emergency fallback
-│   │   ├── xtts.py            # Voice cloning + VRAM management
-│   │   ├── elevenlabs.py      # Cloud premium TTS
-│   │   └── cloud.py           # Generic cloud adapter
-│   │
-│   ├── audio/
-│   │   ├── processor.py       # Normalize, trim, LUFS, batch process
-│   │   ├── mixer.py           # Multi-track + VAD ducking
-│   │   ├── composer.py        # Ambient pad generator (5 presets)
-│   │   ├── sfx.py             # Procedural SFX (whoosh, impact, click, drone)
-│   │   └── synthesis.py       # Low-level oscillator/noise primitives
-│   │
-│   ├── qc/
-│   │   ├── scanner.py         # Per-chunk QC (Node 3.5)
-│   │   ├── final.py           # Final mix QC (Node 7)
-│   │   └── report.py          # qc_report.json generation
-│   │
-│   ├── export/
-│   │   ├── mp3.py             # MP3/WAV export
-│   │   ├── m4b.py             # M4B + ffmetadata + cover art
-│   │   └── metadata.py        # Manifest + SHA256 checksums
-│   │
-│   ├── server/
-│   │   ├── app.py             # FastAPI entry + static mounts
-│   │   ├── routes.py          # 15 REST endpoints
-│   │   └── static/            # Dashboard HTML/JS/CSS
-│   │
-│   └── utils/
-│       ├── arabic.py          # Diacritics, language detection, Mishkal
-│       ├── text.py            # Chunking, speaker tags, splitting
-│       ├── hardware.py        # GPU/VRAM detection + strategy
-│       └── security.py        # Sanitization, path validation
-│
-├── tests/                     # 371 tests, 26 test files
-│   ├── conftest.py
-│   ├── test_arabic.py
-│   ├── test_chunking.py
-│   ├── test_cli_cast.py
-│   ├── test_cli_compose.py
-│   ├── test_cli_mix.py
-│   ├── test_cli_preview.py
-│   ├── test_composer.py
-│   ├── test_engines.py
-│   ├── test_export.py
-│   ├── test_export_m4b.py
-│   ├── test_ingest.py
-│   ├── test_mix_unit.py
-│   ├── test_mixer.py
-│   ├── test_multispeaker.py
-│   ├── test_pipeline.py
-│   ├── test_processor.py
-│   ├── test_project.py
-│   ├── test_qc.py
-│   ├── test_qc_final.py
-│   ├── test_security.py
-│   ├── test_server.py
-│   ├── test_sfx.py
-│   ├── test_validation.py
-│   └── test_xtts.py
-│
-├── schemas/
-│   └── project.schema.json
-│
-└── docs/
-```
-
-### Future Engine Candidates (Monitor, Not Adopted Yet)
+## Future Engine Candidates (Monitor, Not Adopted Yet)
 
 | Engine | Promise | Status Feb 2026 | Action |
 |---|---|---|---|
 | FishAudio-S1 | Strong multilingual cloning + emotion | Promising, not mature | Test in Phase 4 |
 | IndexTTS | XTTS successor candidate, better naturalness | Paper stage, limited adoption | Monitor |
 | MeloTTS | Fast CPU inference, multilingual | Weaker voice cloning | Skip unless cloning not needed |
+
+--
+
+## Notes:
+✅ CLI Engine List Command Fix - Logged
+All actions successfully documented in memory:
+
+Problem Resolved:
+audioformation engines list command crashed when ElevenLabs API key was missing
+Root cause: CLI tried to instantiate engines to check capabilities
+Solution Implemented:
+Added requires_api_key property to TTSEngine base class
+Implemented capability checking without instantiation via get_capabilities()
+Enhanced CLI to show configuration status gracefully
+Updated all engine classes with API key requirements
+Files Modified:
+base.py - Added abstract properties
+registry.py - Added capability checking method
+cli.py - Updated engines list command
+All engine files - Added requires_api_key implementation
+Result:
+Available Engines:
+  - edge (SSML)
+  - elevenlabs (cloning, API key) [CONFIG NEEDED: API key required]
+  - gtts
+  - xtts (cloning)
+Memory entry created with complete technical details, file changes, and benefits for future reference.

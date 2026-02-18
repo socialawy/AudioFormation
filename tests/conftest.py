@@ -41,6 +41,7 @@ for mod_name in MODULES_TO_MOCK:
 
         if mod_name == "edge_tts":
             mock_mod.Communicate = MagicMock()
+
             # Communicate.save needs to act awaitable and create file with content
             async def _save(path):
                 p = Path(path)
@@ -171,8 +172,8 @@ for mod_name in MODULES_TO_MOCK:
             def _tashkeel(text):
                 if isinstance(text, str):
                     # Append a Fatha (U+064E) to ensure detection sees it as diacritized
-                    return text + "\u064E"
-                return "diacritized_text\u064E"
+                    return text + "\u064e"
+                return "diacritized_text\u064e"
 
             mock_tashkeel_inst.tashkeel.side_effect = _tashkeel
             mock_mod.TashkeelClass.return_value = mock_tashkeel_inst
@@ -421,10 +422,12 @@ def client():
     try:
         # Add src to path for imports
         import sys
+
         sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
-        
+
         from audioformation.server.app import app
         from fastapi.testclient import TestClient
+
         return TestClient(app)
     except (ImportError, ModuleNotFoundError) as e:
         pytest.skip(f"Server dependencies not available: {e}")

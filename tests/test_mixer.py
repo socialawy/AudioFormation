@@ -78,8 +78,10 @@ def mock_torch():
     """Mock torch and hub for VAD."""
     # Import here to ensure we patch before any other imports
     import audioformation.audio.mixer
-    
-    with patch.object(audioformation.audio.mixer, 'torch', new=MagicMock()) as mock_torch:
+
+    with patch.object(
+        audioformation.audio.mixer, "torch", new=MagicMock()
+    ) as mock_torch:
         # Setup hub.load to return (model, utils)
         mock_model = MagicMock()
         mock_utils = [MagicMock()]  # get_speech_timestamps
@@ -92,7 +94,7 @@ def mock_torch():
 
         mock_torch.hub.load.return_value = (mock_model, mock_utils)
         mock_torch.from_numpy.return_value = MagicMock()
-        
+
         # Reset the SILERO_AVAILABLE flag
         audioformation.audio.mixer.SILERO_AVAILABLE = True
 
@@ -128,7 +130,7 @@ class TestAudioMixer:
         """If torch fails to load, fallback to energy."""
         # Import the actual torch from the mixer module to check if it's None
         from audioformation.audio.mixer import torch as mixer_torch
-        
+
         if mixer_torch is None:
             # If torch is None, the method should automatically fallback
             mixer = AudioMixer({})
@@ -137,8 +139,10 @@ class TestAudioMixer:
             assert mixer._vad_model is None
         else:
             # If torch is available, mock the hub.load to fail
-            with patch("audioformation.audio.mixer.torch.hub.load",
-                      side_effect=Exception("Network error")):
+            with patch(
+                "audioformation.audio.mixer.torch.hub.load",
+                side_effect=Exception("Network error"),
+            ):
                 mixer = AudioMixer({})
                 mixer._ensure_vad_model()
                 assert mixer.method == "energy"

@@ -23,6 +23,7 @@ const app = {
     availableEngines: [],
     voiceCache: {},
     activeUploadCid: null,
+    _isDirty: false,          // PATCH 3: tracks unsaved in-memory changes
 
     init() {
         this.initToastContainer(); // PATCH 2: toast system
@@ -170,6 +171,7 @@ const app = {
             this.currentProject = id;
             this.currentData = await projRes.json();
             this.currentStatus = statRes.ok ? await statRes.json() : null;
+            this.clearDirty(); // PATCH 3: fresh load = no unsaved changes
 
             this.renderOverview();
             this.renderCast();
@@ -294,7 +296,7 @@ const app = {
                     const selected = (v.id === char.voice) ? 'selected' : '';
                     voiceOpts += `<option value="${this.escapeHtml(v.id)}" ${selected}>${this.escapeHtml(v.name)} (${this.escapeHtml(v.gender)})</option>`;
                 });
-                if (char.voice && !voices.find(v => v.id === char.voice)) {
+                if (char.voice && !voices.some(v => v.id === char.voice)) {
                     voiceOpts += `<option value="${this.escapeHtml(char.voice)}" selected>${this.escapeHtml(char.voice)} (Current)</option>`;
                 }
                 voiceSectionHtml = `
@@ -326,7 +328,7 @@ const app = {
                     const selected = (v.id === char.voice) ? 'selected' : '';
                     voiceOpts += `<option value="${this.escapeHtml(v.id)}" ${selected}>${this.escapeHtml(v.name)} (${this.escapeHtml(v.gender)})</option>`;
                 });
-                if (char.voice && !voices.find(v => v.id === char.voice)) {
+                if (char.voice && !voices.some(v => v.id === char.voice)) {
                     voiceOpts += `<option value="${this.escapeHtml(char.voice)}" selected>${this.escapeHtml(char.voice)} (Current)</option>`;
                 }
                 voiceSectionHtml = `
@@ -377,34 +379,83 @@ const app = {
     async updateCharacter(cid, field, value) {
         if (!this.currentData.characters[cid]) return;
         this.currentData.characters[cid][field] = value;
+
         if (field === 'engine') {
+            // Engine change: must save + re-render immediately (voice reset, UI rebuild)
             this.currentData.characters[cid].voice = '';
             await this.saveProject();
             this.renderCast();
         } else {
-            await this.saveProject();
+            // All other fields (voice, dialect, persona): update in memory only.
+            // The manual "Save Changes" button will persist. No race conditions.
+            this.markDirty();
         }
     },
 
     async removeCharacter(cid) {
-        if (!confirm(`Remove character ${cid}?`)) return;
+        // PATCH 6: replace confirm() with toast-based undo pattern
         delete this.currentData.characters[cid];
         await this.saveProject();
         this.renderCast();
+        this.showToast(`Character "${cid}" removed. Save Changes to persist.`, 'info');
     },
 
     async addCharacter() {
-        const id = prompt("Character ID (e.g. hero):");
-        if (!id) return;
-        if (this.currentData.characters && this.currentData.characters[id]) {
-            alert("ID already exists.");
-            return;
+        // PATCH 6: inline form instead of prompt()
+        const castList = document.getElementById('cast-list');
+        // Prevent adding multiple forms
+        if (document.getElementById('add-char-form')) return;
+
+        const form = document.createElement('div');
+        form.id = 'add-char-form';
+        form.className = 'cast-item';
+        form.style.cssText = 'border: 1px dashed var(--accent); background: var(--bg-hover);';
+        form.innerHTML = `
+            <div style="display:flex; gap:0.75rem; align-items:flex-end; flex-wrap:wrap;">
+                <div class="form-group" style="flex:1; min-width:120px;">
+                    <label>Character ID</label>
+                    <input id="new-char-id" type="text" placeholder="e.g. hero" autocomplete="off">
+                </div>
+                <div class="form-group" style="flex:2; min-width:160px;">
+                    <label>Display Name</label>
+                    <input id="new-char-name" type="text" placeholder="e.g. The Hero" autocomplete="off">
+                </div>
+                <div style="display:flex; gap:0.5rem; padding-bottom:0.25rem;">
+                    <button class="btn small success" onclick="app._submitAddCharacter()">Add</button>
+                    <button class="btn small" onclick="document.getElementById('add-char-form').remove()">Cancel</button>
+                </div>
+            </div>`;
+        castList.prepend(form);
+        document.getElementById('new-char-id').focus();
+
+        // Allow Enter key to submit
+        form.addEventListener('keydown', e => { if (e.key === 'Enter') this._submitAddCharacter(); });
+    },
+
+    async _submitAddCharacter() {
+        const idInput = document.getElementById('new-char-id');
+        const nameInput = document.getElementById('new-char-name');
+        if (!idInput) return;
+
+        const id = idInput.value.trim();
+        const name = nameInput.value.trim();
+
+        if (!id) { this.showToast('Character ID is required.', 'error'); idInput.focus(); return; }
+        if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+            this.showToast('ID must be alphanumeric (underscores/hyphens ok).', 'error');
+            idInput.focus(); return;
         }
-        const name = prompt("Display Name:");
+        if (this.currentData.characters && this.currentData.characters[id]) {
+            this.showToast('That ID already exists.', 'error');
+            idInput.focus(); return;
+        }
+
         if (!this.currentData.characters) this.currentData.characters = {};
         this.currentData.characters[id] = { name: name || id, engine: "edge", voice: "", dialect: "msa" };
+        document.getElementById('add-char-form')?.remove();
         await this.saveProject();
         this.renderCast();
+        this.showToast(`Character "${id}" added.`, 'success');
     },
 
     triggerRefUpload(cid) {
@@ -487,7 +538,7 @@ const app = {
         document.getElementById('conf-silence').value = gen.leading_silence_ms || 100;
         document.getElementById('conf-fallback-scope').value = gen.fallback_scope || 'chapter';
         document.getElementById('conf-xtts-temp').value = gen.xtts_temperature || 0.7;
-        document.getElementById('conf-xtts-rep').value = gen.xtts_repetition_penalty || 5.0;
+        document.getElementById('conf-xtts-rep').value = gen.xtts_repetition_penalty || 5;
         document.getElementById('conf-xtts-vram').value = gen.xtts_vram_management || 'empty_cache_per_chapter';
         const mix = this.currentData.mix || {};
         document.getElementById('conf-lufs').value = mix.target_lufs || -16.0;
@@ -498,19 +549,15 @@ const app = {
         const d = this.currentData;
         const s = this.currentStatus;
         const chList = document.getElementById('chapter-list');
-        chList.innerHTML = '';
-        (d.chapters || []).forEach((ch, idx) => {
-            const row = document.createElement('div');
-            row.className = 'list-item';
-            if (this.selectedChapterIndex === idx) row.classList.add('active');
 
+        (d.chapters || []).forEach((ch, idx) => {
+            const chapterId = ch.id;
             let status = 'pending';
-            if (s?.nodes?.generate?.chapters) {
-                const chStat = s.nodes.generate.chapters[ch.id];
-                if (chStat) status = chStat.status;
+            if (s?.nodes?.generate?.chapters?.[chapterId]) {
+                status = s.nodes.generate.chapters[chapterId].status;
             }
 
-            const safeId = this.escapeHtml(ch.id);
+            const safeId = this.escapeHtml(chapterId);
             const actions = `
                 <div class="action-buttons">
                     <button class="btn small" onclick="app.selectChapter(${idx})">Edit</button>
@@ -518,14 +565,38 @@ const app = {
                     ${status === 'complete' ? `<button class="btn small" onclick="event.stopPropagation(); app.playChapter('${safeId}')">&#9654; Play</button>` : ''}
                 </div>`;
 
-            row.innerHTML = `
-                <span>${safeId}</span>
-                <span>${this.escapeHtml(ch.title || '')}</span>
-                <span>${this.escapeHtml(ch.language || '')}</span>
-                <span><span class="status-badge ${status}">${status}</span></span>
-                <span>${actions}</span>`;
-            row.onclick = () => this.selectChapter(idx);
-            chList.appendChild(row);
+            // PATCH 5: diff-update — find existing row and only update dynamic cells
+            let row = chList.querySelector(`[data-chapter-id="${safeId}"]`);
+            if (!row) {
+                // First render or new chapter — build full row
+                row = document.createElement('div');
+                row.className = 'list-item';
+                row.dataset.chapterId = chapterId;
+                row.innerHTML = `
+                    <span>${safeId}</span>
+                    <span>${this.escapeHtml(ch.title || '')}</span>
+                    <span>${this.escapeHtml(ch.language || '')}</span>
+                    <span class="col-status"></span>
+                    <span class="col-actions"></span>`;
+                row.onclick = () => this.selectChapter(idx);
+                chList.appendChild(row);
+            }
+
+            // Always update active class
+            row.classList.toggle('active', this.selectedChapterIndex === idx);
+
+            // Only touch DOM if values actually changed (avoids reflow)
+            const statusCell = row.querySelector('.col-status');
+            const actionsCell = row.querySelector('.col-actions');
+            const newStatusHtml = `<span class="status-badge ${status}">${status}</span>`;
+            const newActionsHtml = actions;
+            if (statusCell.innerHTML !== newStatusHtml) statusCell.innerHTML = newStatusHtml;
+            if (actionsCell.innerHTML !== newActionsHtml) actionsCell.innerHTML = newActionsHtml;
+        });
+
+        // Remove rows for deleted chapters
+        chList.querySelectorAll('[data-chapter-id]').forEach(row => {
+            if (!(d.chapters || []).some(ch => ch.id === row.dataset.chapterId)) row.remove();
         });
 
         if (this.selectedChapterIndex === -1) {
@@ -589,18 +660,18 @@ const app = {
     updateDataFromForm() {
         if (!this.currentData.generation) this.currentData.generation = {};
         const gen = this.currentData.generation;
-        gen.chunk_max_chars = parseInt(document.getElementById('conf-chunk-chars').value);
-        gen.crossfade_ms = parseInt(document.getElementById('conf-crossfade').value);
+        gen.chunk_max_chars = Number.parseInt(document.getElementById('conf-chunk-chars').value);
+        gen.crossfade_ms = Number.parseInt(document.getElementById('conf-crossfade').value);
         gen.chunk_strategy = document.getElementById('conf-strategy').value;
-        gen.fail_threshold_percent = parseFloat(document.getElementById('conf-fail-thresh').value);
-        gen.leading_silence_ms = parseInt(document.getElementById('conf-silence').value);
+        gen.fail_threshold_percent = Number.parseFloat(document.getElementById('conf-fail-thresh').value);
+        gen.leading_silence_ms = Number.parseInt(document.getElementById('conf-silence').value);
         gen.fallback_scope = document.getElementById('conf-fallback-scope').value;
-        gen.xtts_temperature = parseFloat(document.getElementById('conf-xtts-temp').value);
-        gen.xtts_repetition_penalty = parseFloat(document.getElementById('conf-xtts-rep').value);
+        gen.xtts_temperature = Number.parseFloat(document.getElementById('conf-xtts-temp').value);
+        gen.xtts_repetition_penalty = Number.parseFloat(document.getElementById('conf-xtts-rep').value);
         gen.xtts_vram_management = document.getElementById('conf-xtts-vram').value;
         if (!this.currentData.mix) this.currentData.mix = {};
-        this.currentData.mix.target_lufs = parseFloat(document.getElementById('conf-lufs').value);
-        this.currentData.mix.master_volume = parseFloat(document.getElementById('conf-vol').value);
+        this.currentData.mix.target_lufs = Number.parseFloat(document.getElementById('conf-lufs').value);
+        this.currentData.mix.master_volume = Number.parseFloat(document.getElementById('conf-vol').value);
     },
 
     renderJson() {
@@ -620,6 +691,29 @@ const app = {
         if (targetTab === 'assets') this.fetchAssets();
     },
 
+    // PATCH 3: Dirty state — marks unsaved in-memory changes from Cast panel
+    markDirty() {
+        if (this._isDirty) return; // already marked
+        this._isDirty = true;
+        const btn = document.getElementById('btn-save');
+        if (btn) {
+            btn.classList.add('dirty');
+            btn.title = 'You have unsaved changes';
+            // Prepend dot indicator if not already there
+            if (!btn.innerText.startsWith('●')) btn.innerText = '● ' + btn.innerText;
+        }
+    },
+
+    clearDirty() {
+        this._isDirty = false;
+        const btn = document.getElementById('btn-save');
+        if (btn) {
+            btn.classList.remove('dirty');
+            btn.title = '';
+            btn.innerText = btn.innerText.replace(/^● /, '');
+        }
+    },
+
     async saveProject() {
         try {
             this.updateDataFromForm();
@@ -628,7 +722,9 @@ const app = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(this.currentData)
             });
-            if (!res.ok) {
+            if (res.ok) {
+                this.clearDirty(); // PATCH 3: clear indicator on successful save
+            } else {
                 const err = await res.json();
                 this.showToast(`Error saving: ${err.detail}`, 'error');
             }
@@ -706,13 +802,13 @@ const app = {
             title: document.getElementById('meta-title').value,
             author: document.getElementById('meta-author').value,
             narrator: document.getElementById('meta-narrator').value,
-            year: parseInt(document.getElementById('meta-year').value),
+            year: Number.parseInt(document.getElementById('meta-year').value),
         };
         await this.saveProject();
         const fmt = document.getElementById('export-format').value;
         let bitrate = 192;
-        if (fmt === 'mp3') bitrate = parseInt(document.getElementById('export-bitrate').value);
-        else if (fmt === 'm4b') bitrate = parseInt(document.getElementById('export-aac-bitrate').value);
+        if (fmt === 'mp3') bitrate = Number.parseInt(document.getElementById('export-bitrate').value);
+        else if (fmt === 'm4b') bitrate = Number.parseInt(document.getElementById('export-aac-bitrate').value);
         const statusPanel = document.getElementById('export-status-panel');
         const statusText = document.getElementById('export-status-text');
         const statusMsg = document.getElementById('export-status-msg');
@@ -778,36 +874,60 @@ const app = {
     renderQCReports(reports) {
         const container = document.getElementById('qc-reports-container');
         container.innerHTML = '';
+
         if (reports.final_qc) {
             const final = reports.final_qc;
             const el = document.createElement('div');
             el.className = 'card';
-            // FIX P1 XSS: filenames and messages escaped
-            el.innerHTML = `
-                <h3>QC Final Report</h3>
-                <div style="display:flex; gap:2rem; margin-bottom:1rem;">
-                    <div>Passed: ${final.passed ? '\u2705 YES' : '\u274C NO'}</div>
-                    <div>Files: ${final.total_files}</div>
-                    <div>Failures: ${final.failed_files}</div>
-                </div>
-                ${final.results.map(r => `
-                    <div style="margin-top:0.5rem; padding:0.5rem; background:#333; border-radius:4px; border-left:4px solid ${r.status==='pass'?'#10b981':'#ef4444'}">
-                        <strong>${this.escapeHtml(r.filename)}</strong>: LUFS ${r.lufs.toFixed(1)} | TP ${r.true_peak.toFixed(1)}
-                        ${r.messages.length > 0 ? `<div style="color:#ef4444; font-size:0.9rem;">${r.messages.map(m => this.escapeHtml(m)).join('<br>')}</div>` : ''}
-                    </div>`).join('')}`;
+
+            const header = document.createElement('h3');
+            header.textContent = 'QC Final Report';
+            el.appendChild(header);
+
+            const summary = document.createElement('div');
+            summary.style.cssText = 'display:flex; gap:2rem; margin-bottom:1rem;';
+            summary.innerHTML = `<div>Passed: ${final.passed ? '\u2705 YES' : '\u274C NO'}</div>
+                <div>Files: ${Number(final.total_files)}</div>
+                <div>Failures: ${Number(final.failed_files)}</div>`;
+            el.appendChild(summary);
+
+            // SonarQube S4624: no nested template literals — build each result row via DOM
+            (final.results || []).forEach(r => {
+                const row = document.createElement('div');
+                row.style.cssText = `margin-top:0.5rem; padding:0.5rem; background:#333; border-radius:4px; border-left:4px solid ${r.status === 'pass' ? '#10b981' : '#ef4444'}`;
+                const rowText = document.createElement('div');
+                // Numbers from API — safe to interpolate directly; strings are escaped
+                rowText.innerHTML = `<strong>${this.escapeHtml(r.filename)}</strong>: LUFS ${Number(r.lufs).toFixed(1)} | TP ${Number(r.true_peak).toFixed(1)}`;
+                row.appendChild(rowText);
+                if (r.messages && r.messages.length > 0) {
+                    const msgs = document.createElement('div');
+                    msgs.style.cssText = 'color:#ef4444; font-size:0.9rem; margin-top:0.25rem;';
+                    // Build message nodes — no innerHTML with untrusted data
+                    r.messages.forEach((m, i) => {
+                        if (i > 0) msgs.appendChild(document.createElement('br'));
+                        msgs.appendChild(document.createTextNode(m));
+                    });
+                    row.appendChild(msgs);
+                }
+                el.appendChild(row);
+            });
             container.appendChild(el);
         }
+
         if (reports.chunk_qc && reports.chunk_qc.length > 0) {
             const latest = reports.chunk_qc[reports.chunk_qc.length - 1];
             const el = document.createElement('div');
             el.className = 'card';
-            el.innerHTML = `
-                <h3>Latest Chunk Scan</h3>
-                <div style="display:flex; gap:2rem;">
-                    <div>Fail Rate: ${latest.fail_rate_percent}%</div>
-                    <div>Chunks: ${latest.total_chunks}</div>
-                    <div>Failures: ${latest.failures}</div>
-                </div>`;
+            const h = document.createElement('h3');
+            h.textContent = 'Latest Chunk Scan';
+            el.appendChild(h);
+            const stats = document.createElement('div');
+            stats.style.cssText = 'display:flex; gap:2rem;';
+            // All numeric values — safe direct interpolation
+            stats.innerHTML = `<div>Fail Rate: ${Number(latest.fail_rate_percent)}%</div>
+                <div>Chunks: ${Number(latest.total_chunks)}</div>
+                <div>Failures: ${Number(latest.failures)}</div>`;
+            el.appendChild(stats);
             container.appendChild(el);
         }
     },
@@ -871,7 +991,7 @@ const app = {
 
     async generateSFX() {
         const type = document.getElementById('sfx-type').value;
-        const duration = parseFloat(document.getElementById('sfx-duration').value);
+        const duration = Number.parseFloat(document.getElementById('sfx-duration').value);
         try {
             const res = await fetch(`${API_BASE}/projects/${this.currentProject}/sfx`, {
                 method: 'POST',
@@ -885,7 +1005,7 @@ const app = {
 
     async composeMusic() {
         const preset = document.getElementById('music-preset').value;
-        const duration = parseFloat(document.getElementById('music-duration').value);
+        const duration = Number.parseFloat(document.getElementById('music-duration').value);
         try {
             const res = await fetch(`${API_BASE}/projects/${this.currentProject}/compose`, {
                 method: 'POST',
@@ -961,13 +1081,13 @@ const app = {
         if (!this.currentData.mix.ducking) this.currentData.mix.ducking = {};
         const mix = this.currentData.mix;
         const duck = mix.ducking;
-        mix.master_volume = parseFloat(document.getElementById('mix-master-vol').value);
-        mix.target_lufs = parseFloat(document.getElementById('mix-target-lufs').value);
-        duck.vad_threshold = parseFloat(document.getElementById('mix-duck-thresh').value);
-        duck.attenuation_db = parseFloat(document.getElementById('mix-duck-atten').value);
-        duck.look_ahead_ms = parseInt(document.getElementById('mix-duck-lookahead').value);
-        duck.attack_ms = parseInt(document.getElementById('mix-duck-attack').value);
-        duck.release_ms = parseInt(document.getElementById('mix-duck-release').value);
+        mix.master_volume = Number.parseFloat(document.getElementById('mix-master-vol').value);
+        mix.target_lufs = Number.parseFloat(document.getElementById('mix-target-lufs').value);
+        duck.vad_threshold = Number.parseFloat(document.getElementById('mix-duck-thresh').value);
+        duck.attenuation_db = Number.parseFloat(document.getElementById('mix-duck-atten').value);
+        duck.look_ahead_ms = Number.parseInt(document.getElementById('mix-duck-lookahead').value);
+        duck.attack_ms = Number.parseInt(document.getElementById('mix-duck-attack').value);
+        duck.release_ms = Number.parseInt(document.getElementById('mix-duck-release').value);
     },
 
     async fetchMusicFiles() {
@@ -991,7 +1111,12 @@ const app = {
         const badge = document.getElementById('mix-status-badge');
         const btn = document.getElementById('btn-mix');
         badge.innerText = status.toUpperCase();
-        badge.className = `status-badge ${status === 'complete' ? 'complete' : status === 'running' ? 'partial' : status === 'failed' ? 'failed' : ''}`;
+        // SonarQube S3358: flatten nested ternary
+        let badgeClass = '';
+        if (status === 'complete') badgeClass = 'complete';
+        else if (status === 'running') badgeClass = 'partial';
+        else if (status === 'failed') badgeClass = 'failed';
+        badge.className = `status-badge ${badgeClass}`;
         badge.style.display = 'inline-block';
         btn.disabled = (status === 'running');
         btn.innerText = status === 'running' ? "Mixing..." : "\u2602 Run Mix";
@@ -1109,7 +1234,9 @@ const app = {
                         console.error(`Playback error loading ${p.type} audio:`, playbackError);
                     }
                 }
-            } catch (headError) { /* silent 404 probe */ }
+            } catch (headError) {
+                // Intentional: silent HEAD probe for 404 detection — no action needed
+            }
         }
         if (!loaded) trackInfoEl.innerHTML = `<h3 style="color:red">Audio Not Found</h3><p>Run generation first.</p>`;
     },
@@ -1128,17 +1255,17 @@ const app = {
     escapeHtml(unsafe) {
         if (typeof unsafe !== 'string') return unsafe;
         return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+            .replaceAll('&', "&amp;")
+            .replaceAll('<', "&lt;")
+            .replaceAll('>', "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
     },
 
     // FIX P1: Stop all active audio to prevent overlap when starting new playback
     stopAllAudio() {
         document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; });
-        if (this.wavesurfer && this.wavesurfer.isPlaying()) this.wavesurfer.pause();
+        if (this.wavesurfer?.isPlaying()) this.wavesurfer.pause();
     },
 
     // FIX P1: Kill all running polls (used on navigation away from project)
@@ -1212,7 +1339,7 @@ const app = {
     async handleIngestFiles(input) {
         if (!input.files.length) return;
         const formData = new FormData();
-        for (let i = 0; i < input.files.length; i++) formData.append('files', input.files[i]);
+        for (const file of input.files) formData.append('files', file);
         try {
             const res = await fetch(`${API_BASE}/projects/${this.currentProject}/ingest`, { method: 'POST', body: formData });
             if (res.ok) { this.showToast("Files ingested.", 'success'); await this.loadProject(this.currentProject); }
@@ -1255,11 +1382,14 @@ const app = {
 
     async runAllPipeline() {
         if (!confirm("Run full pipeline? This may take time.")) return;
+        
         const steps = ['validate','generate','qc-scan','process','compose','mix','qc-final','export'];
         const btn = document.getElementById('btn-run-all');
         btn.disabled = true;
-        for (const step of steps) {
-            btn.innerText = `Running ${step}...`;
+
+        for (let i = 0; i < steps.length; i++) {
+            const step = steps[i];
+            btn.innerText = `[${i + 1}/${steps.length}] ${step}...`; // PATCH 4: step counter
             try {
                 let body = {};
                 if (step === 'generate') body = { chapters: null };
@@ -1279,6 +1409,7 @@ const app = {
                 return;
             }
         }
+        
         btn.disabled = false;
         btn.innerText = "\uD83D\uDE80 Run All Pipeline";
         this.showToast("Pipeline complete!", 'success');
@@ -1296,6 +1427,8 @@ const app = {
             const res = await fetch(`${API_BASE}/projects/${this.currentProject}/status`);
             if (res.ok) {
                 const s = await res.json();
+                this.currentStatus = s; // PATCH 4: keep status current
+                this.renderOverview(); // PATCH 4: live stepper update
                 const status = s.nodes?.[nodeName]?.status;
                 if (status === 'complete') return true;
                 if (status === 'failed') throw new Error(`Node ${nodeName} failed`);

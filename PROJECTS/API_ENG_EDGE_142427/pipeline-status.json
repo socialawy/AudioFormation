@@ -1,0 +1,52 @@
+{
+  "project_id": "API_ENG_EDGE_142427",
+  "nodes": {
+    "bootstrap": {
+      "status": "complete",
+      "timestamp": "2026-02-18T12:24:42.965688+00:00"
+    },
+    "ingest": {
+      "status": "complete",
+      "timestamp": "2026-02-18T12:24:43.018707+00:00",
+      "files_ingested": 1,
+      "files_skipped": 0
+    },
+    "validate": {
+      "status": "complete",
+      "timestamp": "2026-02-18T12:24:43.092114+00:00"
+    },
+    "generate": {
+      "status": "complete",
+      "timestamp": "2026-02-18T12:24:44.094442+00:00",
+      "engine": "edge",
+      "chapters": {
+        "contemplative": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\API_ENG_EDGE_142427\\03_GENERATED\\raw\\contemplative.wav"
+        }
+      }
+    },
+    "qc_scan": {
+      "status": "pending"
+    },
+    "process": {
+      "status": "pending"
+    },
+    "compose": {
+      "status": "pending"
+    },
+    "mix": {
+      "status": "pending"
+    },
+    "qc_final": {
+      "status": "pending"
+    },
+    "export": {
+      "status": "pending"
+    }
+  }
+}

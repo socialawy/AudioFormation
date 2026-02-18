@@ -147,12 +147,12 @@ def export_project_m4b(
         "-f",
         "mp4",  # M4B is technically MP4 container
     ]
-    
+
     # Only add video codec if cover art exists
     if has_cover:
         codec_args.insert(-2, "-c:v")
         codec_args.insert(-2, "copy")  # Copy cover art (don't re-encode jpeg)
-    
+
     codec_args.append(str(output_path))
     cmd.extend(codec_args)
 

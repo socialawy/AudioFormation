@@ -27,7 +27,7 @@ Bilingual First	| Arabic + English as primary languages
 
 ### Basic Installation
 ```bash
-# Install with core dependencies
+# Install with core dependencies (includes edge-tts, audio processing, etc.)
 pip install -e ".[cloud]"
 
 # Or for development
@@ -41,7 +41,8 @@ AudioFormation supports multiple TTS engines. Install the optional dependencies 
 ```bash
 # Cloud TTS engines (recommended for most users)
 pip install -e ".[cloud]"
-# Includes: edge-tts, gTTS, ElevenLabs, httpx, python-dotenv
+# Includes: gTTS, ElevenLabs, httpx, python-dotenv
+# Note: edge-tts is always installed (main dependency)
 
 # Local voice cloning (requires GPU)
 pip install -e ".[xtts]"

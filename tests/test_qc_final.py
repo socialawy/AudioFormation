@@ -11,11 +11,12 @@ class TestQCFinalScanner:
     @pytest.fixture
     def mock_processor(self):
         """Mock audio measurement functions."""
-        with patch("audioformation.qc.final.measure_lufs") as m_lufs, patch(
-            "audioformation.qc.final.measure_true_peak"
-        ) as m_tp, patch("audioformation.qc.final.detect_clipping") as m_clip, patch(
-            "audioformation.qc.final.get_duration"
-        ) as m_dur:
+        with (
+            patch("audioformation.qc.final.measure_lufs") as m_lufs,
+            patch("audioformation.qc.final.measure_true_peak") as m_tp,
+            patch("audioformation.qc.final.detect_clipping") as m_clip,
+            patch("audioformation.qc.final.get_duration") as m_dur,
+        ):
 
             yield {"lufs": m_lufs, "tp": m_tp, "clip": m_clip, "dur": m_dur}
 

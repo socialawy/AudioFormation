@@ -147,15 +147,18 @@ class TestE2EPipeline:
         """Check if an engine is available"""
         try:
             if engine == "edge":
-                import edge_tts
-                return True
+                import importlib.util
+
+                return importlib.util.find_spec("edge_tts") is not None
             elif engine == "gtts":
-                import gtts
-                return True
+                import importlib.util
+
+                return importlib.util.find_spec("gtts") is not None
             elif engine == "xtts":
                 try:
-                    import TTS
-                    return True
+                    import importlib.util
+
+                    return importlib.util.find_spec("TTS") is not None
                 except ImportError:
                     return False
             elif engine == "elevenlabs":
@@ -184,7 +187,7 @@ class TestE2EPipeline:
                 text=True,
                 timeout=900,
                 check=False,
-                encoding="utf-8" # Explicitly use utf-8 for reading output
+                encoding="utf-8",  # Explicitly use utf-8 for reading output
             )
             return {
                 "cmd": " ".join(cmd_list),  # For logging display
@@ -227,7 +230,7 @@ class TestE2EPipeline:
 
         logger.log_command(f"new {project_name}", result)
         if not result["success"]:
-            error_detail = result['stderr'] or result['stdout']
+            error_detail = result["stderr"] or result["stdout"]
             return False, f"Bootstrap failed: {error_detail}"
 
         # Step 2: Ingest
@@ -241,7 +244,7 @@ class TestE2EPipeline:
 
         logger.log_command(f"ingest {project_name}", result)
         if not result["success"]:
-            error_detail = result['stderr'] or result['stdout']
+            error_detail = result["stderr"] or result["stdout"]
             return False, f"Ingest failed: {error_detail}"
 
         # Step 3: Validate
@@ -256,7 +259,7 @@ class TestE2EPipeline:
         if not result["success"]:
             # Log but don't fail immediately if validation warns?
             # Usually validate returns 0 even with warnings, 1 on fail.
-            error_detail = result['stderr'] or result['stdout']
+            error_detail = result["stderr"] or result["stdout"]
             return False, f"Validation failed: {error_detail}"
 
         # Step 4: Generate
@@ -272,7 +275,7 @@ class TestE2EPipeline:
 
         logger.log_command(f"generate {project_name}", result)
         if not result["success"]:
-            error_detail = result['stderr'] or result['stdout']
+            error_detail = result["stderr"] or result["stdout"]
             return False, f"Generate failed: {error_detail}"
 
         # Step 5.5: QC Scan (between Generate and Process)
@@ -285,7 +288,7 @@ class TestE2EPipeline:
 
         logger.log_command(f"qc {project_name} --report", result)
         if not result["success"]:
-            error_detail = result['stderr'] or result['stdout']
+            error_detail = result["stderr"] or result["stdout"]
             return False, f"QC Scan failed: {error_detail}"
 
         # Step 6: Process
@@ -298,7 +301,7 @@ class TestE2EPipeline:
 
         logger.log_command(f"process {project_name}", result)
         if not result["success"]:
-            error_detail = result['stderr'] or result['stdout']
+            error_detail = result["stderr"] or result["stdout"]
             return False, f"Process failed: {error_detail}"
 
         # Step 6: Mix
@@ -311,7 +314,7 @@ class TestE2EPipeline:
 
         logger.log_command(f"mix {project_name}", result)
         if not result["success"]:
-            error_detail = result['stderr'] or result['stdout']
+            error_detail = result["stderr"] or result["stdout"]
             return False, f"Mix failed: {error_detail}"
 
         # Step 6.5: QC Final (quality gate — may fail on short test clips)
@@ -325,7 +328,9 @@ class TestE2EPipeline:
         qc_passed = result["success"]
 
         if not qc_passed:
-            logger.entries.append("⚠ QC Final did not pass (expected for short test clips)\n")
+            logger.entries.append(
+                "⚠ QC Final did not pass (expected for short test clips)\n"
+            )
 
         # Step 7: Export (only if QC passed — gate enforced by CLI)
         if qc_passed:
@@ -338,7 +343,7 @@ class TestE2EPipeline:
 
             logger.log_command(f"export {project_name}", result)
             if not result["success"]:
-                error_detail = result['stderr'] or result['stdout']
+                error_detail = result["stderr"] or result["stdout"]
                 return False, f"Export failed: {error_detail}"
             else:
                 self._log_export_files(logger, project_name)
@@ -378,16 +383,20 @@ class TestEngineAvailability:
     def test_edge_tts_availability(self):
         """Test Edge-TTS availability"""
         try:
-            import edge_tts
-            assert True, "Edge-TTS is available"
+            import importlib.util
+
+            assert (
+                importlib.util.find_spec("edge_tts") is not None
+            ), "Edge-TTS is available"
         except ImportError:
             pytest.skip("Edge-TTS not available")
 
     def test_gtts_availability(self):
         """Test gTTS availability"""
         try:
-            import gtts
-            assert True, "gTTS is available"
+            import importlib.util
+
+            assert importlib.util.find_spec("gtts") is not None, "gTTS is available"
         except ImportError:
             pytest.skip("gTTS not available")
 
@@ -405,8 +414,10 @@ class TestEngineAvailability:
     def test_xtts_availability(self):
         """Test XTTS availability"""
         try:
-            import TTS
-            assert True, "XTTS is available"
+            import importlib.util
+
+            if importlib.util.find_spec("TTS") is None:
+                pytest.skip("XTTS not available")
         except ImportError:
             pytest.skip("XTTS not available")
 

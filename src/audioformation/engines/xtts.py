@@ -95,6 +95,10 @@ class XTTSEngine(TTSEngine):
         # Strongly benefits from GPU but works on CPU.
         return False
 
+    @property
+    def requires_api_key(self) -> bool:
+        return False
+
     # ── Device management ────────────────────────────────
 
     @property

@@ -18,6 +18,7 @@ from pydub import AudioSegment
 # Try importing torch for VAD
 try:
     import torch
+
     SILERO_AVAILABLE = True
 except ImportError:
     torch = None

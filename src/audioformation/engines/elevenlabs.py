@@ -59,6 +59,10 @@ class ElevenLabsEngine(TTSEngine):
     def requires_gpu(self) -> bool:
         return False  # Cloud-based, no GPU required
 
+    @property
+    def requires_api_key(self) -> bool:
+        return True  # ElevenLabs requires API key
+
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create HTTP client."""
         if self._client is None:

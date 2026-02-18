@@ -1,6 +1,5 @@
 """Tests for Arabic text processing — diacritics, language detection, dialect matching."""
 
-
 from audioformation.utils.arabic import (
     detect_diacritization_level,
     classify_diacritization,
@@ -34,7 +33,7 @@ class TestCharacterDetection:
         assert is_arabic_char("A") is False
 
     def test_diacritic_detection(self) -> None:
-        assert is_diacritic("\u064E") is True  # fatha
+        assert is_diacritic("\u064e") is True  # fatha
         assert is_diacritic("\u0651") is True  # shadda
         assert is_diacritic("ا") is False  # alef is not a diacritic
         assert is_diacritic("A") is False

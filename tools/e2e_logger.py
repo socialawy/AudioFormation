@@ -17,14 +17,14 @@ import platform
 
 class E2ELogger:
     """Comprehensive logging for e2e tests with metrics capture"""
-    
+
     def __init__(self, output_file: str = "E2E_TEST_LOG.md"):
         self.output_file = Path(output_file)
         self.entries = []
         self.start_time = datetime.now()
         self.engine_results = {}
         self.system_info = self._capture_system_info()
-        
+
     def _capture_system_info(self) -> Dict[str, str]:
         """Capture system context"""
         return {
@@ -34,19 +34,24 @@ class E2ELogger:
             "cwd": os.getcwd(),
             "platform": platform.platform(),
         }
-    
+
     def log_section(self, title: str, level: int = 1):
         """Start a new section"""
         heading = "#" * level
         self.entries.append(f"\n{heading} {title}\n")
-    
-    def log_step(self, step_name: str, status: str, duration: float, 
-                 details: Optional[Dict[str, Any]] = None):
+
+    def log_step(
+        self,
+        step_name: str,
+        status: str,
+        duration: float,
+        details: Optional[Dict[str, Any]] = None,
+    ):
         """Log a pipeline step result"""
         self.entries.append(f"\n#### {step_name}\n")
         self.entries.append(f"- **Status**: {status}\n")
         self.entries.append(f"- **Duration**: {duration:.2f}s\n")
-        
+
         if details:
             for key, value in details.items():
                 if isinstance(value, dict):
@@ -59,7 +64,7 @@ class E2ELogger:
                         self.entries.append(f"    - {item}\n")
                 else:
                     self.entries.append(f"- **{key}**: {value}\n")
-    
+
     def log_audio_metrics(self, filename: str, metrics: Dict[str, Any]):
         """Log audio metrics for a file"""
         self.entries.append(f"\n**Audio Metrics: {filename}**\n")
@@ -70,16 +75,16 @@ class E2ELogger:
             else:
                 self.entries.append(f"  {key}: {value}\n")
         self.entries.append("```\n")
-    
+
     def log_file_info(self, filepath: Path) -> Dict[str, Any]:
         """Capture file size, checksum, and other info"""
         if not filepath.exists():
             return {"status": "missing", "path": str(filepath)}
-        
+
         stat = filepath.stat()
-        with open(filepath, 'rb') as f:
+        with open(filepath, "rb") as f:
             checksum = hashlib.sha256(f.read()).hexdigest()[:8]
-        
+
         try:
             return {
                 "path": str(filepath.relative_to(Path.cwd())),
@@ -97,63 +102,66 @@ class E2ELogger:
                 "sha256_prefix": checksum,
                 "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
             }
-    
+
     def log_error(self, error_msg: str, exception: Optional[Exception] = None):
         """Log an error"""
         self.entries.append(f"\n⚠️ **ERROR**: {error_msg}\n")
         if exception:
             self.entries.append(f"```\n{str(exception)}\n```\n")
-    
+
     def log_skip(self, reason: str):
         """Log a skipped step"""
         self.entries.append(f"\n⏭️ **SKIPPED**: {reason}\n")
-    
+
     def start_engine_section(self, engine_name: str):
         """Start logging for a specific engine"""
-        self.engine_results[engine_name] = {
-            "start_time": time.time(),
-            "steps": []
-        }
+        self.engine_results[engine_name] = {"start_time": time.time(), "steps": []}
         self.log_section(f"Engine: {engine_name}", level=2)
-    
+
     def end_engine_section(self, engine_name: str):
         """Finish logging for an engine"""
         if engine_name in self.engine_results:
             duration = time.time() - self.engine_results[engine_name]["start_time"]
             self.entries.append(f"\n**Total Duration**: {duration:.2f}s\n")
-    
+
     def log_command(self, cmd: str, result: Optional[Dict[str, Any]] = None):
         """Log a CLI command execution"""
         self.entries.append(f"\n**Command**: `{cmd}`\n")
         if result:
             if result.get("returncode") == 0:
-                self.entries.append(f"✅ Success\n")
+                self.entries.append("✅ Success\n")
             else:
-                self.entries.append(f"❌ Failed (exit code: {result.get('returncode')})\n")
-            
+                self.entries.append(
+                    f"❌ Failed (exit code: {result.get('returncode')})\n"
+                )
+
             if result.get("stdout"):
                 self.entries.append(f"```\n{result['stdout'][:200]}...\n```\n")
             if result.get("stderr"):
-                self.entries.append(f"**stderr**: ```\n{result['stderr'][:200]}...\n```\n")
-    
+                self.entries.append(
+                    f"**stderr**: ```\n{result['stderr'][:200]}...\n```\n"
+                )
+
     def log_validation_results(self, results: Dict[str, Any]):
         """Log validation gate results"""
-        self.entries.append(f"\n**Validation Results**:\n")
+        self.entries.append("\n**Validation Results**:\n")
         self.entries.append("```json\n")
         self.entries.append(json.dumps(results, indent=2))
         self.entries.append("\n```\n")
-    
-    def add_comparison_table(self, engines: List[str], metrics: Dict[str, Dict[str, Any]]):
+
+    def add_comparison_table(
+        self, engines: List[str], metrics: Dict[str, Dict[str, Any]]
+    ):
         """Add a side-by-side comparison table"""
         self.log_section("Comparative Results", level=2)
         self.entries.append("\n| Metric | " + " | ".join(engines) + " |\n")
         self.entries.append("|--------|" + "|".join(["-----"] * len(engines)) + "|\n")
-        
+
         # Collect all metric keys
         all_keys = set()
         for engine_metrics in metrics.values():
             all_keys.update(engine_metrics.keys())
-        
+
         for key in sorted(all_keys):
             row = [key]
             for engine in engines:
@@ -163,18 +171,18 @@ class E2ELogger:
                 else:
                     row.append(str(value))
             self.entries.append("| " + " | ".join(row) + " |\n")
-    
+
     def save(self):
         """Write log to markdown file"""
         content = self._generate_header()
         content += "".join(self.entries)
         content += self._generate_footer()
-        
-        with open(self.output_file, 'w', encoding='utf-8') as f:
+
+        with open(self.output_file, "w", encoding="utf-8") as f:
             f.write(content)
-        
+
         print(f"✅ Test log saved to: {self.output_file.absolute()}")
-    
+
     def _generate_header(self) -> str:
         """Generate markdown header"""
         header = f"""# E2E Audio-Formation Pipeline Test Log
@@ -203,7 +211,7 @@ Each engine runs: Bootstrap → Ingest → Validate → Generate → Process →
 
 """
         return header
-    
+
     def _generate_footer(self) -> str:
         """Generate markdown footer with summary"""
         total_duration = (datetime.now() - self.start_time).total_seconds()
@@ -225,9 +233,14 @@ Each engine runs: Bootstrap → Ingest → Validate → Generate → Process →
         return footer
 
 
-def execute_command(cmd: str, timeout: int = 900, max_retries: int = 2, env: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+def execute_command(
+    cmd: str,
+    timeout: int = 900,
+    max_retries: int = 2,
+    env: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
     """Execute a CLI command and capture output with retry logic for network operations"""
-    
+
     for attempt in range(max_retries + 1):
         try:
             result = subprocess.run(
@@ -236,7 +249,7 @@ def execute_command(cmd: str, timeout: int = 900, max_retries: int = 2, env: Opt
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                env=env
+                env=env,
             )
             return {
                 "cmd": cmd,

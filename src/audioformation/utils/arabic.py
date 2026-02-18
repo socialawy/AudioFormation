@@ -19,9 +19,9 @@ _ARABIC_PRESENTATION_B = range(0xFE70, 0xFF00)
 
 # Diacritical marks (tashkeel)
 _DIACRITICS = set(
-    "\u064B\u064C\u064D\u064E\u064F\u0650"  # tanween + fatha/damma/kasra
+    "\u064b\u064c\u064d\u064e\u064f\u0650"  # tanween + fatha/damma/kasra
     "\u0651\u0652\u0653\u0654\u0655"  # shadda, sukun, etc.
-    "\u0656\u0657\u0658\u065A\u065B"  # additional marks
+    "\u0656\u0657\u0658\u065a\u065b"  # additional marks
     "\u0670"  # superscript alef
 )
 
