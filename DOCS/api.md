@@ -34,7 +34,17 @@ Update project configuration.
 
 Body: Full or partial project.json object.
 
-## Pipeline
+### `GET /api/engines`
+List available TTS engines.
+
+### `GET /api/engines/{engine}/voices`
+Get available voices for specific engine and language.
+
+Query Parameters:
+- `lang` - Language code (e.g., "ar", "en")
+
+### `GET /api/projects/{id}/hardware`
+Get system hardware info for optimization (GPU, VRAM, ffmpeg availability).
 
 ### `POST /api/projects/{id}/ingest`
 Upload and ingest text files.
@@ -54,6 +64,24 @@ Body (optional):
 {"engine": "edge", "chapters": ["ch01", "ch02"]}
 ```
 
+### `POST /api/projects/{id}/preview`
+Generate voice preview for testing.
+
+Body:
+
+```json
+{"text": "مرحبا بالعالم", "engine": "edge", "voice": "ar-SA-Wavenet-A", "reference_audio": "path/to/ref.wav", "language": "ar"}
+```
+
+### `POST /api/projects/{id}/upload`
+Upload reference audio or background music files.
+
+Content-Type: multipart/form-data
+Query Parameters:
+- `category` - "references" for voice cloning, "music" for background music
+
+Field: file — single file upload.
+
 ### `POST /api/projects/{id}/qc-scan`
 Run QC scan on generated audio (Node 3.5). Runs in background.
 
@@ -61,6 +89,27 @@ Scans all generated audio files for quality issues (SNR, clipping, duration, LUF
 
 ### `POST /api/projects/{id}/process`
 Run audio normalization (Node 4). Runs in background.
+
+### `GET /api/projects/{id}/files`
+List all project files with metadata.
+
+Response:
+
+```json
+[
+  {"name": "ch01.wav", "path": "03_GENERATED/raw/ch01.wav", "category": "generated", "size": 1048576, "modified": 1700000000},
+  {"name": "background.mp3", "path": "assets/music/background.mp3", "category": "music", "size": 2097152, "modified": 1700000000}
+]
+```
+
+### `POST /api/projects/{id}/sfx`
+Generate sound effects (SFX) for audio production.
+
+Body:
+
+```json
+{"type": "whoosh", "duration": 2.5}
+```
 
 ### `POST /api/projects/{id}/compose`
 Generate ambient background music (Node 5). Runs in background.
