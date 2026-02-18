@@ -55,10 +55,10 @@ def get_project_path(project_id: str) -> Path:
     # CODEQL FIX: Pure String Validation
     # We do NOT touch the filesystem (resolve()) here, as that triggers CodeQL.
     # Instead, we prove safety via strict Allowlist Regex and os.path.basename.
-    
+
     # 1. Force filename component only
     safe_id = os.path.basename(project_id)
-    
+
     # 2. Strict Allowlist: Alphanumeric, underscore, hyphen ONLY.
     # This guarantees no path separators (/ or \) and no traversal (..).
     if not re.fullmatch(r"^[A-Za-z0-9_-]+$", safe_id):
@@ -79,7 +79,7 @@ def create_project(project_id: str) -> Path:
     """
     # FIX: Explicitly sanitize input here so get_project_path receives a valid ID
     safe_id = sanitize_project_id(project_id)
-    
+
     project_path = get_project_path(safe_id)
 
     if project_path.exists():

@@ -8,7 +8,6 @@ Pipeline Node: SFX (Optional).
 """
 
 import numpy as np
-import os
 import soundfile as sf
 from pathlib import Path
 from typing import Optional, Literal
@@ -77,14 +76,19 @@ def generate_sfx(
         # validate_path_within now uses abspath() which is safe.
         valid = False
         try:
-             if validate_path_within(output_path, PROJECTS_ROOT): valid = True
-             else:
-                 import tempfile
-                 if validate_path_within(output_path, Path(tempfile.gettempdir())): valid = True
-        except Exception: pass
-        
-        if not valid: raise ValueError("Security Alert: Output path unsafe")
-        
+            if validate_path_within(output_path, PROJECTS_ROOT):
+                valid = True
+            else:
+                import tempfile
+
+                if validate_path_within(output_path, Path(tempfile.gettempdir())):
+                    valid = True
+        except Exception:
+            pass
+
+        if not valid:
+            raise ValueError("Security Alert: Output path unsafe")
+
         # Safe to create directory now
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         sf.write(str(output_path), audio, sample_rate)

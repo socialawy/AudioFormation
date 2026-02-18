@@ -18,7 +18,6 @@ def test_mix_command_success(runner, sample_project, isolate_projects):
         patch("audioformation.mix.mix_project") as mock_mix,
         patch("audioformation.pipeline.can_proceed_to", return_value=(True, "OK")),
     ):
-
         mock_mix.return_value = True
 
         result = runner.invoke(main, ["mix", sample_project["id"]])
@@ -39,7 +38,6 @@ def test_mix_command_with_music(runner, sample_project, isolate_projects):
         patch("audioformation.mix.mix_project") as mock_mix,
         patch("audioformation.pipeline.can_proceed_to", return_value=(True, "OK")),
     ):
-
         mock_mix.return_value = True
 
         result = runner.invoke(
@@ -60,7 +58,6 @@ def test_mix_command_gate_fail(runner, sample_project, isolate_projects):
             return_value=(False, "Previous step failed"),
         ),
     ):
-
         result = runner.invoke(main, ["mix", sample_project["id"]])
 
         assert result.exit_code != 0
@@ -74,7 +71,6 @@ def test_mix_command_internal_fail(runner, sample_project, isolate_projects):
         patch("audioformation.mix.mix_project") as mock_mix,
         patch("audioformation.pipeline.can_proceed_to", return_value=(True, "OK")),
     ):
-
         # Simulate mix failure
         mock_mix.return_value = False
 

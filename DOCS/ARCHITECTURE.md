@@ -1,7 +1,7 @@
 # 🏭 AudioFormation — Planning/ARCHITECTURE Document
 
 > Production audio pipeline: Voice, SFX, Music, Mix, Export.
-> Companion to VideoFormation (same architecture, different domain). 
+> Companion to VideoFormation (same architecture, different domain).
 
 ## Philosophy (Mirrors VideoFormation)
 
@@ -136,7 +136,7 @@ Fallback 2: Cloud engines (✅ BUILT)
 
 **Test mocking approach:**
 - Engine tests: Use `MagicMock` for TTS library (torch, coqui-tts) and `AsyncMock` for async generation
-- Project tests: Redirect `PROJECTS_ROOT` to isolated `tmp_path`  
+- Project tests: Redirect `PROJECTS_ROOT` to isolated `tmp_path`
 - External services: Mock httpx for ElevenLabs, mock edge-tts responses
 - No environment variables required (API keys auto-mocked)
 
@@ -711,7 +711,7 @@ parsing is Phase 2. Schema supports both from day one.
   }
 }
 ```
-#### Multi-Speaker Chapter 
+#### Multi-Speaker Chapter
 ```json
 {
   "id": "ch03",
@@ -1020,3 +1020,7 @@ Result:
   - `xtts` (cloning)
 
 Memory entry created with complete technical details, file changes, and benefits for future reference.
+
+- 4 CodeQL issues reamin, not critical.
+Now code QL back to 31 open, and 30 closed (after fixing failing tests)
+- Check github bot failed tests/lint

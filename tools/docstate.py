@@ -12,6 +12,9 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Dict, List
+
+projects: List[Dict[str, Any]] = []
 
 ROOT = Path(__file__).resolve().parent.parent
 PROJECTS_DIR = ROOT / "PROJECTS"

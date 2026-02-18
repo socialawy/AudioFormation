@@ -40,7 +40,7 @@
                     <h1>Projects</h1>
                     <button class="btn primary" onclick="app.refreshProjects()">↻ Refresh</button>
                 </div>
-                
+
                 <div id="project-grid" class="project-grid">
                     <div class="card loading">Loading projects...</div>
                 </div>
@@ -70,7 +70,7 @@
                         <button id="btn-save" class="btn primary" onclick="app.saveProject()">Save Changes</button>
                     </div>
                 </div>
-                
+
                 <div class="editor-layout">
                     <aside class="sidebar">
                         <div class="nav-item active" onclick="app.switchTab('overview')" id="tab-btn-overview">Overview</div>
@@ -80,9 +80,9 @@
                         <div class="nav-item" onclick="app.switchTab('assets')" id="tab-btn-assets">Assets (SFX/Music)</div>
                         <div class="nav-item" onclick="app.switchTab('json')" id="tab-btn-json">Raw JSON</div>
                     </aside>
-                    
+
                     <div class="main-panel">
-                        
+
                         <!-- Overview Tab -->
                         <div id="tab-overview" class="tab-content">
                             <h2>Project Overview</h2>
@@ -96,12 +96,12 @@
                                     <div style="font-size:1.1rem; padding:0.5rem;" id="overview-created">2026-02-16</div>
                                 </div>
                             </div>
-                            
+
                             <h3>Pipeline Status</h3>
                             <div class="pipeline-stepper" id="pipeline-stepper">
                                 <!-- Populated by JS -->
                             </div>
-                            
+
                             <div style="margin-top:2rem;">
                                 <h3>Hardware Detection</h3>
                                 <div id="hardware-info" class="info-panel" style="font-family:monospace;">
@@ -137,7 +137,7 @@
                                     <input type="number" id="conf-fail-thresh">
                                 </div>
                             </div>
-                            
+
                             <h3>Chunking & Stitching</h3>
                             <div class="form-row">
                                 <div class="form-group">
@@ -162,7 +162,7 @@
                                     <input type="number" id="conf-silence">
                                 </div>
                             </div>
-                            
+
                             <!-- XTTS Advanced Settings -->
                             <div class="collapsible collapsed" onclick="app.toggleCollapse(this)">
                                 <div class="collapsible-header">XTTS Configuration (Voice Cloning)</div>
@@ -228,7 +228,7 @@
                                     </div>
                                     <button class="btn" onclick="document.getElementById('chapter-detail').classList.add('hidden')">Close Editor</button>
                                 </div>
-                                
+
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label>Title</label>
@@ -310,7 +310,7 @@
                                     </div>
                                     <button class="btn primary" onclick="app.generateSFX()">Generate SFX</button>
                                 </div>
-                                
+
                                 <div class="form-group" style="flex:1; border-left:1px solid var(--border); padding-left:2rem;">
                                     <h3>Compose Music (Ambient)</h3>
                                     <div class="form-row">
@@ -332,7 +332,7 @@
                                     <button class="btn primary" onclick="app.composeMusic()">Compose</button>
                                 </div>
                             </div>
-                            
+
                             <h3 style="margin-top:2rem;">Asset Library</h3>
                             <button class="btn small" onclick="app.fetchAssets()">↻ Refresh List</button>
                             <div id="assets-list" class="list-group" style="margin-top:1rem;">
@@ -379,7 +379,7 @@
                             <div id="waveform"></div>
                             <div id="wave-timeline"></div>
                         </div>
-                        
+
                         <div class="transport-controls">
                             <button id="play-btn" class="btn primary big">▶ Play</button>
                             <span id="time-display">00:00 / 00:00</span>
@@ -412,7 +412,7 @@
                                     <input type="number" id="mix-target-lufs" step="0.1" value="-16.0">
                                 </div>
                             </div>
-                            
+
                             <h4 style="margin-top:1rem; border-bottom:1px solid #444; padding-bottom:0.5rem; font-size:0.9rem; color:var(--text-secondary);">Ducking (VAD)</h4>
                             <div class="form-row" style="margin-bottom:0.5rem;">
                                 <div class="form-group">
@@ -456,7 +456,7 @@
                         <button class="btn" onclick="app.showProjects()">Close</button>
                     </div>
                 </div>
-                
+
                 <div class="editor-layout">
                     <div class="main-panel">
                         <div class="form-row" style="align-items: flex-end;">
@@ -511,12 +511,12 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div id="export-status-panel" class="info-panel hidden" style="margin-top:2rem;">
                             <h3>Export Status: <span id="export-status-text">Pending</span></h3>
                             <p id="export-status-msg"></p>
                         </div>
-                        
+
                         <h3 style="margin-top:2rem;">Files</h3>
                         <div id="export-file-list">
                             <div class="card loading">No exported files yet. Run export above.</div>
@@ -533,7 +533,7 @@
                         <button class="btn" onclick="app.showProjects()">Close</button>
                     </div>
                 </div>
-                
+
                 <div class="editor-layout">
                     <div class="main-panel">
                         <div id="qc-reports-container">

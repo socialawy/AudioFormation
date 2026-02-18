@@ -77,4 +77,3 @@ Scope: "chapter" — retry primary each chapter (default)
 Scope: "project" — switch permanently after first failure
 ```
 - Configure in generation.fallback_scope and generation.fallback_chain.
-

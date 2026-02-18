@@ -6,11 +6,10 @@ Used by engine selection and VRAM management strategy.
 """
 
 import json
-import platform
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from audioformation.utils.security import validate_path_within
 
@@ -149,13 +148,13 @@ def detect_all() -> dict[str, Any]:
 def write_hardware_json(project_path: Path) -> dict[str, Any]:
     """Detect hardware and write to project's 00_CONFIG/hardware.json."""
     hw = detect_all()
-    
+
     # CODEQL FIX: project_path is assumed valid by caller, but we guard the child path
     hw_path = project_path / "00_CONFIG" / "hardware.json"
-    
+
     # Ensure strict containment using the improved validator
     if not validate_path_within(hw_path, project_path):
         raise ValueError(f"Hardware config path escapes project directory: {hw_path}")
-    
+
     hw_path.write_text(json.dumps(hw, indent=2, ensure_ascii=False))
     return hw

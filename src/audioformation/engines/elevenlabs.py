@@ -220,7 +220,6 @@ class ElevenLabsEngine(TTSEngine):
     async def _mp3_to_wav(self, mp3_path: Path, wav_path: Path) -> bool:
         """Convert MP3 to WAV using ffmpeg."""
         try:
-
             cmd = [
                 "ffmpeg",
                 "-i",
@@ -251,7 +250,6 @@ class ElevenLabsEngine(TTSEngine):
     async def _get_duration(self, audio_path: Path) -> float:
         """Get audio duration in seconds."""
         try:
-
             cmd = [
                 "ffprobe",
                 "-v",

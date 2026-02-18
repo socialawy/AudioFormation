@@ -158,7 +158,7 @@ AudioFormation follows a modular pipeline architecture with five core domains:
 ```
 audioformation CLI → Pipeline State Machine
 ├── TTS Engines (edge, gtts, xtts, elevenlabs) ✅ IMPLEMENTED
-├── Audio Processor (normalize, trim, stitch) ✅ IMPLEMENTED  
+├── Audio Processor (normalize, trim, stitch) ✅ IMPLEMENTED
 ├── Ambient Composer (pad generation) ✅ IMPLEMENTED
 ├── Mixer (multi-track, VAD ducking) ✅ IMPLEMENTED
 ├── QC Scanner (per-chunk quality) ✅ IMPLEMENTED
@@ -170,7 +170,7 @@ audioformation CLI → Pipeline State Machine
 - ✅ **Phase 1 Complete**: Core TTS pipeline, QC, audio processing
 - ✅ **Phase 2 Complete**: Cloud TTS adapters, voice cloning, multi-speaker, CLI tools
 - ✅ **Phase 3 Complete**: Mixer with ducking, M4B export, web interface (Editor/Mix)
-- ✅ **Phase 4 Complete**: Dashboard v2.0 
+- ✅ **Phase 4 Complete**: Dashboard v2.0
 - ⏳ **Phase 5 Future**: Real Music & Algorithmic composition, advanced features
 
 ## Dashboard

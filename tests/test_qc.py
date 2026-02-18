@@ -55,7 +55,6 @@ class TestScanChunk:
             patch("audioformation.qc.scanner._check_clipping") as m_clip,
             patch("audioformation.qc.scanner._check_lufs") as m_lufs,
         ):
-
             m_snr.return_value = {"status": "pass"}
             m_clip.return_value = {"status": "pass"}
             m_lufs.return_value = {"status": "pass"}

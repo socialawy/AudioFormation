@@ -82,7 +82,7 @@ src/audioformation/
 
 ## Decoupling Library Code from CLI
 
-The `generate.py` module currently uses `click.echo()` for progress reporting. Before Phase 3 
+The `generate.py` module currently uses `click.echo()` for progress reporting. Before Phase 3
 (server work), this must be refactored to use standard logging or callbacks.
 
 **Current Pattern (❌ Don't do this):**
@@ -107,7 +107,7 @@ def generate_project(project_id: str, progress_callback=None):
 - `src/audioformation/generate.py` — ~8 click.echo() calls (lines 131, 137, 145, 365, 372, 383, 391, 414, 419)
 
 **Why This Matters:**
-Allows the library to be used as a pure Python module in FastAPI servers, Jupyter notebooks, 
+Allows the library to be used as a pure Python module in FastAPI servers, Jupyter notebooks,
 and other non-CLI contexts without hardcoded terminal output.
 
 **Review Checklist:**

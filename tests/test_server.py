@@ -3,7 +3,6 @@
 import pytest
 
 try:
-
     SERVER_AVAILABLE = True
 except ImportError:
     SERVER_AVAILABLE = False

@@ -52,7 +52,8 @@ async def _run_with_status(func, project_id: str, node: str):
         path = get_project_path(project_id)
         mark_node(path, node, "running")
         result = func()
-        if asyncio.iscoroutine(result): await result
+        if asyncio.iscoroutine(result):
+            await result
         mark_node(path, node, "complete")
     except Exception as e:
         logger.exception(f"Task failed: {e}")
@@ -60,7 +61,8 @@ async def _run_with_status(func, project_id: str, node: str):
             path = get_project_path(project_id)
             # Use fixed string for error to prevent info leak
             mark_node(path, node, "failed", error="Task Failed (Check Logs)")
-        except Exception: pass
+        except Exception:
+            pass
 
 
 class ProjectCreateRequest(BaseModel):
@@ -197,28 +199,36 @@ async def ingest_files(
 
 @router.post("/projects/{project_id}/upload")
 async def upload_file(project_id: str, category: str, file: UploadFile = File(...)):
-    if not project_exists(project_id): raise HTTPException(status_code=404, detail="Not found")
+    if not project_exists(project_id):
+        raise HTTPException(status_code=404, detail="Not found")
     project_path = get_project_path(project_id)
-    if category == "references": target_dir = project_path / "02_VOICES" / "references"
-    elif category == "music": target_dir = project_path / "05_MUSIC" / "generated"
-    else: raise HTTPException(status_code=400, detail="Invalid category")
+    if category == "references":
+        target_dir = project_path / "02_VOICES" / "references"
+    elif category == "music":
+        target_dir = project_path / "05_MUSIC" / "generated"
+    else:
+        raise HTTPException(status_code=400, detail="Invalid category")
     target_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Secure filename handling
     safe_name = os.path.basename(file.filename)
     # Additional strict regex guard
     if not re.fullmatch(r"^[A-Za-z0-9_.-]+$", safe_name):
-         raise HTTPException(status_code=400, detail="Invalid filename characters")
-         
+        raise HTTPException(status_code=400, detail="Invalid filename characters")
+
     dest = target_dir / safe_name
-    
+
     # Check bounds using fixed validator
     if not validate_path_within(dest, target_dir):
         raise HTTPException(status_code=400, detail="Invalid path")
-        
+
     try:
-        with open(dest, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
-        return {"path": str(dest.relative_to(project_path)).replace("\\", "/"), "filename": safe_name}
+        with open(dest, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {
+            "path": str(dest.relative_to(project_path)).replace("\\", "/"),
+            "filename": safe_name,
+        }
     except Exception:
         raise HTTPException(status_code=500, detail="Upload failed")
 
@@ -245,8 +255,8 @@ async def preview_voice(project_id: str, request: PreviewRequest):
         # User input could be "../../etc/passwd"
         possible_ref = (project_path / request.reference_audio).resolve()
         if not validate_path_within(possible_ref, project_path):
-             raise HTTPException(status_code=400, detail="Invalid reference audio path")
-        
+            raise HTTPException(status_code=400, detail="Invalid reference audio path")
+
         if not possible_ref.exists():
             raise HTTPException(status_code=400, detail="Reference audio not found")
         ref_path = possible_ref
@@ -254,7 +264,7 @@ async def preview_voice(project_id: str, request: PreviewRequest):
     # Create temp file for output
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         output_path = Path(tmp.name)
-    
+
     # Validate temp path is within system temp directory
     temp_root = Path(tempfile.gettempdir())
     if not validate_path_within(output_path, temp_root):
@@ -440,7 +450,7 @@ async def trigger_sfx(
     # CODEQL FIX: Sanitize input and basename
     raw_name = request.name if request.name else f"{request.type}_{timestamp}"
     safe_name = sanitize_filename(os.path.basename(raw_name))
-    
+
     if not safe_name.endswith(".wav"):
         safe_name += ".wav"
 
@@ -542,7 +552,7 @@ def _qc_scan_sync(project_id: str) -> dict:
                 target_lufs=target_lufs,
             )
             chunk_results.append(result)
-        except Exception as e:
+        except Exception:
             # CODEQL FIX: Hardcoded error message to prevent information exposure
             chunk_results.append(
                 ChunkQCResult(

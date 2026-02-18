@@ -26,7 +26,7 @@ def sanitize_project_id(raw: str) -> str:
     """
     # CODEQL FIX: Explicitly strip directory components first
     cleaned = os.path.basename(raw.strip())
-    
+
     cleaned = cleaned.replace(" ", "_").upper()
     cleaned = re.sub(r"[^A-Za-z0-9_-]", "", cleaned)
 
@@ -77,7 +77,7 @@ def validate_path_within(path: Path, root: Path) -> bool:
         # 3. Ensure root ends with separator to prevent partial matches
         # e.g. /tmp/foo vs /tmp/foobar
         if not abs_root.endswith(os.path.sep):
-             abs_root += os.path.sep
+            abs_root += os.path.sep
 
         # 4. Check prefix
         # We ensure the path starts with the root directory.

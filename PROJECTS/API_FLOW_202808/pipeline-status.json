@@ -1,0 +1,55 @@
+{
+  "project_id": "API_FLOW_202808",
+  "nodes": {
+    "bootstrap": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:28:20.791473+00:00"
+    },
+    "ingest": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:28:20.837615+00:00",
+      "files_ingested": 1,
+      "files_skipped": 0
+    },
+    "validate": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:28:20.948288+00:00"
+    },
+    "generate": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:28:22.759502+00:00",
+      "engine": "edge",
+      "chapters": {
+        "contemplative": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\API_FLOW_202808\\03_GENERATED\\raw\\contemplative.wav"
+        }
+      }
+    },
+    "qc_scan": {
+      "status": "pending"
+    },
+    "process": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:28:24.013543+00:00"
+    },
+    "compose": {
+      "status": "pending"
+    },
+    "mix": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:28:24.064435+00:00"
+    },
+    "qc_final": {
+      "status": "pending"
+    },
+    "export": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:28:24.085390+00:00"
+    }
+  }
+}

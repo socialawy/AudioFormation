@@ -1382,7 +1382,7 @@ const app = {
 
     async runAllPipeline() {
         if (!confirm("Run full pipeline? This may take time.")) return;
-        
+
         const steps = ['validate','generate','qc-scan','process','compose','mix','qc-final','export'];
         const btn = document.getElementById('btn-run-all');
         btn.disabled = true;
@@ -1409,7 +1409,7 @@ const app = {
                 return;
             }
         }
-        
+
         btn.disabled = false;
         btn.innerText = "\uD83D\uDE80 Run All Pipeline";
         this.showToast("Pipeline complete!", 'success');

@@ -20,7 +20,7 @@
 
 ### Code Quality Improvements
 - **SonarQube S3358**: Nested ternary → explicit if/else
-- **SonarQube S4624**: Nested templates eliminated  
+- **SonarQube S4624**: Nested templates eliminated
 - **SonarQube S7781**: `.replace()` → `.replaceAll()`
 - **SonarQube S7754**: `.find()` → `.some()` for existence checks
 - **SonarQube S7773**: `parseInt/parseFloat` → `Number.parseInt/Number.parseFloat`
@@ -89,9 +89,9 @@ enforcement at ingest time — correct fix is flexible glob, not naming constrai
 
 # AudioFormation Build Log
 
-**Status:** Phase 3 Complete (Mix & Review Dashboard)  
-**Tests:** 378 / 378 Passing (100%)  
-**Date:** February 7, 2026  
+**Status:** Phase 3 Complete (Mix & Review Dashboard)
+**Tests:** 378 / 378 Passing (100%)
+**Date:** February 7, 2026
 **Hardware Reference:** NVIDIA GTX 1650 Ti (4GB VRAM)
 
 **Phase 4:** Final Polish & Export UI (Feb 16-17, 2026)
@@ -114,28 +114,28 @@ Tracking progress against `docs/New-Dashboard.md`.
 1.  **API**:
     - `POST /projects/{id}/upload`: Generic file upload for 'references' and 'music'.
     - `POST /projects/{id}/preview`: Ad-hoc voice generation for character testing.
-2.  **UI**: 
+2.  **UI**:
     - Added "Upload" and "Preview" buttons to Cast tab (for XTTS/ElevenLabs).
     - Added "Upload BGM" button to Mix view.
-3.  **Logic**: 
+3.  **Logic**:
     - Implemented file handling and audio playback for previews.
 
 4.  **UI Styles**: Added collapsible components and action button groups.
-5.  **Editor**: 
+5.  **Editor**:
     - Added XTTS advanced configuration section.
     - Added ElevenLabs placeholder section.
     - Enhanced Chapter list with immediate feedback and controls.
-6.  **Logic**: 
+6.  **Logic**:
     - Wired XTTS parameters to `project.json` generation config.
     - Added inline audio playback for generated chapters.
 
 7.  **UI Styles**: Added collapsible components and action button groups.
-8.  **Editor**: 
+8.  **Editor**:
     - Added XTTS advanced configuration section.
     - Added ElevenLabs placeholder section.
     - Enhanced Chapter list with immediate feedback and controls.
     - Added "Assets" tab for SFX/Music generation and management.
-9.  **Logic**: 
+9.  **Logic**:
     - Wired XTTS parameters to `project.json` generation config.
     - Added inline audio playback for generated chapters.
     - Added SFX/Music generation API endpoints and UI logic.

@@ -1,0 +1,94 @@
+{
+  "id": "API_ENG_GTTS_202808",
+  "version": "1.0",
+  "created": "2026-02-18T18:28:26.476442+00:00",
+  "languages": [
+    "ar",
+    "en"
+  ],
+  "chapters": [
+    {
+      "id": "contemplative",
+      "title": "Contemplative",
+      "language": "en",
+      "source": "01_TEXT/chapters/contemplative.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    }
+  ],
+  "characters": {
+    "narrator": {
+      "name": "Narrator",
+      "engine": "edge",
+      "voice": "ar-SA-HamedNeural",
+      "dialect": "msa",
+      "persona": "Default narrator",
+      "reference_audio": null
+    }
+  },
+  "generation": {
+    "chunk_max_chars": 200,
+    "chunk_strategy": "breath_group",
+    "crossfade_ms": 120,
+    "crossfade_min_ms": 50,
+    "leading_silence_ms": 100,
+    "max_retries_per_chunk": 3,
+    "fail_threshold_percent": 5.0,
+    "xtts_temperature": 0.7,
+    "xtts_repetition_penalty": 5.0,
+    "edge_tts_rate_limit_ms": 200,
+    "edge_tts_concurrency": 4,
+    "edge_tts_ssml": true,
+    "xtts_vram_management": "empty_cache_per_chapter"
+  },
+  "qc": {
+    "snr_method": "vad_noise_floor",
+    "snr_min_db": 20.0,
+    "max_duration_deviation_percent": 30.0,
+    "clipping_threshold_dbfs": -0.5,
+    "lufs_deviation_max": 3.0,
+    "pitch_jump_max_semitones": 12.0,
+    "boundary_artifact_check": true
+  },
+  "mix": {
+    "master_volume": 0.9,
+    "target_lufs": -16.0,
+    "true_peak_limit_dbtp": -1.0,
+    "gap_between_chapters_sec": 2.0,
+    "ducking": {
+      "method": "vad",
+      "vad_model": "silero-vad",
+      "vad_threshold": 0.5,
+      "vad_threshold_ar": 0.45,
+      "look_ahead_ms": 200,
+      "attack_ms": 100,
+      "release_ms": 500,
+      "attenuation_db": -12.0,
+      "frequency_aware": false
+    }
+  },
+  "export": {
+    "formats": [
+      "mp3",
+      "m4b"
+    ],
+    "mp3_bitrate": 192,
+    "m4b_aac_bitrate": 128,
+    "include_cover_art": true,
+    "cover_art": "00_CONFIG/cover.jpg",
+    "chapter_transition": "silence",
+    "chapter_transition_file": null,
+    "metadata": {
+      "author": "",
+      "narrator": "",
+      "publisher": "",
+      "year": 2026,
+      "description": ""
+    }
+  }
+}

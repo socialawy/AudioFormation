@@ -45,7 +45,6 @@ def test_export_m4b_success(setup_mixed_files):
         patch("subprocess.run") as mock_run,
         patch("audioformation.export.m4b.get_duration", return_value=60.0),
     ):
-
         mock_run.return_value.returncode = 0
 
         result = export_project_m4b(project_id, output_path)
@@ -94,7 +93,6 @@ def test_export_with_cover_art(setup_mixed_files):
         patch("subprocess.run") as mock_run,
         patch("audioformation.export.m4b.get_duration", return_value=10.0),
     ):
-
         mock_run.return_value.returncode = 0
 
         export_project_m4b(project_id, output_path)

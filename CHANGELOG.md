@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Reduced from 7 real vulnerabilities to 5 false positives
 - **Code Quality Issues**: Multiple SonarQube violations affecting maintainability
   - Nested ternary → explicit if/else statements
-  - `.find()` → `.some()` for boolean existence checks  
+  - `.find()` → `.some()` for boolean existence checks
   - `parseInt/parseFloat` → `Number.parseInt/Number.parseFloat`
   - `.replace()` → `.replaceAll()` in escapeHtml function
   - `for` loops → `for-of` iterations
