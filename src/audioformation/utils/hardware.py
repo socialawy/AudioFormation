@@ -5,11 +5,14 @@ Writes results to 00_CONFIG/hardware.json.
 Used by engine selection and VRAM management strategy.
 """
 
+import json
+import platform
 import shutil
 import subprocess
-import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
+
+from audioformation.utils.security import validate_path_within
 
 from audioformation.config import VRAM_STRATEGY_THRESHOLDS
 
@@ -147,5 +150,10 @@ def write_hardware_json(project_path: Path) -> dict[str, Any]:
     """Detect hardware and write to project's 00_CONFIG/hardware.json."""
     hw = detect_all()
     hw_path = project_path / "00_CONFIG" / "hardware.json"
+    
+    # Validate the path is within the project directory
+    if not validate_path_within(hw_path, project_path):
+        raise ValueError(f"Hardware config path escapes project directory: {hw_path}")
+    
     hw_path.write_text(json.dumps(hw, indent=2, ensure_ascii=False))
     return hw

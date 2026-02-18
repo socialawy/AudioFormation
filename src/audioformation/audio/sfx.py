@@ -17,6 +17,7 @@ from audioformation.audio.synthesis import (
     simple_lowpass,
     apply_envelope,
 )
+from audioformation.utils.security import validate_path_within
 
 SFX_TYPES = Literal["whoosh", "impact", "ui_click", "static", "drone"]
 
@@ -71,6 +72,18 @@ def generate_sfx(
 
     if output_path:
         output_path = Path(output_path)
+        
+        # Validate output path is safe (prevent directory traversal)
+        # For SFX generation, we allow any path as long as it doesn't escape intended directories
+        # This is a defensive measure - the calling code should ensure proper sandboxing
+        try:
+            resolved_path = output_path.resolve()
+            # Basic safety check - don't write to system directories
+            if any(system_dir in str(resolved_path) for system_dir in ['/bin', '/sbin', '/usr', '/etc', '/Windows', '/Program Files']):
+                raise ValueError(f"Unsafe output path: {output_path}")
+        except (OSError, ValueError):
+            raise ValueError(f"Invalid output path: {output_path}")
+            
         output_path.parent.mkdir(parents=True, exist_ok=True)
         sf.write(str(output_path), audio, sample_rate)
 

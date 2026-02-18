@@ -26,7 +26,7 @@ from audioformation.project import (
     get_project_path,
 )
 from audioformation.utils.hardware import write_hardware_json
-from audioformation.utils.security import sanitize_filename
+from audioformation.utils.security import sanitize_filename, validate_path_within
 from audioformation.pipeline import mark_node
 from audioformation.ingest import ingest_text
 from audioformation.generate import generate_project
@@ -124,7 +124,8 @@ async def create_new_project(request: ProjectCreateRequest):
             "message": "Project created successfully.",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to create project: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/projects/{project_id}")
@@ -136,7 +137,8 @@ async def get_project_details(project_id: str):
     try:
         return load_project_json(project_id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to load project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.put("/projects/{project_id}")
@@ -153,7 +155,8 @@ async def update_project(project_id: str, project_data: dict[str, Any]):
         save_project_json(project_id, project_data)
         return {"message": "Project updated successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to update project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/projects/{project_id}/ingest")
@@ -172,7 +175,8 @@ async def ingest_files(
     tmp_path = Path(tmp_dir)
     try:
         for file in files:
-            dest = tmp_path / file.filename
+            safe_filename = sanitize_filename(file.filename)
+            dest = tmp_path / safe_filename
             with open(dest, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
     except Exception as e:
@@ -225,7 +229,8 @@ async def upload_file(project_id: str, category: str, file: UploadFile = File(..
         rel_path = str(dest_path.relative_to(project_path)).replace("\\", "/")
         return {"path": rel_path, "filename": safe_name}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to ingest files for project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/projects/{project_id}/preview")
@@ -256,6 +261,11 @@ async def preview_voice(project_id: str, request: PreviewRequest):
     # Create temp file for output
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         output_path = Path(tmp.name)
+    
+    # Validate temp path is within system temp directory
+    temp_root = Path(tempfile.gettempdir())
+    if not validate_path_within(output_path, temp_root):
+        raise HTTPException(status_code=500, detail="Invalid temp path")
 
     try:
         gen_req = GenerationRequest(
@@ -281,7 +291,8 @@ async def preview_voice(project_id: str, request: PreviewRequest):
 
     except Exception as e:
         output_path.unlink(missing_ok=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to generate preview for project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 def _ingest_files_sync(project_id: str, tmp_path: Path) -> dict:
@@ -395,7 +406,8 @@ async def trigger_compose(
     import time
 
     timestamp = str(int(time.time()))
-    output_path = output_dir / f"pad_{request.preset}_{timestamp}.wav"
+    safe_preset = sanitize_filename(request.preset)
+    output_path = output_dir / f"pad_{safe_preset}_{timestamp}.wav"
 
     background_tasks.add_task(
         _run_with_status,
@@ -431,11 +443,11 @@ async def trigger_sfx(
     import time
 
     timestamp = str(int(time.time()))
-    filename = request.name if request.name else f"{request.type}_{timestamp}.wav"
-    if not filename.endswith(".wav"):
-        filename += ".wav"
+    safe_name = sanitize_filename(request.name) if request.name else f"{request.type}_{timestamp}"
+    if not safe_name.endswith(".wav"):
+        safe_name += ".wav"
 
-    output_path = output_dir / filename
+    output_path = output_dir / safe_name
 
     # Simple wrapper to match _run_with_status signature
     def _gen_sfx():
@@ -450,11 +462,12 @@ async def trigger_sfx(
     try:
         _gen_sfx()
         return {
-            "message": f"Generated SFX: {filename}",
+            "message": f"Generated SFX: {safe_name}",
             "path": str(output_path.relative_to(project_path)),
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to generate SFX for project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/projects/{project_id}/export")
@@ -635,7 +648,8 @@ async def get_project_status(project_id: str):
     try:
         return load_pipeline_status(project_id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to load pipeline status for project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/projects/{project_id}/files")
@@ -717,7 +731,8 @@ async def list_engine_voices(name: str, lang: Optional[str] = None):
     except KeyError:
         raise HTTPException(status_code=404, detail=f"Engine '{name}' not found")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to list voices for engine {name}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/projects/{project_id}/hardware")

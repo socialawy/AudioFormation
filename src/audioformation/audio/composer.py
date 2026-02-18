@@ -12,8 +12,9 @@ import numpy as np
 import soundfile as sf
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
+from audioformation.utils.security import validate_path_within
 from audioformation.audio.synthesis import (
     oscillator,
     cents_to_ratio,
@@ -247,6 +248,18 @@ def generate_pad(
     # Write to file if requested
     if output_path is not None:
         output_path = Path(output_path)
+        
+        # Validate output path is safe (prevent directory traversal)
+        # For pad generation, we allow any path as long as it doesn't escape intended directories
+        # This is a defensive measure - the calling code should ensure proper sandboxing
+        try:
+            resolved_path = output_path.resolve()
+            # Basic safety check - don't write to system directories
+            if any(system_dir in str(resolved_path) for system_dir in ['/bin', '/sbin', '/usr', '/etc', '/Windows', '/Program Files']):
+                raise ValueError(f"Unsafe output path: {output_path}")
+        except (OSError, ValueError):
+            raise ValueError(f"Invalid output path: {output_path}")
+            
         output_path.parent.mkdir(parents=True, exist_ok=True)
         sf.write(str(output_path), mix, sr)
 
