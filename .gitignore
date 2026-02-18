@@ -168,3 +168,7 @@ local-files/
 .windsurf/
 E2E_TEST_RESULTS_*.md
 test_samples/
+
+# Security scanning exclusions
+.snyk
+*.snyk
