@@ -63,25 +63,13 @@ def validate_path_within(path: Path, root: Path) -> bool:
     """
     Ensure `path` resolves to a location within `root`.
     """
-    # CODEQL FIX: Perform textual check BEFORE file system access
-    # resolve() hits the disk, which CodeQL flags if data is tainted.
-    # abspath() is pure string manipulation, safe to use as a guard.
     try:
-        abs_path = os.path.abspath(str(path))
-        abs_root = os.path.abspath(str(root))
-        
-        # 1. Textual Guard: If it doesn't look like it's inside, fail early
-        if not abs_path.startswith(abs_root):
-             # Handle potential edge cases where startswith matches partial folder names
-             # e.g. /root/foobar vs /root/foo
-             # But let's strict check below handle the final verdict.
-             pass
-
-        # 2. Strict Resolve (only if we passed basic sanity checks)
+        # CODEQL FIX: Removed intermediate os.path.abspath checks on tainted strings
+        # Proceed directly to resolved path check
         resolved = path.resolve()
         root_resolved = root.resolve()
         
-        # Python 3.9+ is_relative_to
+        # Python 3.9+ method is safer and cleaner
         return resolved.is_relative_to(root_resolved)
     except (OSError, ValueError, AttributeError):
         return False
