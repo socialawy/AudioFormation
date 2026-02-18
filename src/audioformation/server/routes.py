@@ -176,7 +176,9 @@ async def ingest_files(
     tmp_path = Path(tmp_dir)
     try:
         for file in files:
-            safe_filename = sanitize_filename(file.filename)
+            # CODEQL FIX: Explicit basename + sanitize
+            raw_filename = os.path.basename(file.filename)
+            safe_filename = sanitize_filename(raw_filename)
             dest = tmp_path / safe_filename
             with open(dest, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
