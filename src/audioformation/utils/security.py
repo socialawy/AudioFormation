@@ -63,20 +63,17 @@ def validate_path_within(path: Path, root: Path) -> bool:
     """
     Ensure `path` resolves to a location within `root`.
     """
-    try:
-        # CODEQL FIX: Strong Guard
-        # 1. Normalize strings using os.path.abspath (Trusted sanitizer)
-        # This resolves '..' textually without accessing the filesystem.
-        abs_path = os.path.abspath(str(path))
-        abs_root = os.path.abspath(str(root))
+    # CODEQL FIX: Use pathlib parts instead of os.path.abspath
+    # checking path.parts is a pure memory operation, safe from OS injection
+    if ".." in path.parts:
+        return False
         
-        # 2. Check prefix (Allowlist)
-        # If the textual path escapes the root, reject immediately.
-        if not abs_path.startswith(abs_root):
-            return False
+    # Textual fallback for string representation
+    if ".." in str(path):
+        return False
 
-        # 3. Only now is it safe to resolve symlinks
-        # CodeQL should now see 'path' as sanitized by the block above.
+    try:
+        # Now safe to resolve because we know it doesn't try to traverse up
         resolved = path.resolve()
         root_resolved = root.resolve()
         return resolved.is_relative_to(root_resolved)
