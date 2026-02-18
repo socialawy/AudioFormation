@@ -143,6 +143,12 @@ PROJECTS/**/07_EXPORT/**/*.mp3
 PROJECTS/**/07_EXPORT/**/*.m4b
 PROJECTS/**/07_EXPORT/**/*.wav
 
+# Test projects (E2E tests, development projects)
+PROJECTS/E2E_TEST_*/
+PROJECTS/TEST_*/
+PROJECTS/test_*/
+PROJECTS/MY_NOVEL/
+
 # Keep directory structure
 !**/.gitkeep
 
@@ -160,4 +166,4 @@ Thumbs.db
 # Local development files
 local-files/
 .windsurf/
-PROJECTS/MY_NOVEL/
+E2E_TEST_RESULTS_*.md

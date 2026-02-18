@@ -18,14 +18,67 @@ Engine Agnostic	| Swap TTS/music engines without touching project files
 Hardware Aware	| Auto-detects GPU, suggests optimal engine
 Bilingual First	| Arabic + English as primary languages
 
+## Installation
+
+### Prerequisites
+- Python 3.11+
+- ffmpeg on PATH
+- Optional: NVIDIA GPU with 4GB+ VRAM for XTTS voice cloning
+
+### Basic Installation
+```bash
+# Install with core dependencies
+pip install -e ".[cloud]"
+
+# Or for development
+pip install -e ".[dev,server]"
+```
+
+### TTS Engine Dependencies
+
+AudioFormation supports multiple TTS engines. Install the optional dependencies based on your needs:
+
+```bash
+# Cloud TTS engines (recommended for most users)
+pip install -e ".[cloud]"
+# Includes: edge-tts, gTTS, ElevenLabs, httpx, python-dotenv
+
+# Local voice cloning (requires GPU)
+pip install -e ".[xtts]"
+# Includes: coqui-tts (XTTS v2)
+
+# Voice activity detection for ducking
+pip install -e ".[vad]"
+# Includes: silero-vad
+
+# Web dashboard
+pip install -e ".[server]"
+# Includes: fastapi, uvicorn, aiofiles, python-multipart
+
+# M4B audiobook export
+pip install -e ".[m4b]"
+# Includes: mutagen
+
+# MIDI composition
+pip install -e ".[midi]"
+# Includes: midiutil
+
+# Full installation (all features)
+pip install -e ".[cloud,xtts,vad,server,m4b,midi,dev]"
+```
+
+### API Keys Required
+
+Some engines require API keys:
+
+**ElevenLabs** (optional):
+```bash
+export ELEVENLABS_API_KEY="your_api_key_here"
+```
+
 ## Quick Start
 
 ```bash
-# Install
-pip install -e ".[dev,server]"
-
-pip install "audioformation[server]"
-
 # Create a project
 audioformation new "MY_NOVEL"
 
@@ -50,10 +103,31 @@ audioformation mix MY_NOVEL
 audioformation export MY_NOVEL --format m4b
 ```
 
-## Requirements
-Python 3.11+
-ffmpeg on PATH
-Optional: NVIDIA GPU with 4GB+ VRAM for XTTS voice cloning
+## TTS Engine Support
+
+AudioFormation supports multiple TTS engines with different capabilities:
+
+| Engine | Type | Languages | Cost | Dependencies |
+|--------|------|-----------|------|--------------|
+| **Edge-TTS** | Cloud | Arabic, English, many others | Free | `edge-tts` |
+| **gTTS** | Cloud | 100+ languages | Free | `gTTS` |
+| **ElevenLabs** | Cloud | English (premium voices) | Paid | `elevenlabs` + API key |
+| **XTTS v2** | Local | Multilingual | Free | `coqui-tts` + GPU |
+
+### Engine Selection
+```bash
+# Use Edge-TTS (default, best for Arabic)
+audioformation generate PROJECT --engine edge
+
+# Use gTTS (fallback, more languages)
+audioformation generate PROJECT --engine gtts
+
+# Use ElevenLabs (premium quality)
+audioformation generate PROJECT --engine elevenlabs
+
+# Use XTTS v2 (local voice cloning)
+audioformation generate PROJECT --engine xtts
+```
 
 ## Features
 Feature | Status
