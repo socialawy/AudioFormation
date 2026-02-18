@@ -1,0 +1,30 @@
+{
+  "project_id": "API_ENG_11LABS_202428",
+  "nodes": {
+    "ingest": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:24:51.941264+00:00",
+      "files_ingested": 1,
+      "files_skipped": 0
+    },
+    "validate": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:24:52.118296+00:00"
+    },
+    "generate": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:24:57.204102+00:00",
+      "engine": "elevenlabs",
+      "chapters": {
+        "contemplative": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\API_ENG_11LABS_202428\\03_GENERATED\\raw\\contemplative.wav"
+        }
+      }
+    }
+  }
+}

@@ -99,7 +99,7 @@ def create_project(project_id: str) -> Path:
 
     # Write initial pipeline-status.json
     pipeline_status = _initial_pipeline_status(safe_id)
-    _write_json(project_path / PIPELINE_STATUS_JSON, pipeline_status)
+    _write_json(project_path / "pipeline-status.json", pipeline_status)
 
     # Write .gitignore
     _write_gitignore(project_path)
