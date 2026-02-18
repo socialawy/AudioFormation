@@ -8,6 +8,7 @@ Every project is a directory under PROJECTS_ROOT containing:
 """
 
 import json
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path

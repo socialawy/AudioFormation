@@ -8,6 +8,7 @@ Pipeline Node: SFX (Optional).
 """
 
 import numpy as np
+import os
 import soundfile as sf
 from pathlib import Path
 from typing import Optional, Literal
