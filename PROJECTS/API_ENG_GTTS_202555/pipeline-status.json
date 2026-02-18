@@ -1,0 +1,52 @@
+{
+  "project_id": "API_ENG_GTTS_202555",
+  "nodes": {
+    "bootstrap": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:26:17.471724+00:00"
+    },
+    "ingest": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:26:17.515409+00:00",
+      "files_ingested": 1,
+      "files_skipped": 0
+    },
+    "validate": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:26:17.580862+00:00"
+    },
+    "generate": {
+      "status": "complete",
+      "timestamp": "2026-02-18T18:26:18.501474+00:00",
+      "engine": "gtts",
+      "chapters": {
+        "contemplative": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "gtts",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\API_ENG_GTTS_202555\\03_GENERATED\\raw\\contemplative.wav"
+        }
+      }
+    },
+    "qc_scan": {
+      "status": "pending"
+    },
+    "process": {
+      "status": "pending"
+    },
+    "compose": {
+      "status": "pending"
+    },
+    "mix": {
+      "status": "pending"
+    },
+    "qc_final": {
+      "status": "pending"
+    },
+    "export": {
+      "status": "pending"
+    }
+  }
+}

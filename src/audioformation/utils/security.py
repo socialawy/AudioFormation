@@ -70,12 +70,16 @@ def validate_path_within(path: Path, root: Path) -> bool:
         abs_path = os.path.abspath(str(path))
         abs_root = os.path.abspath(str(root))
 
-        # 2. Ensure root ends with separator to prevent partial matches
+        # 2. Exact match is valid
+        if abs_path == abs_root:
+            return True
+
+        # 3. Ensure root ends with separator to prevent partial matches
         # e.g. /tmp/foo vs /tmp/foobar
         if not abs_root.endswith(os.path.sep):
              abs_root += os.path.sep
 
-        # 3. Check prefix
+        # 4. Check prefix
         # We ensure the path starts with the root directory.
         return abs_path.startswith(abs_root)
     except (TypeError, ValueError):
