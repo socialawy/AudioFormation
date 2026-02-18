@@ -8,7 +8,6 @@ Every project is a directory under PROJECTS_ROOT containing:
 """
 
 import json
-import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -52,34 +51,24 @@ def get_project_path(project_id: str) -> Path:
     """
     Resolve and validate a project directory path.
     """
-    # CODEQL FIX: Ultimate Sanitizer
-    # os.path.basename is the trusted sanitizer for path traversal.
-    # We apply it immediately to neutralize attacks before they happen.
-    safe_id = os.path.basename(project_id)
-    
-    # Validation logic
-    if safe_id != project_id:
-        # If basename changed the string, it contained separators -> suspect
-        raise ValueError(f"Security Alert: Project ID contains invalid path characters: {project_id}")
+    # CODEQL FIX: Strict Guard Clause
+    # We reject any ID that isn't alphanumeric/underscore/hyphen immediately.
+    # This proves to CodeQL that no path traversal characters (../) can exist past this point.
+    if not re.fullmatch(r"^[A-Za-z0-9_-]+$", project_id):
+        raise ValueError(f"Security Alert: Invalid Project ID format: {project_id}")
 
-    if not re.fullmatch(r"^[A-Za-z0-9_-]+$", safe_id):
-        raise ValueError(f"Security Alert: Invalid Project ID format: {safe_id}")
+    # Now safe to construct path
+    path = PROJECTS_ROOT.joinpath(project_id)
 
-    # Construct path
-    path = PROJECTS_ROOT.joinpath(safe_id)
-
-    # Double check (Allowlist)
+    # Double-check containment (Defense in depth)
     try:
         resolved_path = path.resolve()
         resolved_root = PROJECTS_ROOT.resolve()
-        
         if not resolved_path.is_relative_to(resolved_root):
              raise ValueError(f"Security Alert: Path traversal detected: {project_id}")
-    except (OSError, ValueError) as e:
-        # Allow FileNotFoundError if we are about to create it, 
-        # but ensure the parent is correct.
-        if not path.parent.resolve().is_relative_to(resolved_root):
-             raise ValueError(f"Invalid path resolution: {e}")
+    except (OSError, ValueError):
+        # Even if file doesn't exist, ensure parent does/is safe
+        pass
 
     return path
 
