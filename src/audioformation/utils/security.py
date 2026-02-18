@@ -63,15 +63,17 @@ def validate_path_within(path: Path, root: Path) -> bool:
     """
     Ensure `path` resolves to a location within `root`.
     """
+    # CODEQL FIX: Textual Guard
+    # We must block '..' BEFORE calling resolve(), otherwise CodeQL
+    # flags resolve() as a sink (tainted path used in OS operation).
+    if ".." in str(path):
+        return False
+        
     try:
-        # CODEQL FIX: Removed intermediate os.path.abspath checks on tainted strings
-        # Proceed directly to resolved path check
         resolved = path.resolve()
         root_resolved = root.resolve()
-        
-        # Python 3.9+ method is safer and cleaner
         return resolved.is_relative_to(root_resolved)
-    except (OSError, ValueError, AttributeError):
+    except (OSError, ValueError):
         return False
 
 
