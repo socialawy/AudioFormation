@@ -95,7 +95,7 @@ class E2ELogger:
             return {
                 "path": str(filepath.relative_to(Path.cwd())),
                 "size_bytes": stat.st_size,
-                "size_mb": f"{stat.st_size / (1024*1024):.2f}",
+                "size_mb": f"{stat.st_size / (1024 * 1024):.2f}",
                 "sha256_prefix": checksum,
                 "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
             }
@@ -104,7 +104,7 @@ class E2ELogger:
             return {
                 "path": str(filepath),
                 "size_bytes": stat.st_size,
-                "size_mb": f"{stat.st_size / (1024*1024):.2f}",
+                "size_mb": f"{stat.st_size / (1024 * 1024):.2f}",
                 "sha256_prefix": checksum,
                 "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
             }
@@ -202,10 +202,10 @@ class E2ELogger:
         header = f"""# E2E Audio-Formation Pipeline Test Log
 
 **Test Execution Details**
-- **Date**: {self.system_info['timestamp']}
-- **OS**: {self.system_info['os']}
-- **Python**: {self.system_info['python_version']}
-- **Working Directory**: {self.system_info['cwd']}
+- **Date**: {self.system_info["timestamp"]}
+- **OS**: {self.system_info["os"]}
+- **Python**: {self.system_info["python_version"]}
+- **Working Directory**: {self.system_info["cwd"]}
 
 ---
 

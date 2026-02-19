@@ -1136,7 +1136,7 @@ def quick(text: str | None, engine: str, voice: str, output: Path | None) -> Non
     # Use WAV for generation, then convert if needed
     wav_output = output.with_suffix(".wav") if output.suffix != ".wav" else output
 
-    click.echo(f"Generating: \"{text[:60]}{'...' if len(text) > 60 else ''}\"")
+    click.echo(f'Generating: "{text[:60]}{"..." if len(text) > 60 else ""}"')
     click.echo(f"  Engine: {engine}")
     click.echo(f"  Voice:  {voice}")
 
@@ -1249,7 +1249,7 @@ def preview(
     click.echo(f"Generating preview for {project_id}/{chapter_id}")
     click.echo(f"  Engine: {target_engine}")
     click.echo(f"  Voice:  {target_voice}")
-    click.echo(f"  Length: {len(text)} chars (~{len(text)/15:.1f}s)")
+    click.echo(f"  Length: {len(text)} chars (~{len(text) / 15:.1f}s)")
 
     try:
         tts = registry.get(target_engine)
@@ -1562,7 +1562,7 @@ def _dry_run(project_id: str, engine_name: str | None) -> None:
             eng = engine_name or char_data.get("engine", "edge")
 
             click.echo(
-                f"  {ch['id']}: {len(text)} chars → " f"{len(chunks)} chunks ({eng})"
+                f"  {ch['id']}: {len(text)} chars → {len(chunks)} chunks ({eng})"
             )
         else:
             click.echo(f"  {ch['id']}: source file not found")

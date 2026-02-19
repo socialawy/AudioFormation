@@ -67,9 +67,9 @@ class TestE2EPipeline:
         """Verify test data files exist"""
         logger.log_section("Test Data Verification")
 
-        assert (
-            TEST_SAMPLES_DIR.exists()
-        ), f"Test samples directory not found: {TEST_SAMPLES_DIR}"
+        assert TEST_SAMPLES_DIR.exists(), (
+            f"Test samples directory not found: {TEST_SAMPLES_DIR}"
+        )
 
         required_files = ["contemplative.txt", "energetic.txt"]
         for filename in required_files:
@@ -385,9 +385,9 @@ class TestEngineAvailability:
         try:
             import importlib.util
 
-            assert (
-                importlib.util.find_spec("edge_tts") is not None
-            ), "Edge-TTS is available"
+            assert importlib.util.find_spec("edge_tts") is not None, (
+                "Edge-TTS is available"
+            )
         except ImportError:
             pytest.skip("Edge-TTS not available")
 
@@ -407,9 +407,9 @@ class TestEngineAvailability:
             pytest.skip("ElevenLabs API key not configured")
         # More flexible API key format check
         assert len(api_key) > 10, "API key seems too short"
-        assert (
-            api_key.replace("-", "").replace("_", "").isalnum()
-        ), "API key contains invalid characters"
+        assert api_key.replace("-", "").replace("_", "").isalnum(), (
+            "API key contains invalid characters"
+        )
 
     def test_xtts_availability(self):
         """Test XTTS availability"""

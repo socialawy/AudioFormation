@@ -123,7 +123,7 @@ class XTTSEngine(TTSEngine):
                     logger.info("XTTS: using CUDA (%.1f GB free)", free_gb)
                     return "cuda"
                 logger.warning(
-                    "XTTS: only %.1f GB VRAM free (need %.1f), " "falling back to CPU",
+                    "XTTS: only %.1f GB VRAM free (need %.1f), falling back to CPU",
                     free_gb,
                     _MIN_VRAM_GB,
                 )
@@ -142,7 +142,7 @@ class XTTSEngine(TTSEngine):
             from TTS.api import TTS  # type: ignore[import-untyped]
         except ImportError as exc:
             raise RuntimeError(
-                "coqui-tts is not installed. " "Run:  pip install coqui-tts"
+                "coqui-tts is not installed. Run:  pip install coqui-tts"
             ) from exc
 
         logger.info("XTTS: loading %s on %s …", _MODEL_NAME, self.device)

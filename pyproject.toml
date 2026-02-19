@@ -87,3 +87,8 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-fail-under=60",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.1",
+]

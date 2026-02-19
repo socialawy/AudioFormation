@@ -412,8 +412,9 @@ class TestModelLoading:
     def test_ensure_model_caches(self, engine, mock_tts_model):
         with patch(
             "audioformation.engines.xtts.XTTSEngine._ensure_model",
-            side_effect=lambda: setattr(engine, "_model", mock_tts_model)
-            or mock_tts_model,
+            side_effect=lambda: (
+                setattr(engine, "_model", mock_tts_model) or mock_tts_model
+            ),
         ):
             engine._model = mock_tts_model
 

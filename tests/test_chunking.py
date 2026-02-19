@@ -162,9 +162,7 @@ class TestParseChapterSegments:
         assert "Line two" in segments[0].text
 
     def test_arabic_speaker_tags(self) -> None:
-        text = (
-            "قال الراوي بصوت هادئ.\n" "\n" "[hero] لن أستسلم أبداً.\n" "\n" "عاد الصمت."
-        )
+        text = "قال الراوي بصوت هادئ.\n\n[hero] لن أستسلم أبداً.\n\nعاد الصمت."
         segments = parse_chapter_segments(
             text, mode="multi", default_character="narrator"
         )

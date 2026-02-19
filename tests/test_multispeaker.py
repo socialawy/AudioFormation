@@ -34,11 +34,7 @@ class TestMultiSpeakerParsing:
 
     def test_two_speakers(self):
         text = (
-            "The narrator speaks.\n"
-            "\n"
-            "[hero] I will not give up.\n"
-            "\n"
-            "Back to narration."
+            "The narrator speaks.\n\n[hero] I will not give up.\n\nBack to narration."
         )
         segments = parse_chapter_segments(
             text, mode="multi", default_character="narrator"
@@ -66,7 +62,7 @@ class TestMultiSpeakerParsing:
         assert chars == ["narrator", "hero", "villain", "narrator"]
 
     def test_consecutive_same_speaker_merges(self):
-        text = "[hero] First line.\n" "[hero] Second line."
+        text = "[hero] First line.\n[hero] Second line."
         segments = parse_chapter_segments(
             text, mode="multi", default_character="narrator"
         )
@@ -76,7 +72,7 @@ class TestMultiSpeakerParsing:
         assert "Second line." in segments[0].text
 
     def test_blank_line_reverts_to_default(self):
-        text = "[hero] Hero speaks.\n" "\n" "This should be narrator."
+        text = "[hero] Hero speaks.\n\nThis should be narrator."
         segments = parse_chapter_segments(
             text, mode="multi", default_character="narrator"
         )
@@ -114,7 +110,7 @@ class TestMultiSpeakerParsing:
         assert segments[3].character == "narrator"
 
     def test_single_mode_ignores_tags(self):
-        text = "Narrator line.\n" "[hero] Hero line.\n" "More narration."
+        text = "Narrator line.\n[hero] Hero line.\nMore narration."
         segments = parse_chapter_segments(
             text, mode="single", default_character="narrator"
         )
@@ -154,11 +150,7 @@ def multi_project(tmp_path):
 
     # Write chapter text with speaker tags
     chapter_text = (
-        "The narrator begins.\n"
-        "\n"
-        "[hero] I am the hero.\n"
-        "\n"
-        "The narrator concludes."
+        "The narrator begins.\n\n[hero] I am the hero.\n\nThe narrator concludes."
     )
     (text_dir / "ch01.txt").write_text(chapter_text, encoding="utf-8")
 
@@ -317,9 +309,9 @@ class TestMultiSpeakerGeneration:
             assert result["total_chunks"] > 0
 
             # Verify both engines were called
-            assert (
-                edge_mock.generate.call_count > 0
-            ), "Edge should handle narrator segments"
+            assert edge_mock.generate.call_count > 0, (
+                "Edge should handle narrator segments"
+            )
             assert xtts_mock.generate.call_count > 0, "XTTS should handle hero segments"
 
             # Verify edge got narrator text, xtts got hero text
@@ -340,12 +332,12 @@ class TestMultiSpeakerGeneration:
                 for call in xtts_mock.generate.call_args_list
             ]
 
-            assert any(
-                "narrator" in t.lower() for t in edge_texts
-            ), f"Edge should get narrator text, got: {edge_texts}"
-            assert any(
-                "hero" in t.lower() for t in xtts_texts
-            ), f"XTTS should get hero text, got: {xtts_texts}"
+            assert any("narrator" in t.lower() for t in edge_texts), (
+                f"Edge should get narrator text, got: {edge_texts}"
+            )
+            assert any("hero" in t.lower() for t in xtts_texts), (
+                f"XTTS should get hero text, got: {xtts_texts}"
+            )
 
         asyncio.run(_test())
 

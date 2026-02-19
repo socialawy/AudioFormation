@@ -158,7 +158,10 @@ def export_project_m4b(
 
     try:
         result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=None  # Encoding can take time
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=None,  # Encoding can take time
         )
 
         # Clean up temp files

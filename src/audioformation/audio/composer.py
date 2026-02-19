@@ -181,7 +181,7 @@ def generate_pad(
     if isinstance(preset, str):
         if preset not in MOOD_PRESETS:
             raise ValueError(
-                f"Unknown preset '{preset}'. " f"Available: {list(MOOD_PRESETS.keys())}"
+                f"Unknown preset '{preset}'. Available: {list(MOOD_PRESETS.keys())}"
             )
         p = MOOD_PRESETS[preset]
     else:
