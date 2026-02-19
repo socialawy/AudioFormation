@@ -10,7 +10,7 @@ Thank you for your interest in contributing to AudioFormation! This document pro
    cd audioformation
    ```
 
-2. **Create a virtual environment**
+2. **Create a virtual environment** (If you use)
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate

@@ -173,3 +173,8 @@ test_samples/
 .snyk
 *.snyk
 .env
+
+node_modules/
+# Generated Artifacts
+PROJECTS/API_*/
+test_samples/
