@@ -1,0 +1,998 @@
+{
+  "project_id": "DOXASCOPE-PILOT",
+  "chapter_id": "ch01_s01_ar",
+  "total_chunks": 47,
+  "passed": 47,
+  "warnings": 0,
+  "failures": 0,
+  "fail_rate_percent": 0.0,
+  "chunks": [
+    {
+      "chunk_id": "ch01_s01_ar_000",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_000.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 30.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -6.74
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.4,
+          "target": -16.0,
+          "deviation": 6.4
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_001",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_001.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 21.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.19
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.2,
+          "target": -16.0,
+          "deviation": 6.2
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_002",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_002.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 14.9
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.9
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.9,
+          "target": -16.0,
+          "deviation": 5.9
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_003",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_003.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 22.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.82
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.8,
+          "target": -16.0,
+          "deviation": 5.8
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_004",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_004.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 20.3
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.37
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.1,
+          "target": -16.0,
+          "deviation": 6.1
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_005",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_005.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 16.8
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.86
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.2,
+          "target": -16.0,
+          "deviation": 6.2
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_006",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_006.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 26.0
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.7
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.3,
+          "target": -16.0,
+          "deviation": 5.3
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_007",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_007.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 15.4
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.46
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.8,
+          "target": -16.0,
+          "deviation": 5.8
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_008",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_008.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 19.3
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.22
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.7,
+          "target": -16.0,
+          "deviation": 5.7
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_009",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_009.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 15.8
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.14
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.0,
+          "target": -16.0,
+          "deviation": 6.0
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_010",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_010.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 22.8
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.23
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.1,
+          "target": -16.0,
+          "deviation": 6.1
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_011",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_011.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 14.9
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.18
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.6,
+          "target": -16.0,
+          "deviation": 5.6
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_012",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_012.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 14.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.9
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.8,
+          "target": -16.0,
+          "deviation": 5.8
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_013",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_013.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 13.8
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -5.88
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.1,
+          "target": -16.0,
+          "deviation": 6.1
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_014",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_014.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 13.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.22
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.2,
+          "target": -16.0,
+          "deviation": 6.2
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_015",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_015.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 15.0
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.98
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.7,
+          "target": -16.0,
+          "deviation": 5.7
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_016",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_016.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 14.9
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.73
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.6,
+          "target": -16.0,
+          "deviation": 5.6
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_017",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_017.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 22.4
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.49
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.3,
+          "target": -16.0,
+          "deviation": 6.3
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_018",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_018.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 19.2
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -5.05
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.0,
+          "target": -16.0,
+          "deviation": 6.0
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_019",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_019.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 15.9
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.49
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.0,
+          "target": -16.0,
+          "deviation": 6.0
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_020",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_020.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 17.5
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.04
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.1,
+          "target": -16.0,
+          "deviation": 6.1
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_021",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_021.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 17.0
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.17
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.0,
+          "target": -16.0,
+          "deviation": 6.0
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_022",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_022.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 13.9
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.79
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.2,
+          "target": -16.0,
+          "deviation": 6.2
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_023",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_023.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 16.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.94
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.2,
+          "target": -16.0,
+          "deviation": 6.2
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_024",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_024.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 22.0
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.85
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.8,
+          "target": -16.0,
+          "deviation": 5.8
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_025",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_025.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 16.6
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.15
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.1,
+          "target": -16.0,
+          "deviation": 6.1
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_026",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_026.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 14.5
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.71
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.2,
+          "target": -16.0,
+          "deviation": 6.2
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_027",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_027.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 16.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.94
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.9,
+          "target": -16.0,
+          "deviation": 5.9
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_028",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_028.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 35.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.89
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.0,
+          "target": -16.0,
+          "deviation": 6.0
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_029",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_029.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 29.4
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.87
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.3,
+          "target": -16.0,
+          "deviation": 5.3
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_030",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_030.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 16.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -5.87
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.0,
+          "target": -16.0,
+          "deviation": 6.0
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_031",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_031.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 15.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.96
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.2,
+          "target": -16.0,
+          "deviation": 6.2
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_032",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_032.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 21.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.72
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.8,
+          "target": -16.0,
+          "deviation": 5.8
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_033",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_033.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 16.5
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.64
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.1,
+          "target": -16.0,
+          "deviation": 6.1
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_034",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_034.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 14.6
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.86
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.7,
+          "target": -16.0,
+          "deviation": 5.7
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_035",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_035.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 20.6
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.07
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.2,
+          "target": -16.0,
+          "deviation": 6.2
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_036",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_036.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 16.9
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.31
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.0,
+          "target": -16.0,
+          "deviation": 6.0
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_037",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_037.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 18.5
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.54
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.7,
+          "target": -16.0,
+          "deviation": 5.7
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_038",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_038.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 25.3
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -5.76
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.5,
+          "target": -16.0,
+          "deviation": 6.5
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_039",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_039.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 14.3
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.8
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.0,
+          "target": -16.0,
+          "deviation": 6.0
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_040",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_040.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 25.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -6.18
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.6,
+          "target": -16.0,
+          "deviation": 5.6
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_041",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_041.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 19.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -5.04
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.1,
+          "target": -16.0,
+          "deviation": 6.1
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_042",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_042.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 36.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -7.72
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -19.9,
+          "target": -16.0,
+          "deviation": 3.9
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_043",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_043.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 16.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.02
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.9,
+          "target": -16.0,
+          "deviation": 5.9
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_044",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_044.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 28.4
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.06
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.4,
+          "target": -16.0,
+          "deviation": 5.4
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_045",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_045.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 18.4
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.9
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -22.1,
+          "target": -16.0,
+          "deviation": 6.1
+        }
+      }
+    },
+    {
+      "chunk_id": "ch01_s01_ar_046",
+      "file": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar_046.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 14.9
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -5.66
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -21.7,
+          "target": -16.0,
+          "deviation": 5.7
+        }
+      }
+    }
+  ]
+}

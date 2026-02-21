@@ -337,7 +337,10 @@ def _diacritize_mishkal(text: str) -> str:
 
         tashkeel = TashkeelClass()
         result = tashkeel.tashkeel(text)
-        return result.strip() if result else text
+        if result:
+            result = result.replace('\x01', '.')
+            return result.strip()
+        return text
     except ImportError:
         return text
     except Exception:

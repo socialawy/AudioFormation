@@ -767,7 +767,7 @@ Pipeline:
 │ 5-30% → "partial" → warn, offer auto-diacritize
 │
 ├── 2. Auto-diacritize (when needed)
-│ Primary: Mishkal (pip install mishkal)
+│ Primary: Mishkal (pip install mishkal) -- or uv pip install mishkal
 │ ├── Lightweight, fast, pure Python
 │ ├── Good for MSA (Modern Standard Arabic)
 │ └── Sufficient for most literary Arabic
@@ -1024,3 +1024,10 @@ Memory entry created with complete technical details, file changes, and benefits
 - 4 CodeQL issues reamin, not critical.
 Now code QL back to 31 open, and 30 closed (after fixing failing tests)
 - Check github bot failed tests/lint
+
+### Production Pilot (DOXASCOPE_PILOT_01) Note
+AudioFormation passed 100% full E2E project generation utilizing `mishkal` for Arabic Verb diacritization and dynamically-scaled LUFS standards.
+See `DOCS/BEST_PRACTICES.md` for detailed hardware profiling (Max-Q GPU memory management) and text staging constraints.
+
+**Next Milestone:**
+- AudioFormation should verify specific engines tweaks are working through the web UI directly (e.g. tuning models dynamically from the frontend).

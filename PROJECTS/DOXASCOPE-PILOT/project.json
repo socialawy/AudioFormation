@@ -1,0 +1,138 @@
+{
+  "id": "DOXASCOPE-PILOT",
+  "version": "1.0",
+  "created": "2026-02-21T13:14:52Z",
+  "languages": [
+    "ar",
+    "en"
+  ],
+  "chapters": [
+    {
+      "id": "prologue_ar",
+      "title": "المقدمة: قبل السؤال الأول - في البدء",
+      "language": "ar",
+      "source": "01_TEXT/chapters/prologue_ar_utf8.txt",
+      "character": "narrator_ar",
+      "mode": "single",
+      "direction": {
+        "energy": "quiet contemplation",
+        "pace": "slow, deliberate",
+        "emotion": "wonder"
+      }
+    },
+    {
+      "id": "prologue_en",
+      "title": "Prologue: Before the First Question - In the Beginning",
+      "language": "en",
+      "source": "01_TEXT/chapters/prologue_en_utf8.txt",
+      "character": "narrator_en",
+      "mode": "single",
+      "direction": {
+        "energy": "quiet contemplation",
+        "pace": "slow, deliberate",
+        "emotion": "wonder"
+      }
+    },
+    {
+      "id": "ch01_s01_ar",
+      "title": "الفصل الأول: الضباب - مشهد 1",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ch01_s01_ar_utf8.txt",
+      "character": "narrator_ar",
+      "mode": "single",
+      "direction": {
+        "energy": "tense, disoriented",
+        "pace": "moderate",
+        "emotion": "fear"
+      }
+    }
+  ],
+  "characters": {
+    "narrator_ar": {
+      "name": "الراوي العربي",
+      "engine": "edge",
+      "voice": "ar-SA-HamedNeural",
+      "dialect": "msa",
+      "persona": "Calm authority, deep philosophical tone",
+      "reference_audio": null
+    },
+    "narrator_en": {
+      "name": "English Narrator",
+      "engine": "edge",
+      "voice": "en-US-SteffanNeural",
+      "dialect": "us",
+      "persona": "Calm authority, deep philosophical tone",
+      "reference_audio": null
+    }
+  },
+  "generation": {
+    "fallback_scope": "chapter",
+    "fallback_chain": [
+      "edge",
+      "gtts"
+    ],
+    "chunk_max_chars": 200,
+    "chunk_strategy": "breath_group",
+    "crossfade_ms": 120,
+    "crossfade_overrides": {
+      "edge": 120,
+      "xtts": 80,
+      "gtts": 150
+    },
+    "crossfade_min_ms": 50,
+    "leading_silence_ms": 100,
+    "max_retries_per_chunk": 3,
+    "fail_threshold_percent": 5.0,
+    "xtts_temperature": 0.7,
+    "xtts_repetition_penalty": 5.0,
+    "edge_tts_rate_limit_ms": 200,
+    "edge_tts_concurrency": 4,
+    "edge_tts_ssml": true,
+    "xtts_vram_management": "empty_cache_per_chapter"
+  },
+  "qc": {
+    "snr_method": "vad_noise_floor",
+    "snr_min_db": 10.0,
+    "max_duration_deviation_percent": 30.0,
+    "clipping_threshold_dbfs": -0.5,
+    "lufs_deviation_max": 8.0,
+    "pitch_jump_max_semitones": 12.0,
+    "boundary_artifact_check": true
+  },
+  "mix": {
+    "master_volume": 0.9,
+    "target_lufs": -16.0,
+    "true_peak_limit_dbtp": -1.0,
+    "gap_between_chapters_sec": 2.0,
+    "ducking": {
+      "method": "vad",
+      "vad_model": "silero-vad",
+      "vad_threshold": 0.5,
+      "vad_threshold_ar": 0.45,
+      "look_ahead_ms": 200,
+      "attack_ms": 100,
+      "release_ms": 500,
+      "attenuation_db": -12.0,
+      "frequency_aware": false
+    }
+  },
+  "export": {
+    "formats": [
+      "mp3",
+      "m4b"
+    ],
+    "mp3_bitrate": 192,
+    "m4b_aac_bitrate": 128,
+    "include_cover_art": false,
+    "cover_art": null,
+    "chapter_transition": "silence",
+    "chapter_transition_file": null,
+    "metadata": {
+      "author": "A.F.Sadek",
+      "narrator": "AudioFormation",
+      "publisher": "Doxascope",
+      "year": 2026,
+      "description": "Pilot audiobook generation for Doxascope Universe"
+    }
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "project_id": "DOXASCOPE_PILOT_01",
+  "generated_at": "2026-02-21T20:26:16.946146+00:00",
+  "total_files": 39,
+  "metadata": {
+    "author": "",
+    "narrator": "",
+    "publisher": "",
+    "year": 2026,
+    "description": ""
+  },
+  "files": [
+    {
+      "path": "audiobook\\.gitkeep",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "chapters\\.gitkeep",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "chapters\\ar_prologue_p01.mp3",
+      "size_bytes": 99692,
+      "sha256": "8b0fb018cfcc3e3526e3b2744b746d08a3504347238fc4906ef2ba6637991cf6"
+    },
+    {
+      "path": "chapters\\ar_prologue_p02.mp3",
+      "size_bytes": 585836,
+      "sha256": "c1b6f222d623a7d4b4d70e4347862cba8687037109769091e75e7582667796f7"
+    },
+    {
+      "path": "chapters\\ar_prologue_p03.mp3",
+      "size_bytes": 74348,
+      "sha256": "a33a18433bfe7d21c2f8bded3e7c39bac2b61dbe6690e8f73d50aebdaf4c8d2c"
+    },
+    {
+      "path": "chapters\\ar_prologue_p04.mp3",
+      "size_bytes": 511532,
+      "sha256": "e6562ef8548718717dc4184a377877fefbd21a2275cb5952e24fc14a080f6800"
+    },
+    {
+      "path": "chapters\\ar_prologue_p05.mp3",
+      "size_bytes": 127916,
+      "sha256": "bccc1a5146a156b354b4116d76c56db218258b4c9ec60401b4bebfe166a272d5"
+    },
+    {
+      "path": "chapters\\ar_prologue_p06.mp3",
+      "size_bytes": 163628,
+      "sha256": "bc551cf5f10aeb9fc2624b32322d6702c0dc3548214446f86410b3ac3edc51da"
+    },
+    {
+      "path": "chapters\\ar_prologue_p07.mp3",
+      "size_bytes": 437228,
+      "sha256": "77d4c88dcb4ef9e51c375488332d1fcfbcd758e778b7e39f8924bbf04190a6a6"
+    },
+    {
+      "path": "chapters\\ar_prologue_p08.mp3",
+      "size_bytes": 244268,
+      "sha256": "8e3b7b4f5dd50493d031b99275925ea23a3c66d2f17a34ff5cd2af2703f8ce55"
+    },
+    {
+      "path": "chapters\\ar_prologue_p09.mp3",
+      "size_bytes": 92780,
+      "sha256": "d589e8d45923b092d82e129d12fa1b0ca8e52253045b6b87a7ae310d87ee2f45"
+    },
+    {
+      "path": "chapters\\ar_prologue_p10.mp3",
+      "size_bytes": 398636,
+      "sha256": "53d40fdccc2146db469ba4271a2aa6e860488a2aea1f82b7ca3c6ef00df83f57"
+    },
+    {
+      "path": "chapters\\ar_prologue_p11.mp3",
+      "size_bytes": 518444,
+      "sha256": "38d215d7487fe343a88f3abd64289eb2210bcdde02f4cbbca5d1b620b6b0d51b"
+    },
+    {
+      "path": "chapters\\ar_prologue_p12.mp3",
+      "size_bytes": 84716,
+      "sha256": "dc35c89dc6503251246ba4f017d2ce7dec166ab2f7929df6479dae30a086d12a"
+    },
+    {
+      "path": "chapters\\ar_prologue_p13.mp3",
+      "size_bytes": 560492,
+      "sha256": "3c70afbe45bc2d7d86ec4294aefe8eb7de36e48c2833019128ee34652eb28df4"
+    },
+    {
+      "path": "chapters\\ar_prologue_p14.mp3",
+      "size_bytes": 256364,
+      "sha256": "8d3d689fe17fbb7cddf4d7448f0781d4870aa06a71929d02e31234ffc93c3c7a"
+    },
+    {
+      "path": "chapters\\ar_prologue_p15.mp3",
+      "size_bytes": 245996,
+      "sha256": "f41643fbce5f7099391d43001981014300ed9b4c5c8af3abfba4cc9514fd440f"
+    },
+    {
+      "path": "chapters\\ar_prologue_p16.mp3",
+      "size_bytes": 519596,
+      "sha256": "ddf9db60b2c61f9929cbf811b540d1e7d47155ff90ee99e4fd7a0fb3b5d21a63"
+    },
+    {
+      "path": "chapters\\ar_prologue_p17.mp3",
+      "size_bytes": 302444,
+      "sha256": "1cd91dbbf278ce56fdd54fd789a9388177f21b77ccf549dc642b632c82f8c512"
+    },
+    {
+      "path": "chapters\\ar_prologue_p18.mp3",
+      "size_bytes": 210860,
+      "sha256": "ddb2a5ce254cb3b3589fd591a70bb8ee2ce1084e063afba68408159565c3596a"
+    },
+    {
+      "path": "chapters\\ar_prologue_p19.mp3",
+      "size_bytes": 112364,
+      "sha256": "d36a33f9612cc8748bd108013ca8524d3aa3399739e6cb1a72a3c4d53392e5f5"
+    },
+    {
+      "path": "chapters\\ar_prologue_p20.mp3",
+      "size_bytes": 209708,
+      "sha256": "053e52f07a87858d4dc8505218221b3032eeb68c647989434abfd068a151f3c7"
+    },
+    {
+      "path": "chapters\\ar_prologue_p21.mp3",
+      "size_bytes": 186092,
+      "sha256": "2c5bfd30a1759f3d1fd9b8a8edd4e4d2abd0f12cdd13919dbda77f140c868cfc"
+    },
+    {
+      "path": "chapters\\ar_prologue_p22.mp3",
+      "size_bytes": 519596,
+      "sha256": "6ab58700e8c69ed0e35d8902d910053045e72b0bc5a6c5a15f6b1d2110a7ca60"
+    },
+    {
+      "path": "chapters\\ar_prologue_p23.mp3",
+      "size_bytes": 97388,
+      "sha256": "8ab870d4c4a204500a2747258f87870d7173bd8b72562a78ad482eb418b14c82"
+    },
+    {
+      "path": "chapters\\ar_prologue_p24.mp3",
+      "size_bytes": 304172,
+      "sha256": "da107b8567083c701a52cabd7e2f8f690ce03c0bfed5735ce64f877304d2aa87"
+    },
+    {
+      "path": "chapters\\ar_prologue_p25.mp3",
+      "size_bytes": 216044,
+      "sha256": "40af5d798c6636d1b9964ee100df5150f0238391a67825ea7f42caf8910b12bc"
+    },
+    {
+      "path": "chapters\\ar_prologue_p26.mp3",
+      "size_bytes": 421676,
+      "sha256": "3489b16b203b751c60fa13c9e1ce701367403f056ce326ace77087743aceeb00"
+    },
+    {
+      "path": "chapters\\ar_prologue_p27.mp3",
+      "size_bytes": 89900,
+      "sha256": "3ce3441bacbb80cf0c451e67127c40eaf5e00efc8fa04d00ed4fb4d968cdfedd"
+    },
+    {
+      "path": "chapters\\ar_prologue_p28.mp3",
+      "size_bytes": 259244,
+      "sha256": "46467dcee5432f3e9d50936157df13a5184282f0543091a087acbfe38a9ab913"
+    },
+    {
+      "path": "chapters\\ar_prologue_p29.mp3",
+      "size_bytes": 94508,
+      "sha256": "1ddfcd5bfef059584f88ced962c41ebfe8ae162053aa697992bf1452889c24ab"
+    },
+    {
+      "path": "chapters\\ar_prologue_p30.mp3",
+      "size_bytes": 329516,
+      "sha256": "88aed618f56a36e2a14363c3574ff1a1a942df80fde21cddfab6cbb48e1c538c"
+    },
+    {
+      "path": "chapters\\ar_prologue_p31.mp3",
+      "size_bytes": 252908,
+      "sha256": "e566063dcc8c170b30f9811ddbf2d8da2f1ffe24d4e3d3bf36f681ecc59ba991"
+    },
+    {
+      "path": "chapters\\ar_prologue_p32.mp3",
+      "size_bytes": 165932,
+      "sha256": "ddff6f4c565b3d1d8cad939a17a2033b1cce845984931c9e294a52882147d282"
+    },
+    {
+      "path": "chapters\\ar_prologue_p33.mp3",
+      "size_bytes": 142316,
+      "sha256": "d1f03e6f4bff6ceee01c3b7122220e7eac06780e21916d6ff5548df515f67d58"
+    },
+    {
+      "path": "chapters\\ar_prologue_p34.mp3",
+      "size_bytes": 136088,
+      "sha256": "b55ac5103388444f8bf817f00aad542203699445e830988ef22c591eb530b92e"
+    },
+    {
+      "path": "chapters\\ar_prologue_p35.mp3",
+      "size_bytes": 154412,
+      "sha256": "d85006de384287c98cd6cd2b6fd5f07fd3480ec1ef8f628ad2a4a312505c8551"
+    },
+    {
+      "path": "chapters\\ar_prologue_p36.mp3",
+      "size_bytes": 74924,
+      "sha256": "9925449d7cb2e6c94352854a8f01dc2595fbcaa01fc0658fcef3a66c5701d35a"
+    },
+    {
+      "path": "chapters\\ar_prologue_p37.mp3",
+      "size_bytes": 69740,
+      "sha256": "155e8288d5c9c2d460d00933da77ab8a236f172f6e681ee875609dc254e33e34"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "project_id": "DOXASCOPE_PILOT_01",
+  "chapter_id": "ar_prologue_p37",
+  "total_chunks": 1,
+  "passed": 1,
+  "warnings": 0,
+  "failures": 0,
+  "fail_rate_percent": 0.0,
+  "chunks": [
+    {
+      "chunk_id": "ar_prologue_p37_000",
+      "file": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p37_000.wav",
+      "status": "pass",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 42.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -6.29
+        },
+        "lufs": {
+          "status": "pass",
+          "lufs": -19.5,
+          "target": -16.0,
+          "deviation": 3.5
+        }
+      }
+    }
+  ]
+}

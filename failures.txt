@@ -1,0 +1,10 @@
+X ar_prologue_p18.wav       LUFS: -14.9  TP:  -0.9
+      ΓööΓöÇ LUFS -14.9 deviates from target -16.0 by > 1.0.
+X ar_prologue_p19.wav       LUFS: -17.4  TP:  -1.7
+      ΓööΓöÇ LUFS -17.4 deviates from target -16.0 by > 1.0.
+X ar_prologue_p30.wav       LUFS: -14.9  TP:  -0.9
+      ΓööΓöÇ LUFS -14.9 deviates from target -16.0 by > 1.0.
+X ar_prologue_p33.wav       LUFS: -14.6  TP:  -0.9
+      ΓööΓöÇ LUFS -14.6 deviates from target -16.0 by > 1.0.
+X ar_prologue_p37.wav       LUFS: -17.3  TP:  -4.6
+      ΓööΓöÇ LUFS -17.3 deviates from target -16.0 by > 1.0.

@@ -1,0 +1,352 @@
+{
+  "project_id": "DOXASCOPE_PILOT_01",
+  "nodes": {
+    "bootstrap": {
+      "status": "complete",
+      "timestamp": "2026-02-21T18:04:05.219573+00:00"
+    },
+    "ingest": {
+      "status": "complete",
+      "timestamp": "2026-02-21T18:14:43.280857+00:00",
+      "files_ingested": 37,
+      "files_skipped": 0
+    },
+    "validate": {
+      "status": "complete",
+      "timestamp": "2026-02-21T18:27:27.477432+00:00"
+    },
+    "generate": {
+      "status": "complete",
+      "timestamp": "2026-02-21T20:20:27.297625+00:00",
+      "engine": "per-character",
+      "chapters": {
+        "ar_prologue_p01": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p01.wav"
+        },
+        "ar_prologue_p02": {
+          "status": "complete",
+          "chunks": 2,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p02.wav"
+        },
+        "ar_prologue_p03": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p03.wav"
+        },
+        "ar_prologue_p04": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p04.wav"
+        },
+        "ar_prologue_p05": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p05.wav"
+        },
+        "ar_prologue_p06": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p06.wav"
+        },
+        "ar_prologue_p07": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p07.wav"
+        },
+        "ar_prologue_p08": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p08.wav"
+        },
+        "ar_prologue_p09": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p09.wav"
+        },
+        "ar_prologue_p10": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p10.wav"
+        },
+        "ar_prologue_p11": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p11.wav"
+        },
+        "ar_prologue_p12": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p12.wav"
+        },
+        "ar_prologue_p13": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p13.wav"
+        },
+        "ar_prologue_p14": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p14.wav"
+        },
+        "ar_prologue_p15": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p15.wav"
+        },
+        "ar_prologue_p16": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p16.wav"
+        },
+        "ar_prologue_p17": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p17.wav"
+        },
+        "ar_prologue_p18": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p18.wav"
+        },
+        "ar_prologue_p19": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p19.wav"
+        },
+        "ar_prologue_p20": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p20.wav"
+        },
+        "ar_prologue_p21": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p21.wav"
+        },
+        "ar_prologue_p22": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p22.wav"
+        },
+        "ar_prologue_p23": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p23.wav"
+        },
+        "ar_prologue_p24": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p24.wav"
+        },
+        "ar_prologue_p25": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p25.wav"
+        },
+        "ar_prologue_p26": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p26.wav"
+        },
+        "ar_prologue_p27": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p27.wav"
+        },
+        "ar_prologue_p28": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p28.wav"
+        },
+        "ar_prologue_p29": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p29.wav"
+        },
+        "ar_prologue_p30": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p30.wav"
+        },
+        "ar_prologue_p31": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p31.wav"
+        },
+        "ar_prologue_p32": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p32.wav"
+        },
+        "ar_prologue_p33": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p33.wav"
+        },
+        "ar_prologue_p34": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p34.wav"
+        },
+        "ar_prologue_p35": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p35.wav"
+        },
+        "ar_prologue_p36": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p36.wav"
+        },
+        "ar_prologue_p37": {
+          "status": "complete",
+          "chunks": 1,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE_PILOT_01\\03_GENERATED\\raw\\ar_prologue_p37.wav"
+        }
+      }
+    },
+    "qc_scan": {
+      "status": "complete",
+      "timestamp": "2026-02-21T20:20:36.802966+00:00",
+      "chunks_scanned": 38,
+      "fail_percent": 0.0
+    },
+    "process": {
+      "status": "complete",
+      "timestamp": "2026-02-21T20:21:00.108842+00:00"
+    },
+    "compose": {
+      "status": "complete",
+      "timestamp": "2026-02-21T20:21:48.697511+00:00",
+      "preset": "contemplative",
+      "duration": 60.0
+    },
+    "mix": {
+      "status": "complete",
+      "timestamp": "2026-02-21T20:22:04.812426+00:00"
+    },
+    "qc_final": {
+      "status": "complete",
+      "timestamp": "2026-02-21T20:25:58.797692+00:00",
+      "failed_count": 5,
+      "total_count": 37
+    },
+    "export": {
+      "status": "complete",
+      "timestamp": "2026-02-21T20:26:16.948878+00:00"
+    }
+  }
+}

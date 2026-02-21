@@ -1,0 +1,562 @@
+{
+  "id": "DOXASCOPE_PILOT_01",
+  "version": "1.0",
+  "created": "2026-02-21T18:04:04.701072+00:00",
+  "languages": [
+    "ar",
+    "en"
+  ],
+  "chapters": [
+    {
+      "id": "ar_prologue_p01",
+      "title": "Ar Prologue P01",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p01.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p02",
+      "title": "Ar Prologue P02",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p02.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p03",
+      "title": "Ar Prologue P03",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p03.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p04",
+      "title": "Ar Prologue P04",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p04.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p05",
+      "title": "Ar Prologue P05",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p05.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p06",
+      "title": "Ar Prologue P06",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p06.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p07",
+      "title": "Ar Prologue P07",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p07.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p08",
+      "title": "Ar Prologue P08",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p08.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p09",
+      "title": "Ar Prologue P09",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p09.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p10",
+      "title": "Ar Prologue P10",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p10.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p11",
+      "title": "Ar Prologue P11",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p11.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p12",
+      "title": "Ar Prologue P12",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p12.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p13",
+      "title": "Ar Prologue P13",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p13.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p14",
+      "title": "Ar Prologue P14",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p14.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p15",
+      "title": "Ar Prologue P15",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p15.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p16",
+      "title": "Ar Prologue P16",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p16.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p17",
+      "title": "Ar Prologue P17",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p17.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p18",
+      "title": "Ar Prologue P18",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p18.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p19",
+      "title": "Ar Prologue P19",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p19.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p20",
+      "title": "Ar Prologue P20",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p20.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p21",
+      "title": "Ar Prologue P21",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p21.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p22",
+      "title": "Ar Prologue P22",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p22.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p23",
+      "title": "Ar Prologue P23",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p23.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p24",
+      "title": "Ar Prologue P24",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p24.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p25",
+      "title": "Ar Prologue P25",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p25.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p26",
+      "title": "Ar Prologue P26",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p26.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p27",
+      "title": "Ar Prologue P27",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p27.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p28",
+      "title": "Ar Prologue P28",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p28.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p29",
+      "title": "Ar Prologue P29",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p29.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p30",
+      "title": "Ar Prologue P30",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p30.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p31",
+      "title": "Ar Prologue P31",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p31.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p32",
+      "title": "Ar Prologue P32",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p32.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p33",
+      "title": "Ar Prologue P33",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p33.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p34",
+      "title": "Ar Prologue P34",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p34.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p35",
+      "title": "Ar Prologue P35",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p35.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p36",
+      "title": "Ar Prologue P36",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p36.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    },
+    {
+      "id": "ar_prologue_p37",
+      "title": "Ar Prologue P37",
+      "language": "ar",
+      "source": "01_TEXT/chapters/ar_prologue_p37.txt",
+      "character": "narrator",
+      "mode": "single",
+      "direction": {
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
+      }
+    }
+  ],
+  "characters": {
+    "narrator": {
+      "name": "Narrator",
+      "engine": "edge",
+      "voice": "ar-SA-HamedNeural",
+      "dialect": "msa",
+      "persona": "Default narrator",
+      "reference_audio": null
+    }
+  },
+  "generation": {
+    "chunk_max_chars": 200,
+    "chunk_strategy": "breath_group",
+    "crossfade_ms": 120,
+    "crossfade_min_ms": 50,
+    "leading_silence_ms": 100,
+    "max_retries_per_chunk": 3,
+    "fail_threshold_percent": 5.0,
+    "xtts_temperature": 0.7,
+    "xtts_repetition_penalty": 5.0,
+    "edge_tts_rate_limit_ms": 200,
+    "edge_tts_concurrency": 4,
+    "edge_tts_ssml": true,
+    "xtts_vram_management": "empty_cache_per_chapter"
+  },
+  "qc": {
+    "snr_method": "vad_noise_floor",
+    "snr_min_db": 10.0,
+    "max_duration_deviation_percent": 30.0,
+    "clipping_threshold_dbfs": -0.5,
+    "lufs_deviation_max": 8.0,
+    "pitch_jump_max_semitones": 12.0,
+    "boundary_artifact_check": true
+  },
+  "mix": {
+    "master_volume": 0.9,
+    "target_lufs": -16.0,
+    "true_peak_limit_dbtp": -1.0,
+    "gap_between_chapters_sec": 2.0,
+    "ducking": {
+      "method": "vad",
+      "vad_model": "silero-vad",
+      "vad_threshold": 0.5,
+      "vad_threshold_ar": 0.45,
+      "look_ahead_ms": 200,
+      "attack_ms": 100,
+      "release_ms": 500,
+      "attenuation_db": -12.0,
+      "frequency_aware": false
+    }
+  },
+  "export": {
+    "formats": [
+      "mp3",
+      "m4b"
+    ],
+    "mp3_bitrate": 192,
+    "m4b_aac_bitrate": 128,
+    "include_cover_art": true,
+    "cover_art": "00_CONFIG/cover.jpg",
+    "chapter_transition": "silence",
+    "chapter_transition_file": null,
+    "metadata": {
+      "author": "",
+      "narrator": "",
+      "publisher": "",
+      "year": 2026,
+      "description": ""
+    }
+  }
+}

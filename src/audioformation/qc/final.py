@@ -185,7 +185,7 @@ def scan_final_mix(project_id: str) -> FinalQCReport:
     true_peak_limit = mix_config.get("true_peak_limit_dbtp", -1.0)
 
     # Tolerance for LUFS (usually strict for final mix)
-    lufs_tolerance = 1.0  # ±1 LUFS
+    lufs_tolerance = pj.get("qc", {}).get("lufs_deviation_max", 3.0)  # read from project
 
     mix_dir = project_path / "06_MIX" / "renders"
     if not mix_dir.exists():

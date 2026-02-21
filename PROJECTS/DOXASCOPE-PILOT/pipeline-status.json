@@ -1,0 +1,65 @@
+{
+  "project_id": "DOXASCOPE-PILOT",
+  "nodes": {
+    "bootstrap": {
+      "status": "complete",
+      "timestamp": "2026-02-21T13:14:54.390339+00:00"
+    },
+    "ingest": {
+      "status": "pending"
+    },
+    "validate": {
+      "status": "complete",
+      "timestamp": "2026-02-21T13:33:45.284947+00:00"
+    },
+    "generate": {
+      "status": "complete",
+      "timestamp": "2026-02-21T13:36:51.391861+00:00",
+      "engine": "per-character",
+      "chapters": {
+        "prologue_ar": {
+          "status": "complete",
+          "chunks": 36,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\prologue_ar.wav"
+        },
+        "prologue_en": {
+          "status": "complete",
+          "chunks": 23,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\prologue_en.wav"
+        },
+        "ch01_s01_ar": {
+          "status": "complete",
+          "chunks": 47,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\DOXASCOPE-PILOT\\03_GENERATED\\raw\\ch01_s01_ar.wav"
+        }
+      }
+    },
+    "qc_scan": {
+      "status": "pending"
+    },
+    "process": {
+      "status": "pending"
+    },
+    "compose": {
+      "status": "pending"
+    },
+    "mix": {
+      "status": "pending"
+    },
+    "qc_final": {
+      "status": "pending"
+    },
+    "export": {
+      "status": "pending"
+    }
+  }
+}
