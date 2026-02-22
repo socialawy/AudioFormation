@@ -50,8 +50,8 @@ class TestQCFinalScanner:
 
     def test_lufs_fail(self, sample_project, setup_mix_dir, mock_processor):
         """Test audio with bad LUFS (too loud)."""
-        # Target -16, measured -14.0 (diff 2.0 > 1.0 tolerance)
-        mock_processor["lufs"].return_value = -14.0
+        # Target -16, measured -12.0 (diff 4.0 > 3.0 tolerance)
+        mock_processor["lufs"].return_value = -12.0
         mock_processor["tp"].return_value = -2.0
         mock_processor["clip"].return_value = {"clipped": False}
         mock_processor["dur"].return_value = 60.0

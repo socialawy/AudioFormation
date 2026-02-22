@@ -7,7 +7,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from audioformation.export.mp3 import export_mp3, export_wav
+from audioformation.export.mp3 import export_mp3, export_wav, export_project_mp3
 from audioformation.export.metadata import sha256_file, generate_manifest
 
 
@@ -29,10 +29,40 @@ class TestMP3Export:
 
     def test_export_creates_file(self, sample_wav: Path, tmp_path: Path) -> None:
         output = tmp_path / "output.mp3"
-        ok = export_mp3(sample_wav, output, bitrate=128)
-        assert ok is True
-        assert output.exists()
-        assert output.stat().st_size > 0
+        with patch("audioformation.export.mp3.AudioSegment") as MockAudioSegment:
+            mock_segment = MagicMock()
+            MockAudioSegment.from_file.return_value = mock_segment
+
+            def _export(path, format=None, **kwargs):
+                Path(path).write_bytes(b"mock mp3 data")
+            mock_segment.export.side_effect = _export
+
+            ok = export_mp3(sample_wav, output, bitrate=128)
+            assert ok is True
+            assert output.exists()
+            assert output.stat().st_size > 0
+
+    def test_export_project_mp3(self, sample_wav: Path, sample_project) -> None:
+        """Test exporting full project as MP3."""
+        # Setup mixed file
+        mix_dir = sample_project["dir"] / "06_MIX"
+        mix_dir.mkdir(parents=True, exist_ok=True)
+        mixed_file = mix_dir / f"{sample_project['id']}_mixed.wav"
+        # Copy sample wav to mixed file
+        mixed_file.write_bytes(sample_wav.read_bytes())
+
+        with patch("audioformation.export.mp3.AudioSegment") as MockAudioSegment:
+            mock_segment = MagicMock()
+            MockAudioSegment.from_file.return_value = mock_segment
+            def _export(path, format=None, **kwargs):
+                Path(path).write_bytes(b"mock mp3 data")
+            mock_segment.export.side_effect = _export
+
+            ok = export_project_mp3(sample_project["id"])
+            assert ok is True
+
+            export_dir = sample_project["dir"] / "07_EXPORT" / "audiobook"
+            assert (export_dir / f"{sample_project['id']}.mp3").exists()
 
     def test_export_with_different_bitrates(
         self, sample_wav: Path, tmp_path: Path
@@ -128,7 +158,15 @@ class TestManifest:
         export_dir.mkdir()
 
         output = export_dir / "chapter01.mp3"
-        export_mp3(sample_wav, output)
+
+        with patch("audioformation.export.mp3.AudioSegment") as MockAudioSegment:
+            mock_segment = MagicMock()
+            MockAudioSegment.from_file.return_value = mock_segment
+            def _export(path, format=None, **kwargs):
+                Path(path).write_bytes(b"mock mp3 data")
+            mock_segment.export.side_effect = _export
+
+            export_mp3(sample_wav, output)
 
         manifest_path = generate_manifest(
             export_dir,

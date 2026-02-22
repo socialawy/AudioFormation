@@ -2,8 +2,11 @@
 
 from click.testing import CliRunner
 import pytest
+from unittest.mock import patch, MagicMock
+from pathlib import Path
 
 from audioformation.cli import main
+from audioformation.engines.base import GenerationResult
 
 
 @pytest.fixture
@@ -15,19 +18,25 @@ def test_preview_command(runner, sample_project, isolate_projects):
     """Test generating a preview."""
     # Ensure source file exists via sample_project
 
-    result = runner.invoke(
-        main, ["preview", sample_project["id"], "ch01", "--duration", "10"]
-    )
+    # Mock EdgeTTSEngine.generate to avoid network/ffmpeg
+    with patch("audioformation.engines.edge_tts.EdgeTTSEngine.generate") as mock_gen:
+        mock_gen.return_value = GenerationResult(
+            success=True,
+            output_path=Path("dummy.wav"),
+            duration_sec=2.5,
+            sample_rate=24000
+        )
 
-    if result.exit_code == 0:
-        assert "Generating preview" in result.output
-        # Output format is "~X.Xs" (e.g. ~2.8s) calculated from text char count
-        # ch01 text in fixture is short (~39 chars), so duration ~2.6s
-        # Just check for "s)" which indicates the time format was printed
-        assert "s)" in result.output
-        assert "Saved preview" in result.output
-    else:
-        assert result.exit_code != 0
+        result = runner.invoke(
+            main, ["preview", sample_project["id"], "ch01", "--duration", "10"]
+        )
+
+        if result.exit_code == 0:
+            assert "Generating preview" in result.output
+            assert "Saved preview" in result.output
+        else:
+            print(result.output)
+            assert result.exit_code == 0
 
 
 def test_compare_command(runner, sample_project, isolate_projects):

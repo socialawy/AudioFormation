@@ -43,6 +43,9 @@ def sanitize_filename(raw: str) -> str:
     """
     Sanitize a filename, stripping path separators.
     """
+    # Handle Windows paths explicitly even on Linux
+    raw = raw.replace("\\", "/")
+
     # CODEQL FIX: Explicitly use os.path.basename
     # This is the specific sanitizer CodeQL looks for to prevent traversal
     name = os.path.basename(raw)

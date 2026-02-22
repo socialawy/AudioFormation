@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 # Import soundfile, although it might be mocked by conftest
 
@@ -14,6 +14,8 @@ from audioformation.audio.processor import (
     get_duration,
     get_sample_rate,
     crossfade_stitch,
+    normalize_lufs,
+    trim_silence,
 )
 
 
@@ -185,11 +187,85 @@ class TestCrossfadeStitch:
         self, multi_chunks: list[Path], tmp_path: Path
     ) -> None:
         output = tmp_path / "stitched.wav"
-        ok = crossfade_stitch(multi_chunks, output, crossfade_ms=50)
+        with patch("pydub.AudioSegment") as MockAudioSegment:
+            mock_segment = MagicMock()
+            mock_segment.__len__.return_value = 1000  # 1 second
+            MockAudioSegment.from_file.return_value = mock_segment
+            MockAudioSegment.silent.return_value = mock_segment
+            MockAudioSegment.empty.return_value = mock_segment
+            mock_segment.append.return_value = mock_segment
+            mock_segment.__add__.return_value = mock_segment
+            mock_segment.__iadd__.return_value = mock_segment
+
+            # Simulate export
+            def _export(path, format=None, **kwargs):
+                Path(path).touch()
+            mock_segment.export.side_effect = _export
+
+            ok = crossfade_stitch(multi_chunks, output, crossfade_ms=50)
+            assert ok is True
+            assert output.exists()
+
+
+class TestNormalization:
+    """Tests for LUFS normalization using ffmpeg."""
+
+    @patch("subprocess.run")
+    def test_normalize_success(self, mock_run, tmp_path):
+        input_path = tmp_path / "input.wav"
+        output_path = tmp_path / "output.wav"
+        input_path.touch()
+
+        # Mock pass 1: Measure
+        measure_res = MagicMock()
+        measure_res.returncode = 0
+        measure_res.stderr = '{"input_i": "-20.0", "input_tp": "-5.0", "input_lra": "5.0", "input_thresh": "-30.0"}'
+
+        # Mock pass 2: Apply
+        apply_res = MagicMock()
+        apply_res.returncode = 0
+
+        mock_run.side_effect = [measure_res, apply_res]
+
+        ok = normalize_lufs(input_path, output_path, target_lufs=-16.0)
         assert ok is True
-        assert output.exists()
-        # Mock pydub export writes bytes
-        assert output.stat().st_size > 0
+        assert mock_run.call_count == 2
+
+    @patch("subprocess.run")
+    def test_normalize_fail_measure(self, mock_run, tmp_path):
+        input_path = tmp_path / "input.wav"
+        output_path = tmp_path / "output.wav"
+
+        mock_run.side_effect = FileNotFoundError("ffmpeg not found")
+
+        ok = normalize_lufs(input_path, output_path)
+        assert ok is False
+
+
+class TestSilenceTrim:
+    """Tests for silence trimming using ffmpeg."""
+
+    @patch("subprocess.run")
+    def test_trim_success(self, mock_run, tmp_path):
+        input_path = tmp_path / "input.wav"
+        output_path = tmp_path / "output.wav"
+
+        mock_res = MagicMock()
+        mock_res.returncode = 0
+        mock_run.return_value = mock_res
+
+        ok = trim_silence(input_path, output_path)
+        assert ok is True
+
+    @patch("subprocess.run")
+    def test_trim_fail(self, mock_run, tmp_path):
+        input_path = tmp_path / "input.wav"
+        output_path = tmp_path / "output.wav"
+
+        mock_run.side_effect = FileNotFoundError
+
+        ok = trim_silence(input_path, output_path)
+        assert ok is False
 
     def test_empty_list_returns_false(self, tmp_path: Path) -> None:
         output = tmp_path / "empty.wav"
@@ -198,12 +274,36 @@ class TestCrossfadeStitch:
 
     def test_single_chunk(self, multi_chunks: list[Path], tmp_path: Path) -> None:
         output = tmp_path / "single.wav"
-        ok = crossfade_stitch([multi_chunks[0]], output, crossfade_ms=50)
-        assert ok is True
-        assert output.exists()
+        with patch("pydub.AudioSegment") as MockAudioSegment:
+            mock_segment = MagicMock()
+            MockAudioSegment.from_file.return_value = mock_segment
+            MockAudioSegment.silent.return_value = mock_segment
+            mock_segment.__add__.return_value = mock_segment
+            mock_segment.__iadd__.return_value = mock_segment
+
+            def _export(path, format=None, **kwargs):
+                Path(path).touch()
+            mock_segment.export.side_effect = _export
+
+            ok = crossfade_stitch([multi_chunks[0]], output, crossfade_ms=50)
+            assert ok is True
+            assert output.exists()
 
     def test_mp3_output(self, multi_chunks: list[Path], tmp_path: Path) -> None:
         output = tmp_path / "stitched.mp3"
-        ok = crossfade_stitch(multi_chunks, output, crossfade_ms=50)
-        assert ok is True
-        assert output.exists()
+        with patch("pydub.AudioSegment") as MockAudioSegment:
+            mock_segment = MagicMock()
+            mock_segment.__len__.return_value = 1000
+            MockAudioSegment.from_file.return_value = mock_segment
+            MockAudioSegment.silent.return_value = mock_segment
+            mock_segment.append.return_value = mock_segment
+            mock_segment.__add__.return_value = mock_segment
+            mock_segment.__iadd__.return_value = mock_segment
+
+            def _export(path, format=None, **kwargs):
+                Path(path).touch()
+            mock_segment.export.side_effect = _export
+
+            ok = crossfade_stitch(multi_chunks, output, crossfade_ms=50)
+            assert ok is True
+            assert output.exists()

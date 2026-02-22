@@ -37,17 +37,24 @@ class TestValidationResult:
         assert s["ok"] is False
 
 
+from unittest.mock import patch
+
+@patch("audioformation.utils.hardware.detect_ffmpeg")
 class TestValidateProject:
     """Tests for the full validation gate."""
 
     def test_valid_project_passes(
-        self, sample_project_with_text, isolate_projects: Path
+        self, mock_detect, sample_project_with_text, isolate_projects: Path
     ) -> None:
+        mock_detect.return_value = {
+            "ffmpeg_available": True,
+            "ffmpeg_path": "/usr/bin/ffmpeg",
+        }
         result = validate_project(sample_project_with_text["id"])
         assert result.ok is True or len(result.failures) == 0
 
     def test_missing_source_file_fails(
-        self, sample_project, isolate_projects: Path
+        self, mock_detect, sample_project, isolate_projects: Path
     ) -> None:
         pj = load_project_json(sample_project["id"])
         pj["chapters"] = [
@@ -67,7 +74,7 @@ class TestValidateProject:
         assert any("not found" in f.lower() for f in result.failures)
 
     def test_empty_source_file_fails(
-        self, sample_project, isolate_projects: Path
+        self, mock_detect, sample_project, isolate_projects: Path
     ) -> None:
         project_path = sample_project["dir"]
         ch_path = project_path / "01_TEXT" / "chapters" / "ch01.txt"
@@ -91,7 +98,7 @@ class TestValidateProject:
         assert any("empty" in f.lower() for f in result.failures)
 
     def test_unknown_character_reference_fails(
-        self, sample_project_with_text, isolate_projects: Path
+        self, mock_detect, sample_project_with_text, isolate_projects: Path
     ) -> None:
         pj = load_project_json(sample_project_with_text["id"])
         pj["chapters"][0]["character"] = "ghost_character"
@@ -101,7 +108,7 @@ class TestValidateProject:
         assert any("ghost_character" in f for f in result.failures)
 
     def test_xtts_without_reference_fails(
-        self, sample_project_with_text, isolate_projects: Path
+        self, mock_detect, sample_project_with_text, isolate_projects: Path
     ) -> None:
         pj = load_project_json(sample_project_with_text["id"])
         pj["characters"]["narrator"]["engine"] = "xtts"
@@ -112,13 +119,13 @@ class TestValidateProject:
         assert any("reference_audio" in f for f in result.failures)
 
     def test_arabic_diacritics_warning(
-        self, sample_project_with_text, isolate_projects: Path
+        self, mock_detect, sample_project_with_text, isolate_projects: Path
     ) -> None:
         result = validate_project(sample_project_with_text["id"])
         assert any("diacritiz" in w.lower() for w in result.warnings)
 
     def test_no_lufs_target_fails(
-        self, sample_project_with_text, isolate_projects: Path
+        self, mock_detect, sample_project_with_text, isolate_projects: Path
     ) -> None:
         pj = load_project_json(sample_project_with_text["id"])
         del pj["mix"]["target_lufs"]
@@ -130,7 +137,7 @@ class TestValidateProject:
         )
 
     def test_dialect_voice_mismatch_warns(
-        self, sample_project_with_text, isolate_projects: Path
+        self, mock_detect, sample_project_with_text, isolate_projects: Path
     ) -> None:
         pj = load_project_json(sample_project_with_text["id"])
         pj["characters"]["narrator"]["dialect"] = "eg"
@@ -141,7 +148,7 @@ class TestValidateProject:
         assert any("dialect" in w.lower() or "eg" in w.lower() for w in result.warnings)
 
     def test_crossfade_below_min_warns(
-        self, sample_project_with_text, isolate_projects: Path
+        self, mock_detect, sample_project_with_text, isolate_projects: Path
     ) -> None:
         pj = load_project_json(sample_project_with_text["id"])
         pj["generation"]["crossfade_ms"] = 20
