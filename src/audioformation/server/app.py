@@ -21,6 +21,7 @@ except ImportError:
 
 from audioformation import __version__
 from audioformation.server.routes import router
+from audioformation.server.staticfiles import SafeStaticFiles
 from audioformation.config import PROJECTS_ROOT
 
 app = FastAPI(
@@ -50,7 +51,8 @@ async def health_check():
 # Mount projects directory for audio streaming (e.g., /projects/MY_NOVEL/...)
 # Ensure directory exists so mount doesn't fail or get skipped
 PROJECTS_ROOT.mkdir(parents=True, exist_ok=True)
-app.mount("/projects", StaticFiles(directory=PROJECTS_ROOT), name="projects")
+# Sentinel Fix: Use SafeStaticFiles to block sensitive files (e.g. 00_CONFIG/engines.json)
+app.mount("/projects", SafeStaticFiles(directory=PROJECTS_ROOT), name="projects")
 
 # Mount static files (Dashboard)
 # Must be mounted AFTER API routes to avoid capturing /api calls
