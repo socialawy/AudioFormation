@@ -8,7 +8,8 @@ Port: 4001 (default).
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+
+from audioformation.server.staticfiles import SafeStaticFiles
 
 # Load environment variables from .env file
 try:
@@ -50,10 +51,10 @@ async def health_check():
 # Mount projects directory for audio streaming (e.g., /projects/MY_NOVEL/...)
 # Ensure directory exists so mount doesn't fail or get skipped
 PROJECTS_ROOT.mkdir(parents=True, exist_ok=True)
-app.mount("/projects", StaticFiles(directory=PROJECTS_ROOT), name="projects")
+app.mount("/projects", SafeStaticFiles(directory=PROJECTS_ROOT), name="projects")
 
 # Mount static files (Dashboard)
 # Must be mounted AFTER API routes to avoid capturing /api calls
 static_dir = Path(__file__).parent / "static"
 if static_dir.exists():
-    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+    app.mount("/", SafeStaticFiles(directory=static_dir, html=True), name="static")
