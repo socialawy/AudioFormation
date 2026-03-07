@@ -1,0 +1,4 @@
+## 2025-02-18 - Path Traversal bypass via Symlinks
+**Vulnerability:** The `validate_path_within` function used pure string manipulation (`os.path.abspath`) to check if a file path was contained within a directory. This fails to handle symbolic links correctly, allowing path traversal (e.g. creating a symlink inside the project directory that points outside, which string matching incorrectly validated as safe).
+**Learning:** Checking for directory containment based purely on string matching does not account for the file system's structure. Symlinks can traverse directories out of bounds while appearing valid in their string representation.
+**Prevention:** Always use `Path.resolve().is_relative_to(root.resolve())` in Python to securely resolve symlinks before verifying directory containment.
