@@ -1,0 +1,473 @@
+{
+  "project_id": "EN",
+  "chapter_id": "prologue-en",
+  "total_chunks": 21,
+  "passed": 0,
+  "warnings": 21,
+  "failures": 0,
+  "fail_rate_percent": 0.0,
+  "chunks": [
+    {
+      "chunk_id": "prologue-en_000",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_000.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 26.2
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.79
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.9,
+          "target": -16.0,
+          "deviation": 4.9,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_001",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_001.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 26.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.52
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.7,
+          "target": -16.0,
+          "deviation": 4.7,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_002",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_002.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 23.3
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.14
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.7,
+          "target": -16.0,
+          "deviation": 4.7,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_003",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_003.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 26.0
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.37
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.8,
+          "target": -16.0,
+          "deviation": 4.8,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_004",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_004.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 27.4
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.27
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -21.1,
+          "target": -16.0,
+          "deviation": 5.1,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_005",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_005.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 28.3
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.41
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.9,
+          "target": -16.0,
+          "deviation": 4.9,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_006",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_006.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 21.6
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.83
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -21.1,
+          "target": -16.0,
+          "deviation": 5.1,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_007",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_007.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 29.8
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.76
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.5,
+          "target": -16.0,
+          "deviation": 4.5,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_008",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_008.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 24.9
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.21
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -21.3,
+          "target": -16.0,
+          "deviation": 5.3,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_009",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_009.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 28.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.52
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.7,
+          "target": -16.0,
+          "deviation": 4.7,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_010",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_010.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 24.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.73
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.8,
+          "target": -16.0,
+          "deviation": 4.8,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_011",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_011.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 22.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.72
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -21.1,
+          "target": -16.0,
+          "deviation": 5.1,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_012",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_012.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 27.8
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.41
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.9,
+          "target": -16.0,
+          "deviation": 4.9,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_013",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_013.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 27.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.95
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.9,
+          "target": -16.0,
+          "deviation": 4.9,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_014",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_014.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 30.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.22
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.8,
+          "target": -16.0,
+          "deviation": 4.8,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_015",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_015.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 27.2
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.31
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -21.3,
+          "target": -16.0,
+          "deviation": 5.3,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_016",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_016.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 22.5
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.01
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -21.3,
+          "target": -16.0,
+          "deviation": 5.3,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_017",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_017.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 25.5
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.65
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.6,
+          "target": -16.0,
+          "deviation": 4.6,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_018",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_018.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 26.0
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.74
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -21.1,
+          "target": -16.0,
+          "deviation": 5.1,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_019",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_019.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 28.0
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.74
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -21.2,
+          "target": -16.0,
+          "deviation": 5.2,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    },
+    {
+      "chunk_id": "prologue-en_020",
+      "file": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en_020.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 32.3
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.55
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -20.7,
+          "target": -16.0,
+          "deviation": 4.7,
+          "message": "LUFS slightly outside target range."
+        }
+      }
+    }
+  ]
+}

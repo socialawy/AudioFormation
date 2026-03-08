@@ -1,0 +1,62 @@
+{
+  "project_id": "EN",
+  "nodes": {
+    "bootstrap": {
+      "status": "complete",
+      "timestamp": "2026-03-08T07:17:48.383766+00:00"
+    },
+    "ingest": {
+      "status": "complete",
+      "timestamp": "2026-03-08T07:18:35.457613+00:00",
+      "files_ingested": 3,
+      "files_skipped": 0
+    },
+    "validate": {
+      "status": "complete",
+      "timestamp": "2026-03-08T07:19:59.239834+00:00"
+    },
+    "generate": {
+      "status": "complete",
+      "timestamp": "2026-03-08T07:29:40.697381+00:00",
+      "engine": "per-character",
+      "chapters": {
+        "prologue-en": {
+          "status": "complete",
+          "chunks": 21,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\EN\\03_GENERATED\\raw\\prologue-en.wav"
+        }
+      }
+    },
+    "qc_scan": {
+      "status": "complete",
+      "timestamp": "2026-03-08T07:21:00.785588+00:00",
+      "chunks_scanned": 21,
+      "fail_percent": 0.0
+    },
+    "process": {
+      "status": "complete",
+      "timestamp": "2026-03-08T07:30:11.956068+00:00"
+    },
+    "compose": {
+      "status": "complete",
+      "timestamp": "2026-03-08T07:30:14.159253+00:00",
+      "preset": "contemplative",
+      "duration": 60.0
+    },
+    "mix": {
+      "status": "complete",
+      "timestamp": "2026-03-08T07:30:16.085882+00:00"
+    },
+    "qc_final": {
+      "status": "complete",
+      "timestamp": "2026-03-08T07:30:21.435090+00:00"
+    },
+    "export": {
+      "status": "complete",
+      "timestamp": "2026-03-08T07:30:24.031327+00:00"
+    }
+  }
+}

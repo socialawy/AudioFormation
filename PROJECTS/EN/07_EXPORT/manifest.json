@@ -1,0 +1,29 @@
+{
+  "project_id": "EN",
+  "generated_at": "2026-03-08T07:30:24.031327+00:00",
+  "total_files": 3,
+  "metadata": {
+    "author": "",
+    "narrator": "",
+    "publisher": "",
+    "year": 2026,
+    "description": ""
+  },
+  "files": [
+    {
+      "path": "audiobook\\.gitkeep",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "chapters\\.gitkeep",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "chapters\\prologue-en.mp3",
+      "size_bytes": 9572012,
+      "sha256": "5ecc25ea46cd1eac19658b09b0800a930fef77e7e0db9693c6747887ef0c7ace"
+    }
+  ]
+}
