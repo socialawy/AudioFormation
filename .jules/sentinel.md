@@ -1,0 +1,4 @@
+## 2025-02-20 - [Path Traversal bypass using Symlinks]
+**Vulnerability:** The function `validate_path_within` was originally written to verify that paths are securely contained within a root directory using `os.path.abspath(str(path))`. Since `os.path.abspath()` only performs string manipulation, it successfully "validated" paths constructed with symbolic links that actually resolved to external directories (a directory traversal via symlinks).
+**Learning:** Checking paths purely using string manipulation (`os.path.abspath()`, `os.path.commonpath()`, etc) is insufficient for security checks when malicious users can create symlinks.
+**Prevention:** To validate if a path is safely contained within a root folder, always perform actual file system resolution using `Path.resolve().is_relative_to(root.resolve())`.
