@@ -74,6 +74,18 @@ class TestCreateProject:
         assert "07_EXPORT" in gitignore
         assert ".gitkeep" in gitignore
 
+    def test_default_character_has_neutral_defaults(self, isolate_projects):
+        """Default character should not assume Arabic dialect/voice."""
+        from audioformation.project import create_project, load_project_json
+
+        create_project("NEUTRAL_TEST")
+        pj = load_project_json("NEUTRAL_TEST")
+        narrator = pj["characters"]["narrator"]
+
+        # Should NOT default to Arabic-specific values
+        assert narrator["dialect"] == ""
+        assert "ar-SA" not in narrator.get("voice", "")
+
     def test_gitkeep_files_created(self, isolate_projects: Path) -> None:
         path = create_project("KEEP_TEST")
 

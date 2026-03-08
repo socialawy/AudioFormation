@@ -1,19 +1,57 @@
-## Session 7: Production Governance & Modernization (Feb 19, 2026)
+## Session 8: Fixing Round (March 08, 2026)
+
+**Focus**: Fix all bugs discovered during EN prologue walkthrough.
+
+### Bugs Fixed
+
+| #   | Bug                                    | Root Cause                                                                                                      | Fix                                                                      | Files                 |
+| --- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------- |
+| 1   | SSML tags spoken by Edge TTS           | `direction_to_ssml()` wrapped text in `<speak><prosody>` but edge-tts wraps internally too, causing double-wrap | Replaced manual SSML with edge-tts native `rate`/`volume`/`pitch` params | `engines/edge_tts.py` |
+| 2   | Markdown (`**`, `>`) pronounced by TTS | `normalize_text_for_tts()` didn't strip markdown formatting                                                     | Added Step 0: regex strip of bold, italic, blockquotes before TTS        | `utils/text.py`       |
+| 3   | CLI crashes on Windows cp1252          | Unicode symbols (checkmarks, warning signs) can't encode in cp1252                                              | Reconfigure stdout/stderr to UTF-8 on Windows at entry point             | `__main__.py`         |
+| 4   | Ingest `SameFileError`                 | `shutil.copy2()` fails when source == destination                                                               | Skip copy when `resolve()` paths match                                   | `ingest.py`           |
+| 5   | Ingest grabs ALL .txt blindly          | No file filtering in `source_dir.glob("*.txt")`                                                                 | Added `_is_chapter_file()` filter skipping README, LICENSE, hidden files | `ingest.py`           |
+| 6   | Default dialect always "msa"           | `_default_project_json()` hardcoded Arabic voice/dialect                                                        | Changed defaults to empty strings (language-neutral)                     | `project.py`          |
+
+### Test Coverage Added
+
+- `test_chunking.py::TestNormalizeTextForTTS` - 11 tests for markdown/unicode stripping
+- `test_engines.py::TestDirectionToParams` - Rewrote SSML tests for native param mapping
+- `test_engines.py::TestInlineMarkers` - Updated for plain-text marker normalization
+- `test_ingest.py` - SameFileError regression test, non-chapter file filtering test
+- `test_project.py` - Neutral default character test
+
+### Pipeline Verification
+
+Full EN prologue pipeline run (edge-tts, en-US-GuyNeural):
+
+- 21 chunks generated, 0 failures
+- QC Final: LUFS -15.7, True Peak -0.9 dBTP (PASSED)
+- Export: 8.3MB MP3
+
+### Test Results
+
+- **425 passed**, 9 skipped, 68% coverage (threshold: 60%)
+
+## Session 7: Production Governance & Modernization (February 19, 2026)
 
 **Focus**: Establish production-grade governance, hygiene, CI/CD, and modern tooling.
 
 ### Governance Framework
+
 - **Code Style**: Enforced via `.editorconfig` (consistent line endings, indentation, charset)
 - **Git Attributes**: Configured via `.gitattributes` (file handling, language detection)
 - **Quality Standards**: Automated enforcement through pre-commit hooks
 
 ### Development Hygiene
+
 - **Pre-commit Hooks**: Automated code quality checks
   - **Ruff**: Python linting and formatting (fast, Rust-based)
   - **Prettier**: Code formatting for consistent style
 - **Zero-configuration**: Hooks automatically install on clone/setup
 
 ### CI/CD Pipeline
+
 - **Quality Gate**: GitHub Actions workflow
   - **Python 3.12**: Latest stable Python version testing
   - **Linting**: Automated code quality checks
@@ -21,38 +59,42 @@
 - **Gate Function**: Prevents merge of code that doesn't meet quality standards
 
 ### Modern Tooling Stack
+
 - **Package Management**: Fully modernized to `uv`
   - **Performance**: 10-100x faster than pip
   - **Reliability**: Deterministic dependency resolution
   - **Compatibility**: Drop-in replacement for pip/poetry workflows
 
 ### Production Readiness Impact
+
 - **Consistency**: All contributors follow same code standards
 - **Quality**: Automated prevention of regressions
 - **Speed**: Modern tooling reduces development friction
 - **Reliability**: CI/CD ensures only quality code reaches production
-
 
 ## Session 6: Dashboard Security & Code Quality (Feb 18, 2026)
 
 **Focus**: Complete security audit, implement all 6 patches, achieve production-ready dashboard.
 
 ### Security & Quality Fixes Applied
-| Category | Issue | Fix | Status |
-|----------|-------|-----|--------|
-| **Poll Isolation** | Single `pollInterval` causing cross-contamination | Replaced with `activePolls{}` object, each poller gets own key | ✅ COMPLETE |
-| **XSS Prevention** | Template literals with unsanitized data | Applied `escapeHtml()` consistently, rebuilt `renderQCReports` with DOM nodes | ✅ COMPLETE |
-| **Code Quality** | SonarQube issues (nested ternary, .find(), etc.) | Refactored to explicit if/else, .some(), Number.parseInt, .replaceAll() | ✅ COMPLETE |
-| **Error Handling** | Mixed `alert()` usage throughout | Replaced with unified `showToast()` system | ✅ COMPLETE |
-| **Audio Management** | Multiple audio playing simultaneously | Added `stopAllAudio()` with optional chaining | ✅ COMPLETE |
-| **Dirty State** | No tracking of unsaved changes | Implemented `_isDirty` flag with `markDirty()`/`clearDirty()` | ✅ COMPLETE |
+
+| Category             | Issue                                             | Fix                                                                           | Status      |
+| -------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------- | ----------- |
+| **Poll Isolation**   | Single `pollInterval` causing cross-contamination | Replaced with `activePolls{}` object, each poller gets own key                | ✅ COMPLETE |
+| **XSS Prevention**   | Template literals with unsanitized data           | Applied `escapeHtml()` consistently, rebuilt `renderQCReports` with DOM nodes | ✅ COMPLETE |
+| **Code Quality**     | SonarQube issues (nested ternary, .find(), etc.)  | Refactored to explicit if/else, .some(), Number.parseInt, .replaceAll()       | ✅ COMPLETE |
+| **Error Handling**   | Mixed `alert()` usage throughout                  | Replaced with unified `showToast()` system                                    | ✅ COMPLETE |
+| **Audio Management** | Multiple audio playing simultaneously             | Added `stopAllAudio()` with optional chaining                                 | ✅ COMPLETE |
+| **Dirty State**      | No tracking of unsaved changes                    | Implemented `_isDirty` flag with `markDirty()`/`clearDirty()`                 | ✅ COMPLETE |
 
 ### Security Scan Results
+
 - **Before**: 7 XSS vulnerabilities (Medium severity)
 - **After**: 5 XSS warnings (all false positives - Snyk can't trace `escapeHtml()`)
 - **Real vulnerabilities eliminated**: 2 critical XSS issues in `renderQCReports`
 
 ### Code Quality Improvements
+
 - **SonarQube S3358**: Nested ternary → explicit if/else
 - **SonarQube S4624**: Nested templates eliminated
 - **SonarQube S7781**: `.replace()` → `.replaceAll()`
@@ -63,11 +105,13 @@
 - **SonarQube S2486**: Explicit empty catch comments
 
 ### Test Coverage
+
 - **423 tests collected, 423 passing** (100% success rate)
 - **Coverage: 76%** (up from 69%)
 - **All patches verified** via automated and manual inspection
 
 ### Production Readiness Assessment
+
 - ✅ **Security**: All real XSS vulnerabilities eliminated
 - ✅ **Architecture**: Poll isolation prevents race conditions
 - ✅ **UX**: Toast notifications, dirty state tracking, audio management
@@ -81,39 +125,44 @@
 **Focus:** Fix e2e pipeline failures, produce first real M4B, complete dashboard plan.
 
 ### Bugs Found & Fixed
-| Bug | Root Cause | Fix |
-|-----|-----------|-----|
-| E2E: `--voice` flag | Test passed CLI flag that doesn't exist | Removed VOICES dict from test |
-| E2E: "Process failed" (empty) | `batch_process_project` searched wrong dir | Search `raw/` first, fallback to root |
-| E2E: "No chapter audio to mix" | `mix.py` glob `ch*.wav` missed non-ch-prefixed files | Changed to `*.wav` |
-| E2E: "Hard gate qc_final" | E2E test skipped qc-final step | Added step, made non-blocking |
-| M4B: ffmpeg error without cover | `-c:v copy` always added | Conditional on `has_cover` |
-| Dashboard: qc_final skipped | `runAllPipeline()` missing from steps array | Added `qc-final` + nodeMap entry |
+
+| Bug                             | Root Cause                                           | Fix                                   |
+| ------------------------------- | ---------------------------------------------------- | ------------------------------------- |
+| E2E: `--voice` flag             | Test passed CLI flag that doesn't exist              | Removed VOICES dict from test         |
+| E2E: "Process failed" (empty)   | `batch_process_project` searched wrong dir           | Search `raw/` first, fallback to root |
+| E2E: "No chapter audio to mix"  | `mix.py` glob `ch*.wav` missed non-ch-prefixed files | Changed to `*.wav`                    |
+| E2E: "Hard gate qc_final"       | E2E test skipped qc-final step                       | Added step, made non-blocking         |
+| M4B: ffmpeg error without cover | `-c:v copy` always added                             | Conditional on `has_cover`            |
+| Dashboard: qc_final skipped     | `runAllPipeline()` missing from steps array          | Added `qc-final` + nodeMap entry      |
 
 ### Key Insight
+
 Ingest derives chapter IDs from filenames (`contemplative.txt` → `contemplative`).
 Three locations assumed all chapters start with `ch` prefix. Root cause: no convention
 enforcement at ingest time — correct fix is flexible glob, not naming constraints.
 
 ### Milestones
+
 - **First M4B ever exported**: Project 10, Arabic, edge-tts, single chapter
 - **E2E: 0 failures** (was 4 at session start)
 - **Coverage: 69%** (was 65%)
 - **Dashboard plan: 100% complete** (Run From was last item)
 
 ### Dashboard Audit Results (verified from code)
-| Feature | Status |
-|---------|--------|
-| 22 API endpoints | All wired to frontend |
-| Export downloads | Working via static file mount |
-| Cast + voice dropdowns | Working, edge returns 32 Arabic voices |
-| Direction dropdowns (SSML) | Working |
-| Pipeline stepper | Fixed (added qc-final) |
-| Mix controls + ducking | Working |
-| Run From dropdown | Implemented |
-| SFX/Music generation | Working with preview |
+
+| Feature                    | Status                                 |
+| -------------------------- | -------------------------------------- |
+| 22 API endpoints           | All wired to frontend                  |
+| Export downloads           | Working via static file mount          |
+| Cast + voice dropdowns     | Working, edge returns 32 Arabic voices |
+| Direction dropdowns (SSML) | Working                                |
+| Pipeline stepper           | Fixed (added qc-final)                 |
+| Mix controls + ducking     | Working                                |
+| Run From dropdown          | Implemented                            |
+| SFX/Music generation       | Working with preview                   |
 
 ### Remaining Technical Debt
+
 1. **Server test coverage**: routes.py 345 lines at 0%
 2. **Cast UI per-engine**: All engines show same UI (voice dropdown), should adapt
 3. **Console 404 noise**: Audio path probing logs errors for expected misses
@@ -129,10 +178,10 @@ enforcement at ingest time — correct fix is flexible glob, not naming constrai
 **Hardware Reference:** NVIDIA GTX 1650 Ti (4GB VRAM)
 
 **Phase 4:** Final Polish & Export UI (Feb 16-17, 2026)
+
 # Dashboard v2 Implementation Log
 
 Tracking progress against `docs/New-Dashboard.md`.
-
 
 - **Export View (4a)**: Complete. Format selection, metadata, and file downloads are functional.
 - **QC Dashboard (4b)**: Basic implementation complete (list view).
@@ -145,6 +194,7 @@ Tracking progress against `docs/New-Dashboard.md`.
 - **Assets Tab (SFX/Music)**: Added new Editor tab to generate SFX (whoosh, impact, etc.) and compose ambient music.
 
 ### Changes (Upload & Preview)
+
 1.  **API**:
     - `POST /projects/{id}/upload`: Generic file upload for 'references' and 'music'.
     - `POST /projects/{id}/preview`: Ad-hoc voice generation for character testing.
@@ -175,67 +225,74 @@ Tracking progress against `docs/New-Dashboard.md`.
     - Added SFX/Music generation API endpoints and UI logic.
 
 ### Next Steps
+
 - **Validation**: Perform full end-to-end test of the new dashboard flows.
+
 ---
 
 ## Recent Activity (Feb 16, 2026)
 
 **Session 4: Arabic + QC + Edge-TTS Fixes**
-*   **Arabic SSML Disable (edge-tts)**
-    *   Fixed generation default: Arabic (`ar*`) now forces SSML off to prevent SSML tags being read as text.
-    *   Change: `src/audioformation/generate.py`.
-*   **QC Scan API Endpoint Cleanup**
-    *   Removed duplicated `QCReport` / `save_report` block in `_qc_scan_sync`.
-    *   Change: `src/audioformation/server/routes.py`.
-*   **Edge-TTS Temp File Uniqueness (WinError 32 fix)**
-    *   Replaced fragile `Path.with_suffix(...)` temp naming with unique temp MP3 naming:
-        *   `{output_path.stem}_tmp_{uuid8}.mp3`
-    *   Change: `src/audioformation/engines/edge_tts.py`.
-*   **Verification**
-    *   pytest: `362 passed, 9 skipped` (e2e tests excluded).
-    *   Snyk Code scan: 0 issues (severity >= medium).
+
+- **Arabic SSML Disable (edge-tts)**
+  - Fixed generation default: Arabic (`ar*`) now forces SSML off to prevent SSML tags being read as text.
+  - Change: `src/audioformation/generate.py`.
+- **QC Scan API Endpoint Cleanup**
+  - Removed duplicated `QCReport` / `save_report` block in `_qc_scan_sync`.
+  - Change: `src/audioformation/server/routes.py`.
+- **Edge-TTS Temp File Uniqueness (WinError 32 fix)**
+  - Replaced fragile `Path.with_suffix(...)` temp naming with unique temp MP3 naming:
+    - `{output_path.stem}_tmp_{uuid8}.mp3`
+  - Change: `src/audioformation/engines/edge_tts.py`.
+- **Verification**
+  - pytest: `362 passed, 9 skipped` (e2e tests excluded).
+  - Snyk Code scan: 0 issues (severity >= medium).
 
 **Session 3: Architecture & Quality Fixes**
-*   **QC Scan Integration**: Complete end-to-end QC scanning
-    *   Added POST /api/projects/{id}/qc-scan API endpoint (Node 3.5)
-    *   Frontend: QC Scan step in "Run All Pipeline" workflow
-    *   API docs updated: 16 total endpoints
-*   **Pipeline Status Robustness**: Better error handling
-    *   update_node_status handles missing status files (bootstrap)
-    *   mark_node consolidated to delegate to update_node_status
-    *   Tests updated to use isolate_projects fixture
-*   **Architecture Alignment**: Documentation synchronization
-    *   Dashboard port: localhost:4001 (was 4000)
-    *   Test count: 26 files (was 24)
-    *   Endpoint count: 15 (was 13)
-*   **Code Quality**: Encoding and cleanup
-    *   Fixed UTF-8 artifacts in pipeline.py
-    *   Removed dead DASHBOARD_PORT = 4000
-    *   Test coverage: 63.40% (60% minimum met)
+
+- **QC Scan Integration**: Complete end-to-end QC scanning
+  - Added POST /api/projects/{id}/qc-scan API endpoint (Node 3.5)
+  - Frontend: QC Scan step in "Run All Pipeline" workflow
+  - API docs updated: 16 total endpoints
+- **Pipeline Status Robustness**: Better error handling
+  - update_node_status handles missing status files (bootstrap)
+  - mark_node consolidated to delegate to update_node_status
+  - Tests updated to use isolate_projects fixture
+- **Architecture Alignment**: Documentation synchronization
+  - Dashboard port: localhost:4001 (was 4000)
+  - Test count: 26 files (was 24)
+  - Endpoint count: 15 (was 13)
+- **Code Quality**: Encoding and cleanup
+  - Fixed UTF-8 artifacts in pipeline.py
+  - Removed dead DASHBOARD_PORT = 4000
+  - Test coverage: 63.40% (60% minimum met)
 
 **Session 2: Web Dashboard (Mixing)**
-*   **Mix UI:** Added "Mix & Review" view to the dashboard.
-    *   Integrated `wavesurfer.js` for waveform visualization.
-    *   Track loading logic: prioritizes Final Mix > Processed > Raw.
-    *   "Run Mix" button triggers background mixing task via API.
-    *   Status polling updates the UI during the mix process.
-*   **API:** Added `POST /api/projects/{id}/mix` endpoint.
-    *   Runs `mix_project` asynchronously using `BackgroundTasks`.
-    *   Auto-detects background music or accepts overrides.
-*   **Logic:** Decoupled `src/audioformation/mix.py` from CLI `click` output, using logging/callbacks instead.
+
+- **Mix UI:** Added "Mix & Review" view to the dashboard.
+  - Integrated `wavesurfer.js` for waveform visualization.
+  - Track loading logic: prioritizes Final Mix > Processed > Raw.
+  - "Run Mix" button triggers background mixing task via API.
+  - Status polling updates the UI during the mix process.
+- **API:** Added `POST /api/projects/{id}/mix` endpoint.
+  - Runs `mix_project` asynchronously using `BackgroundTasks`.
+  - Auto-detects background music or accepts overrides.
+- **Logic:** Decoupled `src/audioformation/mix.py` from CLI `click` output, using logging/callbacks instead.
 
 **Phase 3: Web Dashboard (Editor)**
-*   **Editor UI:** Added editor view to dashboard (`src/audioformation/server/static/`).
-    *   Configuration tabs for Generation and Mix settings.
-    *   Chapter list view with status badges.
-    *   **Generation Control:** Added "⚡ Generate Audio" button to Chapter Detail panel.
-*   **API:** Added `POST /api/projects/{id}/generate` endpoint.
-*   **API:** Added `PUT /api/projects/{id}` endpoint to save project configuration.
+
+- **Editor UI:** Added editor view to dashboard (`src/audioformation/server/static/`).
+  - Configuration tabs for Generation and Mix settings.
+  - Chapter list view with status badges.
+  - **Generation Control:** Added "⚡ Generate Audio" button to Chapter Detail panel.
+- **API:** Added `POST /api/projects/{id}/generate` endpoint.
+- **API:** Added `PUT /api/projects/{id}` endpoint to save project configuration.
 
 **Phase 3: Mixing Engine**
-*   **Feature:** Implemented `src/audioformation/audio/mixer.py` providing multi-track mixing.
-*   **Feature:** Added **VAD-based ducking** using `silero-vad`.
-*   **CLI:** Added `audioformation mix` command (Node 6).
+
+- **Feature:** Implemented `src/audioformation/audio/mixer.py` providing multi-track mixing.
+- **Feature:** Added **VAD-based ducking** using `silero-vad`.
+- **CLI:** Added `audioformation mix` command (Node 6).
 
 ---
 
@@ -244,6 +301,7 @@ Tracking progress against `docs/New-Dashboard.md`.
 The core pipeline is now accessible via both CLI and Web Dashboard.
 
 **Capabilities:**
+
 1.  **Project Management:** Create, list, edit config (JSON/Form).
 2.  **Generation:** Trigger TTS per chapter, view status, auto-fallback.
 3.  **Mixing:** Auto-ducking of background music, timeline review in browser.
@@ -254,12 +312,14 @@ The core pipeline is now accessible via both CLI and Web Dashboard.
 ## 🚀 Recent Enhancements (Feb 16, 2026)
 
 ### **Critical Infrastructure Improvements**
+
 - **Pipeline Status Tracking**: Comprehensive background task monitoring with async-aware wrapper
 - **"Run All Pipeline" Button**: End-to-end orchestration in dashboard with real-time progress
 - **Polling Timeout Protection**: 10-minute timeouts prevent infinite polling
 - **Console Noise Suppression**: Silent handling of expected 404s
 
 ### **Security & Quality Improvements**
+
 - **XSS Vulnerabilities**: All 3 Medium-severity issues resolved in web dashboard
 - **Code Quality Infrastructure**: Ruff linting, pytest-cov reporting, MyPy type checking
 - **Snyk Integration**: Security scanning with 0 remaining issues
@@ -267,6 +327,7 @@ The core pipeline is now accessible via both CLI and Web Dashboard.
 - **Code Cleanup**: Fixed parameter ordering in routes.py, removed redundant imports, added node validation
 
 ### **Multi-Engine Achievement**
+
 - **100% Engine Coverage**: Edge-TTS, gTTS, XTTS, ElevenLabs all operational
 - **Unicode Text Processing**: Comprehensive hidden character sanitization
 - **Environment Variable Fix**: ElevenLabs API key properly loaded in dashboard
@@ -277,17 +338,17 @@ The core pipeline is now accessible via both CLI and Web Dashboard.
 
 **Goal:** Bridge the gap between "TTS output" and "Audiobook production" via voice cloning, mixing, and ambient sound.
 
-| # | Item | Status | Description |
-| :--- | :--- | :--- | :--- |
-| **1** | **Pipeline Status Wiring** | ✅ Done | `new`, `ingest`, `qc` now write to `pipeline-status.json`. |
-| **2** | **Fallback Scope** | ✅ Done | Changed from per-chunk to **per-chapter** (regenerate full chapter on fail). |
-| **3** | **Dependencies** | ✅ Done | Pinned `edge-tts>=7.0` (DRM fix) & `transformers<5` (XTTS compat). |
-| **4** | **Crossfade Overrides** | ✅ Done | Tuned per engine: Edge (120ms), XTTS (80ms), gTTS (150ms). |
-| **5** | **Arabic Pipeline** | ✅ Done | Mishkal integration + smart boundary splitting. |
-| **6** | **Ambient Composer** | ✅ Done | Pure Numpy generator. 5 presets. |
-| **7** | **XTTS v2 Integration** | ✅ Done | Full engine with VRAM management. |
-| **8** | **Multi-Speaker Wiring** | ✅ Done | Per-segment character resolution. |
-| **9** | **CLI Finalization** | ✅ Done | `cast`, `compose`, `preview`, `compare` commands exposed. |
+| #     | Item                       | Status  | Description                                                                  |
+| :---- | :------------------------- | :------ | :--------------------------------------------------------------------------- |
+| **1** | **Pipeline Status Wiring** | ✅ Done | `new`, `ingest`, `qc` now write to `pipeline-status.json`.                   |
+| **2** | **Fallback Scope**         | ✅ Done | Changed from per-chunk to **per-chapter** (regenerate full chapter on fail). |
+| **3** | **Dependencies**           | ✅ Done | Pinned `edge-tts>=7.0` (DRM fix) & `transformers<5` (XTTS compat).           |
+| **4** | **Crossfade Overrides**    | ✅ Done | Tuned per engine: Edge (120ms), XTTS (80ms), gTTS (150ms).                   |
+| **5** | **Arabic Pipeline**        | ✅ Done | Mishkal integration + smart boundary splitting.                              |
+| **6** | **Ambient Composer**       | ✅ Done | Pure Numpy generator. 5 presets.                                             |
+| **7** | **XTTS v2 Integration**    | ✅ Done | Full engine with VRAM management.                                            |
+| **8** | **Multi-Speaker Wiring**   | ✅ Done | Per-segment character resolution.                                            |
+| **9** | **CLI Finalization**       | ✅ Done | `cast`, `compose`, `preview`, `compare` commands exposed.                    |
 
 ---
 
@@ -296,36 +357,36 @@ The core pipeline is now accessible via both CLI and Web Dashboard.
 **Focus:** Core architecture, CLI scaffolding, and generic TTS support.
 
 ### 📦 Final Inventory (45 Files)
-*   **Core:** `cli.py`, `pipeline.py`, `project.py`, `config.py`
-*   **Engines:** `base.py`, `registry.py`, `edge_tts.py`, `gtts_engine.py`, `xtts.py`, `elevenlabs.py`
-*   **Audio:** `mixer.py`, `sfx.py`, `composer.py`, `processor.py`, `synthesis.py`
-*   **Server:** `app.py`, `routes.py`
-*   **Tests:** 371 unit/integration tests.
+
+- **Core:** `cli.py`, `pipeline.py`, `project.py`, `config.py`
+- **Engines:** `base.py`, `registry.py`, `edge_tts.py`, `gtts_engine.py`, `xtts.py`, `elevenlabs.py`
+- **Audio:** `mixer.py`, `sfx.py`, `composer.py`, `processor.py`, `synthesis.py`
+- **Server:** `app.py`, `routes.py`
+- **Tests:** 371 unit/integration tests.
 
 ---
 
 ## 🔮 Roadmap (Next Steps)
 
 ### Phase 4: Final Polish & Export UI
+
 0. **New Final Dashboard design** Allow advanced controsl from UI
-1.  **Dashboard Export Tab:** Allow users to trigger M4B/MP3 export and download files.
-2.  **FXForge UI:** Add SFX generation tools to the dashboard.
-3.  **Real-time Progress:** Replace status polling with WebSockets for smoother UI updates.
-4.  **Exception Handling:** Add granular exception handling for ffmpeg in processor.py.
-5.  **Type Checking:** Add mypy / type checking to CI.
+1. **Dashboard Export Tab:** Allow users to trigger M4B/MP3 export and download files.
+2. **FXForge UI:** Add SFX generation tools to the dashboard.
+3. **Real-time Progress:** Replace status polling with WebSockets for smoother UI updates.
+4. **Exception Handling:** Add granular exception handling for ffmpeg in processor.py.
+5. **Type Checking:** Add mypy / type checking to CI.
 6. Cast UI engine adaptation (hide/show per engine type)
 7. Console 404 noise suppression
 8. PyInstaller packaging (.exe)
 9. Loco-Tunes integration (ComposeEngine Tier 3 — separate app, file-system handshake)
 
-
 - e2e tests (2 files) Need `@pytest.mark.integration` or refactor to `TestClient`
 - EDGE TTS: Unicode reading issue.
 - Dockerizing: Dockerize for deployment. (Optional - HOLD)
 
-- _qc_scan_sync - verify duplicate block actually removed (was still there last check)
+- \_qc_scan_sync - verify duplicate block actually removed (was still there last check)
 - /validate now async -> runAllPipeline validate logic needs update (can't check pass/fail from initial response anymore)
-CSS truncation at EOF
+  CSS truncation at EOF
 
 ---
-

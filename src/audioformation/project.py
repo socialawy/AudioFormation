@@ -217,8 +217,8 @@ def _default_project_json(project_id: str) -> dict[str, Any]:
             "narrator": {
                 "name": "Narrator",
                 "engine": "edge",
-                "voice": "ar-SA-HamedNeural",
-                "dialect": "msa",
+                "voice": "",
+                "dialect": "",
                 "persona": "Default narrator",
                 "reference_audio": None,
             }

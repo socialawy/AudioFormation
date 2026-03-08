@@ -52,6 +52,9 @@ class EdgeTTSEngine(TTSEngine):
 
         Edge-tts always outputs MP3. If the requested output is .wav,
         we save as MP3 first then convert.
+
+        Direction mapping uses edge-tts native rate/volume/pitch params
+        instead of manual SSML (edge-tts wraps text in SSML internally).
         """
         voice = request.voice or "ar-SA-HamedNeural"
         output_path = request.output_path
@@ -61,24 +64,24 @@ class EdgeTTSEngine(TTSEngine):
         mp3_temp = output_path.parent / f"{output_path.stem}_tmp_{temp_id}.mp3"
 
         try:
-            # Build SSML or plain text
-            use_ssml = (
-                request.direction
-                and request.params
-                and request.params.get("ssml", True)
-            )
+            # Map direction to edge-tts native params
+            rate_str = "+0%"
+            volume_str = "+0%"
+            pitch_str = "+0Hz"
 
-            if use_ssml:
-                # Add unicode safeguard for direction config values
+            if request.direction:
                 direction = {
                     k: v for k, v in request.direction.items() if isinstance(v, str)
                 }
-                text = direction_to_ssml(request.text, direction)
-            else:
-                text = request.text
+                rate_str, volume_str, pitch_str = _direction_to_params(direction)
 
-            # Edge-tts communication and save
-            communicate = edge_tts.Communicate(text, voice)
+            # Process inline markers (replace ellipsis/dashes with pauses)
+            text = _process_inline_markers_plain(request.text)
+
+            # Edge-tts communication and save (uses native SSML params)
+            communicate = edge_tts.Communicate(
+                text, voice, rate=rate_str, volume=volume_str, pitch=pitch_str
+            )
             await communicate.save(str(mp3_temp))
 
             # Convert MP3 → WAV if needed
@@ -185,76 +188,68 @@ def _get_duration(path: Path) -> float:
 # SSML Direction Mapping
 # ──────────────────────────────────────────────
 
-_PACE_MAP: dict[str, str] = {
-    "very slow": "x-slow",
-    "slow": "slow",
-    "moderate": "medium",
-    "fast": "fast",
-    "very fast": "x-fast",
+# ──────────────────────────────────────────────
+# Direction → edge-tts native params
+# ──────────────────────────────────────────────
+
+# Rate maps to edge-tts rate param (percentage offset)
+_PACE_RATE_MAP: dict[str, str] = {
+    "very slow": "-50%",
+    "slow": "-25%",
+    "moderate": "+0%",
+    "fast": "+25%",
+    "very fast": "+50%",
 }
 
-_ENERGY_MAP: dict[str, str] = {
-    "whisper": "x-soft",
-    "quiet": "soft",
-    "quiet contemplation": "soft",
-    "normal": "medium",
-    "loud": "loud",
-    "intense": "x-loud",
+# Energy maps to edge-tts volume param (percentage offset)
+_ENERGY_VOLUME_MAP: dict[str, str] = {
+    "whisper": "-80%",
+    "quiet": "-40%",
+    "quiet contemplation": "-30%",
+    "calm": "-15%",
+    "normal": "+0%",
+    "loud": "+30%",
+    "intense": "+50%",
 }
 
+# Emotion maps to edge-tts pitch param (Hz offset)
 _EMOTION_PITCH_MAP: dict[str, str] = {
-    "wonder": "+5%",
-    "sadness": "-5%",
-    "tension": "+10%",
-    "contemplation": "-2%",
-    "triumph": "+8%",
-    "melancholy": "-8%",
-    "neutral": "+0%",
-    "confrontation": "+5%",
+    "wonder": "+10Hz",
+    "sadness": "-10Hz",
+    "tension": "+20Hz",
+    "contemplation": "-5Hz",
+    "contemplative": "-5Hz",
+    "triumph": "+15Hz",
+    "melancholy": "-15Hz",
+    "neutral": "+0Hz",
+    "confrontation": "+10Hz",
 }
 
 
-def direction_to_ssml(text: str, direction: dict[str, str]) -> str:
+def _direction_to_params(
+    direction: dict[str, str],
+) -> tuple[str, str, str]:
     """
-    Wrap text in SSML tags based on direction config.
+    Map direction config to edge-tts native rate/volume/pitch params.
 
-    Maps direction fields (pace, energy, emotion) to SSML prosody attributes.
-    Adds breaks for ellipsis, em dashes, and paragraph breaks.
+    Returns (rate, volume, pitch) strings for edge_tts.Communicate().
     """
     pace = direction.get("pace", "").lower().strip()
     energy = direction.get("energy", "").lower().strip()
     emotion = direction.get("emotion", "").lower().strip()
 
-    attrs: list[str] = []
+    rate = _PACE_RATE_MAP.get(pace, "+0%")
+    volume = _ENERGY_VOLUME_MAP.get(energy, "+0%")
+    pitch = _EMOTION_PITCH_MAP.get(emotion, "+0Hz")
 
-    rate = _PACE_MAP.get(pace)
-    if rate and rate != "medium":
-        attrs.append(f'rate="{rate}"')
-
-    volume = _ENERGY_MAP.get(energy)
-    if volume and volume != "medium":
-        attrs.append(f'volume="{volume}"')
-
-    pitch = _EMOTION_PITCH_MAP.get(emotion)
-    if pitch and pitch != "+0%":
-        attrs.append(f'pitch="{pitch}"')
-
-    processed = _process_inline_markers(text)
-
-    if attrs:
-        attr_str = " ".join(attrs)
-        body = f"<prosody {attr_str}>{processed}</prosody>"
-    else:
-        body = processed
-
-    return f"<speak>{body}</speak>"
+    return rate, volume, pitch
 
 
-def _process_inline_markers(text: str) -> str:
-    """Replace inline markers with SSML breaks."""
-    text = text.replace("...", '<break time="400ms"/>')
-    text = text.replace("\u2026", '<break time="400ms"/>')
-    text = text.replace("\u2014", '<break time="250ms"/>')  # em dash
-    text = text.replace("\u2013", '<break time="200ms"/>')  # en dash
-    text = text.replace("\n\n", '<break time="600ms"/>')
+def _process_inline_markers_plain(text: str) -> str:
+    """Normalize inline markers for plain-text TTS input."""
+    # Normalize ellipsis to three dots (TTS handles pauses naturally)
+    text = text.replace("\u2026", "...")
+    # Em/en dashes to comma-space (natural pause)
+    text = text.replace("\u2014", ", ")
+    text = text.replace("\u2013", ", ")
     return text

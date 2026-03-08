@@ -45,6 +45,7 @@ def normalize_text_for_tts(text: str) -> str:
     Normalize text before TTS generation to remove problematic unicode characters.
 
     Handles:
+    - Strips markdown formatting (bold **, italic *, blockquotes >)
     - Unicode normalization (NFD → NFC)
     - Removes zero-width characters (zero-width space, joiner, non-joiner)
     - Normalizes dashes: em-dash (—) → hyphen (-)
@@ -61,6 +62,11 @@ def normalize_text_for_tts(text: str) -> str:
     """
     if not text:
         return text
+
+    # Step 0: Strip markdown formatting (bold, italic, blockquotes)
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)  # **bold** → bold
+    text = re.sub(r"\*(.+?)\*", r"\1", text)  # *italic* → italic
+    text = re.sub(r"^>\s?", "", text, flags=re.MULTILINE)  # > blockquote → text
 
     # Step 1: Unicode normalization (NFC = composed form, most TTS-friendly)
     text = unicodedata.normalize("NFC", text)

@@ -1,12 +1,12 @@
-"""Tests for TTS engine interface, registry, and edge-tts SSML mapping."""
+"""Tests for TTS engine interface, registry, and edge-tts direction mapping."""
 
 import pytest
 
 from audioformation.engines.base import GenerationRequest
 from audioformation.engines.registry import registry
 from audioformation.engines.edge_tts import (
-    direction_to_ssml,
-    _process_inline_markers,
+    _direction_to_params,
+    _process_inline_markers_plain,
 )
 from pathlib import Path
 
@@ -64,90 +64,92 @@ class TestGenerationRequest:
         assert req.direction["pace"] == "slow"
 
 
-class TestDirectionToSSML:
-    """Tests for SSML direction mapping."""
+class TestDirectionToParams:
+    """Tests for edge-tts native direction param mapping."""
 
-    def test_plain_text_no_direction(self) -> None:
-        result = direction_to_ssml("Hello", {})
-        assert "<speak>" in result
-        assert "Hello" in result
-        # No prosody wrapper if no direction attributes apply
-        assert "prosody" not in result
+    def test_empty_direction(self) -> None:
+        rate, volume, pitch = _direction_to_params({})
+        assert rate == "+0%"
+        assert volume == "+0%"
+        assert pitch == "+0Hz"
 
     def test_pace_mapping(self) -> None:
-        result = direction_to_ssml("Hello", {"pace": "slow"})
-        assert 'rate="slow"' in result
-        assert "<prosody" in result
+        rate, _, _ = _direction_to_params({"pace": "slow"})
+        assert rate == "-25%"
 
     def test_energy_mapping(self) -> None:
-        result = direction_to_ssml("Hello", {"energy": "whisper"})
-        assert 'volume="x-soft"' in result
+        _, volume, _ = _direction_to_params({"energy": "whisper"})
+        assert volume == "-80%"
 
     def test_emotion_mapping(self) -> None:
-        result = direction_to_ssml("Hello", {"emotion": "wonder"})
-        assert 'pitch="+5%"' in result
+        _, _, pitch = _direction_to_params({"emotion": "wonder"})
+        assert pitch == "+10Hz"
 
     def test_combined_direction(self) -> None:
-        result = direction_to_ssml(
-            "Hello",
+        rate, volume, pitch = _direction_to_params(
             {
                 "pace": "slow",
                 "energy": "quiet",
                 "emotion": "sadness",
             },
         )
-        assert 'rate="slow"' in result
-        assert 'volume="soft"' in result
-        assert 'pitch="-5%"' in result
+        assert rate == "-25%"
+        assert volume == "-40%"
+        assert pitch == "-10Hz"
 
-    def test_moderate_pace_omitted(self) -> None:
-        result = direction_to_ssml("Hello", {"pace": "moderate"})
-        # "medium" maps but should not add prosody since it's the default
-        assert "prosody" not in result
+    def test_moderate_pace_is_default(self) -> None:
+        rate, _, _ = _direction_to_params({"pace": "moderate"})
+        assert rate == "+0%"
 
-    def test_normal_energy_omitted(self) -> None:
-        result = direction_to_ssml("Hello", {"energy": "normal"})
-        assert "prosody" not in result
+    def test_normal_energy_is_default(self) -> None:
+        _, volume, _ = _direction_to_params({"energy": "normal"})
+        assert volume == "+0%"
 
-    def test_unknown_values_ignored(self) -> None:
-        result = direction_to_ssml(
-            "Hello",
+    def test_unknown_values_use_defaults(self) -> None:
+        rate, volume, pitch = _direction_to_params(
             {
                 "pace": "unknown_pace",
                 "emotion": "unknown_emotion",
             },
         )
-        # Unknown values produce no attributes → no prosody tag
-        assert "prosody" not in result
+        assert rate == "+0%"
+        assert volume == "+0%"
+        assert pitch == "+0Hz"
 
     def test_quiet_contemplation_maps(self) -> None:
-        result = direction_to_ssml("Hello", {"energy": "quiet contemplation"})
-        assert 'volume="soft"' in result
+        _, volume, _ = _direction_to_params({"energy": "quiet contemplation"})
+        assert volume == "-30%"
 
-    def test_arabic_text_preserved(self) -> None:
-        result = direction_to_ssml("بسم الله الرحمن الرحيم", {"pace": "slow"})
-        assert "بسم الله" in result
+    def test_calm_energy_maps(self) -> None:
+        _, volume, _ = _direction_to_params({"energy": "calm"})
+        assert volume == "-15%"
+
+    def test_contemplative_emotion_maps(self) -> None:
+        _, _, pitch = _direction_to_params({"emotion": "contemplative"})
+        assert pitch == "-5Hz"
 
 
 class TestInlineMarkers:
-    """Tests for inline SSML break insertion."""
+    """Tests for inline marker normalization for plain-text TTS."""
 
-    def test_ellipsis(self) -> None:
-        result = _process_inline_markers("Wait... then continue")
-        assert 'break time="400ms"' in result
+    def test_ellipsis_preserved(self) -> None:
+        result = _process_inline_markers_plain("Wait... then continue")
+        assert "..." in result
 
-    def test_unicode_ellipsis(self) -> None:
-        result = _process_inline_markers("Wait\u2026 then continue")
-        assert 'break time="400ms"' in result
+    def test_unicode_ellipsis_normalized(self) -> None:
+        result = _process_inline_markers_plain("Wait\u2026 then continue")
+        assert "..." in result
+        assert "\u2026" not in result
 
-    def test_em_dash(self) -> None:
-        result = _process_inline_markers("He said — nothing")
-        assert 'break time="250ms"' in result
+    def test_em_dash_to_comma(self) -> None:
+        result = _process_inline_markers_plain("He said \u2014 nothing")
+        assert "\u2014" not in result
+        assert ", " in result
 
-    def test_paragraph_break(self) -> None:
-        result = _process_inline_markers("End of paragraph.\n\nStart of next.")
-        assert 'break time="600ms"' in result
+    def test_en_dash_to_comma(self) -> None:
+        result = _process_inline_markers_plain("pages 1\u2013 5")
+        assert "\u2013" not in result
 
     def test_no_markers(self) -> None:
         text = "Plain text without markers."
-        assert _process_inline_markers(text) == text
+        assert _process_inline_markers_plain(text) == text

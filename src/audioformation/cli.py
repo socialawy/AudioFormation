@@ -528,18 +528,18 @@ def ingest(project_id: str, source: Path, language: str | None) -> None:
             diacrit = detail.get("diacritization", "")
             diacrit_str = f" [{diacrit}]" if diacrit else ""
             click.echo(
-                f"  {click.style('✓', fg='green')} {detail['file']} → "
+                f"  {click.style('[OK]', fg='green')} {detail['file']} -> "
                 f"{detail['chapter_id']} ({lang}, {chars} chars{diacrit_str})"
             )
         else:
             click.echo(
-                f"  {click.style('⊘', fg='white')} {detail['file']} — "
+                f"  {click.style('[--]', fg='white')} {detail['file']} -- "
                 f"{detail.get('reason', 'skipped')}"
             )
 
     click.echo()
     click.secho(
-        f"✓ Ingested {result['ingested']} files, skipped {result['skipped']}.",
+        f"OK Ingested {result['ingested']} files, skipped {result['skipped']}.",
         fg="green",
     )
 

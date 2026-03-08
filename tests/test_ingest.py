@@ -89,9 +89,9 @@ class TestIngestText:
             ch for ch in config.get("chapters", []) if ch.get("id") == "ch02"
         ]
         assert len(ch02_entries) >= 1, "ch02 not found in project.json"
-        assert ch02_entries[0].get("language") == "ar", (
-            f"Expected language='ar' (override), got: {ch02_entries[0].get('language')}"
-        )
+        assert (
+            ch02_entries[0].get("language") == "ar"
+        ), f"Expected language='ar' (override), got: {ch02_entries[0].get('language')}"
 
     def test_copies_files_to_project(self, sample_project, isolate_projects, tmp_path):
         source = tmp_path / "source"
@@ -164,3 +164,42 @@ class TestIngestText:
         )
         level = detect_diacritization_level(text)
         assert level < 0.1, f"Expected undiacritized text, got level: {level}"
+
+    def test_ingest_skips_non_chapter_files(self, isolate_projects, tmp_path):
+        """Ingest should skip files that look like metadata, not chapters."""
+        from audioformation.project import create_project
+
+        create_project("FILTER_TEST")
+        source = tmp_path / "texts"
+        source.mkdir()
+
+        # Chapter file
+        (source / "prologue.txt").write_text("Once upon a time.", encoding="utf-8")
+        # Non-chapter files that should be skipped
+        (source / "README.txt").write_text("Project docs", encoding="utf-8")
+        (source / "LICENSE.txt").write_text("MIT License", encoding="utf-8")
+        (source / ".hidden.txt").write_text("hidden", encoding="utf-8")
+
+        result = ingest_text("FILTER_TEST", source, language="en")
+        ingested_ids = [
+            d["chapter_id"] for d in result["details"] if d["status"] == "ingested"
+        ]
+        assert "prologue" in ingested_ids
+        assert "readme" not in ingested_ids
+        assert "license" not in ingested_ids
+
+    def test_ingest_same_dir_no_crash(self, isolate_projects, tmp_path):
+        """Ingest should not crash when source dir IS the project's chapters dir."""
+        from audioformation.project import create_project
+
+        project_path = create_project("SAME_DIR_TEST")
+        chapters_dir = project_path / "01_TEXT" / "chapters"
+
+        # Place a file directly in the project's chapters dir
+        test_file = chapters_dir / "test_chapter.txt"
+        test_file.write_text("Hello world, this is a test.", encoding="utf-8")
+
+        # Ingest from the same directory - should NOT raise SameFileError
+        result = ingest_text("SAME_DIR_TEST", chapters_dir, language="en")
+        assert result["ingested"] == 1
+        assert result["details"][0]["status"] == "ingested"

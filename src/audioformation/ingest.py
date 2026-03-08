@@ -19,6 +19,30 @@ from audioformation.utils.arabic import detect_language, classify_diacritization
 from audioformation.utils.security import sanitize_filename
 
 
+# Non-chapter filenames to skip during ingest
+_SKIP_FILENAMES = {
+    "readme",
+    "license",
+    "licence",
+    "changelog",
+    "contributing",
+    "authors",
+    "todo",
+    "notes",
+    "project_structure",
+}
+
+
+def _is_chapter_file(path: Path) -> bool:
+    """Check if a text file looks like a chapter (not metadata/docs)."""
+    name = path.stem.lower()
+    if name.startswith("."):
+        return False
+    if name in _SKIP_FILENAMES:
+        return False
+    return True
+
+
 def ingest_text(
     project_id: str,
     source_dir: Path,
@@ -49,7 +73,7 @@ def ingest_text(
         raise FileNotFoundError(f"Source directory not found: {source_dir}")
 
     # Find all .txt files
-    txt_files = sorted(source_dir.glob("*.txt"))
+    txt_files = sorted(f for f in source_dir.glob("*.txt") if _is_chapter_file(f))
     if not txt_files:
         raise ValueError(f"No .txt files found in {source_dir}")
 
@@ -62,8 +86,9 @@ def ingest_text(
         safe_name = sanitize_filename(src_file.name)
         dst_file = chapters_dir / safe_name
 
-        # Copy file
-        shutil.copy2(src_file, dst_file)
+        # Copy file (skip if source and destination are the same)
+        if src_file.resolve() != dst_file.resolve():
+            shutil.copy2(src_file, dst_file)
 
         # Read content
         content = dst_file.read_text(encoding="utf-8").strip()

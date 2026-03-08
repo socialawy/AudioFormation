@@ -4,6 +4,7 @@ from audioformation.utils.text import (
     split_sentences,
     split_breath_groups,
     chunk_text,
+    normalize_text_for_tts,
     parse_chapter_segments,
     validate_speaker_tags,
 )
@@ -251,3 +252,49 @@ class TestSpeakerTagParser:
         assert is_tag is True
         assert char_id == "hero"
         assert "لن أستسلم" in remaining
+
+
+class TestNormalizeTextForTTS:
+    """Tests for TTS text normalization."""
+
+    def test_strips_bold_markdown(self) -> None:
+        assert (
+            normalize_text_for_tts("The **Pattern** governs") == "The Pattern governs"
+        )
+
+    def test_strips_italic_markdown(self) -> None:
+        assert normalize_text_for_tts("A *tendency* toward") == "A tendency toward"
+
+    def test_strips_blockquote(self) -> None:
+        result = normalize_text_for_tts("> Where did we come from?")
+        assert result == "Where did we come from?"
+
+    def test_strips_multiline_blockquotes(self) -> None:
+        text = "> Line one\n> Line two"
+        result = normalize_text_for_tts(text)
+        assert ">" not in result
+        assert "Line one" in result
+        assert "Line two" in result
+
+    def test_strips_nested_bold_italic(self) -> None:
+        assert "**" not in normalize_text_for_tts("The ***Mist*** calls")
+        assert "*" not in normalize_text_for_tts("The ***Mist*** calls")
+
+    def test_preserves_plain_text(self) -> None:
+        text = "No formatting here."
+        assert normalize_text_for_tts(text) == text
+
+    def test_removes_zero_width_chars(self) -> None:
+        assert normalize_text_for_tts("Hello\u200bWorld") == "HelloWorld"
+
+    def test_normalizes_smart_quotes(self) -> None:
+        assert normalize_text_for_tts("\u201cHello\u201d") == '"Hello"'
+
+    def test_normalizes_em_dash(self) -> None:
+        assert normalize_text_for_tts("word\u2014word") == "word-word"
+
+    def test_collapses_spaces(self) -> None:
+        assert normalize_text_for_tts("too   many   spaces") == "too many spaces"
+
+    def test_empty_input(self) -> None:
+        assert normalize_text_for_tts("") == ""
