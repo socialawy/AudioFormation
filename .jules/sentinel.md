@@ -1,0 +1,4 @@
+## 2025-03-09 - [Path Traversal via Symlink Bypass]
+**Vulnerability:** `validate_path_within` used `os.path.abspath` for path boundary checks, which allowed an attacker to bypass the directory restriction if a user-supplied path contained a symlink pointing outside the root.
+**Learning:** `os.path.abspath` only normalizes path strings (`..`, `.`) and does not check the underlying filesystem to resolve symlinks. This is a common anti-pattern used to suppress CodeQL static analysis alerts about "Path Expressions" accessing the filesystem.
+**Prevention:** Always use `Path.resolve()` when validating that a user-supplied path falls within an allowed boundary. `Path.resolve()` forces filesystem resolution of all symlinks, ensuring the absolute, canonical path is used for `is_relative_to` boundary checks. Handle `RuntimeError` for infinite symlink loops.
