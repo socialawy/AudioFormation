@@ -1,3 +1,23 @@
+## Session 9: Loudness normalization (March 11, 2026)
+
+- src/audioformation/generate.py — fixed fallback logic to keep partial output when fail rate is under threshold; added 3-way status
+  (complete/partial/failed)
+- tests/test_multispeaker.py — updated assertions to accept "failed" for mock-engine tests where stitch can't succeed (mock WAVs aren't real audio)
+- Voiceless engine filter (NEW): When a character has a specific voice (like en-US-RogerNeural), gTTS is completely excluded from the fallback
+  chain. It can never run.
+- Fail-rate threshold check (previous fix): Even if a fallback engine IS
+  allowed, "partial" results within the fail threshold (5%) are kept, not
+  wiped.
+- way status (previous fix): "failed" (no output) vs "partial" (some
+  output) vs "complete" — only true failures trigger fallback.
+- fix: LUFS deviation at chunk level is now warn-only, never fail.
+  Loudness normalization is handled by the "process" pipeline step downstream
+  — rejecting raw chunks for loudness before they reach the normalizer was
+  wrong.
+
+- 425 passed, 0 failed, 9 skipped, 1 warning (pre-existing pydub
+  deprecation). Coverage 67.68% (above 60% threshold)
+
 ## Session 8: Fixing Round (March 08, 2026)
 
 **Focus**: Fix all bugs discovered during EN prologue walkthrough.
@@ -382,7 +402,7 @@ The core pipeline is now accessible via both CLI and Web Dashboard.
 9. Loco-Tunes integration (ComposeEngine Tier 3 — separate app, file-system handshake)
 
 - e2e tests (2 files) Need `@pytest.mark.integration` or refactor to `TestClient`
-- EDGE TTS: Unicode reading issue.
+- EDGE TTS: Unicode reading issue.(Done)
 - Dockerizing: Dockerize for deployment. (Optional - HOLD)
 
 - \_qc_scan_sync - verify duplicate block actually removed (was still there last check)

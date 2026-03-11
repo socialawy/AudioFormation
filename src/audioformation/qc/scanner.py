@@ -315,6 +315,10 @@ def _check_lufs(
         lufs = measure_lufs(audio_path)
         deviation = abs(lufs - target)
 
+        # LUFS deviation is informational at the chunk level — loudness
+        # normalization happens in the "process" pipeline step.  Rejecting
+        # chunks here would cause perfectly good audio to be discarded
+        # before it ever reaches the normalizer.
         if deviation <= max_deviation:
             return {
                 "status": "pass",
@@ -322,17 +326,9 @@ def _check_lufs(
                 "target": target,
                 "deviation": round(deviation, 1),
             }
-        elif deviation <= max_deviation * 2:
-            return {
-                "status": "warn",
-                "lufs": round(lufs, 1),
-                "target": target,
-                "deviation": round(deviation, 1),
-                "message": "LUFS slightly outside target range.",
-            }
         else:
             return {
-                "status": "fail",
+                "status": "warn",
                 "lufs": round(lufs, 1),
                 "target": target,
                 "deviation": round(deviation, 1),

@@ -1,20 +1,20 @@
 {
-  "id": "EN",
+  "id": "CH01_S01_EN",
   "version": "1.0",
-  "created": "2026-03-08T07:17:48.264721+00:00",
+  "created": "2026-03-11T11:24:03.986284+00:00",
   "languages": ["en"],
   "chapters": [
     {
-      "id": "prologue-en",
-      "title": "Prologue",
+      "id": "chapter01_scene01",
+      "title": "Chapter01 Scene01",
       "language": "en",
-      "source": "01_TEXT/chapters/Pro-EN.txt",
+      "source": "01_TEXT/chapters/Chapter01_Scene01.txt",
       "character": "narrator",
       "mode": "single",
       "direction": {
-        "energy": "calm",
-        "pace": "slow",
-        "emotion": "contemplative"
+        "energy": "normal",
+        "pace": "moderate",
+        "emotion": "neutral"
       }
     }
   ],

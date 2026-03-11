@@ -106,21 +106,41 @@ async def generate_project(
         # Determine primary engine for this chapter
         primary_engine = engine_name or char_data.get("engine", "edge")
 
-        # Build engine attempt list for this chapter
-        if project_engine_failed and fallback_scope == "project":
-            # Primary is dead for entire project — start from fallback
-            engines_to_try = [e for e in fallback_chain if e != primary_engine]
-            if not engines_to_try:
-                engines_to_try = [primary_engine]  # last resort
-        else:
-            # Normal: primary first, then fallback chain
-            engines_to_try = [primary_engine] + [
-                e for e in fallback_chain if e != primary_engine
+        # Build engine attempt list for this chapter.
+        # SAFETY: never fall back to a voice-less engine (e.g. gTTS) when the
+        # character has a specific voice configured — that would silently
+        # replace the chosen voice with a completely different one.
+        char_voice = char_data.get("voice", "")
+        safe_fallbacks = []
+        if char_voice:
+            # Only allow fallback engines that support voice selection
+            _voiceless_engines = {"gtts"}
+            safe_fallbacks = [
+                e
+                for e in fallback_chain
+                if e != primary_engine and e not in _voiceless_engines
             ]
+        else:
+            safe_fallbacks = [e for e in fallback_chain if e != primary_engine]
+
+        skipped = set(fallback_chain) - set(safe_fallbacks) - {primary_engine}
+        if skipped:
+            _notify(
+                f"  {ch_id}: voice '{char_voice}' set — "
+                f"skipping voiceless fallback(s): {', '.join(sorted(skipped))}"
+            )
+
+        if project_engine_failed and fallback_scope == "project":
+            engines_to_try = safe_fallbacks or [primary_engine]
+        else:
+            engines_to_try = [primary_engine] + safe_fallbacks
 
         ch_result = None
+        fail_threshold = gen_config.get(
+            "fail_threshold_percent", DEFAULT_FAIL_THRESHOLD_PCT
+        )
 
-        for attempt_engine in engines_to_try:
+        for i, attempt_engine in enumerate(engines_to_try):
             ch_result = await _generate_chapter(
                 project_id=project_id,
                 project_path=project_path,
@@ -134,7 +154,17 @@ async def generate_project(
                 progress_callback=progress_callback,
             )
 
-            if ch_result.get("status") == "complete":
+            ch_status = ch_result.get("status")
+            ch_total = ch_result.get("total_chunks", 0)
+            ch_failed = ch_result.get("failed_chunks", 0)
+            ch_fail_rate = (ch_failed / max(ch_total, 1)) * 100
+            has_next_engine = i < len(engines_to_try) - 1
+
+            # Accept "complete" or "partial" that's under the fail threshold.
+            # Only fall back to next engine on true failure or excessive fail rate.
+            if ch_status == "complete" or (
+                ch_status == "partial" and ch_fail_rate <= fail_threshold
+            ):
                 if attempt_engine != primary_engine:
                     _notify(
                         f"    \u26a0 {ch_id}: fell back from "
@@ -146,14 +176,33 @@ async def generate_project(
                             f"    \u26a0 Project-scope fallback activated: "
                             f"switching to {attempt_engine} for remaining chapters"
                         )
+                if ch_status == "partial":
+                    _notify(
+                        f"    \u26a0 {ch_id}: partial ({ch_failed}/{ch_total} "
+                        f"chunks failed, {ch_fail_rate:.1f}% \u2264 "
+                        f"{fail_threshold}% threshold) — keeping output"
+                    )
+                break
+            elif not has_next_engine:
+                # Last engine — keep whatever output we have, don't destroy it
+                _notify(
+                    f"    \u26a0 {ch_id}: {attempt_engine} {ch_status} "
+                    f"({ch_failed}/{ch_total} failed) — no fallback "
+                    f"available, keeping output"
+                )
                 break
             else:
-                # Clean up partial output before trying next engine
+                # There IS a next engine to try — clean up and retry
                 _cleanup_chapter_chunks(ch_id, raw_dir)
+                reason = ch_result.get("error", "unknown")
+                if ch_status == "partial":
+                    reason = (
+                        f"fail rate {ch_fail_rate:.1f}% exceeds "
+                        f"threshold {fail_threshold}%"
+                    )
                 _notify(
                     f"    \u2717 {ch_id}: {attempt_engine} failed "
-                    f"({ch_result.get('error', 'unknown')}), "
-                    f"trying next engine..."
+                    f"({reason}), trying next engine..."
                 )
                 # Mark primary as failed for project scope
                 if attempt_engine == primary_engine:
@@ -455,7 +504,15 @@ async def _generate_chapter(
     save_report(qc_report, report_dir)
 
     # Update pipeline status
-    status = "complete" if stitch_ok and failed_chunks == 0 else "partial"
+    # "complete" = all chunks OK + stitch OK
+    # "partial"  = stitch OK but some chunks had issues (within tolerance)
+    # "failed"   = no usable output (stitch failed or no chunks produced)
+    if stitch_ok and failed_chunks == 0:
+        status = "complete"
+    elif stitch_ok:
+        status = "partial"
+    else:
+        status = "failed"
     update_chapter_status(
         project_id,
         ch_id,

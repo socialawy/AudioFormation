@@ -1,0 +1,655 @@
+{
+  "project_id": "CH01_S01_EN",
+  "chapter_id": "chapter01_scene01",
+  "total_chunks": 29,
+  "passed": 0,
+  "warnings": 29,
+  "failures": 0,
+  "fail_rate_percent": 0.0,
+  "chunks": [
+    {
+      "chunk_id": "chapter01_scene01_000",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_000.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 21.5
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -5.63
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -24.4,
+          "target": -16,
+          "deviation": 8.4,
+          "message": "LUFS -24.4 deviates 8.4 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_001",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_001.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 34.2
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -1.98
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -22.7,
+          "target": -16,
+          "deviation": 6.7,
+          "message": "LUFS -22.7 deviates 6.7 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_002",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_002.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 29.6
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -0.8
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -22.4,
+          "target": -16,
+          "deviation": 6.4,
+          "message": "LUFS -22.4 deviates 6.4 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_003",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_003.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 26.8
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.76
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.7,
+          "target": -16,
+          "deviation": 7.7,
+          "message": "LUFS -23.7 deviates 7.7 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_004",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_004.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 32.9
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -1.29
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -22.4,
+          "target": -16,
+          "deviation": 6.4,
+          "message": "LUFS -22.4 deviates 6.4 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_005",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_005.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 27.6
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.26
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.8,
+          "target": -16,
+          "deviation": 7.8,
+          "message": "LUFS -23.8 deviates 7.8 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_006",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_006.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 28.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.89
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.1,
+          "target": -16,
+          "deviation": 7.1,
+          "message": "LUFS -23.1 deviates 7.1 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_007",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_007.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 26.4
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.81
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.6,
+          "target": -16,
+          "deviation": 7.6,
+          "message": "LUFS -23.6 deviates 7.6 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_008",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_008.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 27.5
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.07
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.6,
+          "target": -16,
+          "deviation": 7.6,
+          "message": "LUFS -23.6 deviates 7.6 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_009",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_009.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 23.1
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.9
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.4,
+          "target": -16,
+          "deviation": 7.4,
+          "message": "LUFS -23.4 deviates 7.4 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_010",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_010.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 30.2
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -1.92
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.0,
+          "target": -16,
+          "deviation": 7.0,
+          "message": "LUFS -23.0 deviates 7.0 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_011",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_011.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 24.9
+        },
+        "clipping": {
+          "status": "warn",
+          "peak_dbfs": -0.32,
+          "clipped_percent": 0.0009,
+          "message": "Minor clipping detected."
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -22.8,
+          "target": -16,
+          "deviation": 6.8,
+          "message": "LUFS -22.8 deviates 6.8 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_012",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_012.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 29.9
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.93
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.5,
+          "target": -16,
+          "deviation": 7.5,
+          "message": "LUFS -23.5 deviates 7.5 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_013",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_013.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 28.3
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.18
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.1,
+          "target": -16,
+          "deviation": 7.1,
+          "message": "LUFS -23.1 deviates 7.1 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_014",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_014.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 31.9
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.43
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.4,
+          "target": -16,
+          "deviation": 7.4,
+          "message": "LUFS -23.4 deviates 7.4 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_015",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_015.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 31.4
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.04
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.2,
+          "target": -16,
+          "deviation": 7.2,
+          "message": "LUFS -23.2 deviates 7.2 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_016",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_016.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 31.2
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -1.5
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.0,
+          "target": -16,
+          "deviation": 7.0,
+          "message": "LUFS -23.0 deviates 7.0 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_017",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_017.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 24.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.09
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.6,
+          "target": -16,
+          "deviation": 7.6,
+          "message": "LUFS -23.6 deviates 7.6 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_018",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_018.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 26.2
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -1.51
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.1,
+          "target": -16,
+          "deviation": 7.1,
+          "message": "LUFS -23.1 deviates 7.1 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_019",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_019.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 32.4
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -4.36
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.2,
+          "target": -16,
+          "deviation": 7.2,
+          "message": "LUFS -23.2 deviates 7.2 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_020",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_020.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 25.4
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.2
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.6,
+          "target": -16,
+          "deviation": 7.6,
+          "message": "LUFS -23.6 deviates 7.6 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_021",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_021.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 28.5
+        },
+        "clipping": {
+          "status": "warn",
+          "peak_dbfs": -0.11,
+          "clipped_percent": 0.0012,
+          "message": "Minor clipping detected."
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.0,
+          "target": -16,
+          "deviation": 7.0,
+          "message": "LUFS -23.0 deviates 7.0 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_022",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_022.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 32.7
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -1.12
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -22.6,
+          "target": -16,
+          "deviation": 6.6,
+          "message": "LUFS -22.6 deviates 6.6 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_023",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_023.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 26.0
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.49
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.1,
+          "target": -16,
+          "deviation": 7.1,
+          "message": "LUFS -23.1 deviates 7.1 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_024",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_024.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 24.4
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.51
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.8,
+          "target": -16,
+          "deviation": 7.8,
+          "message": "LUFS -23.8 deviates 7.8 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_025",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_025.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 34.8
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.31
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.1,
+          "target": -16,
+          "deviation": 7.1,
+          "message": "LUFS -23.1 deviates 7.1 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_026",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_026.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 30.4
+        },
+        "clipping": {
+          "status": "warn",
+          "peak_dbfs": -0.0,
+          "clipped_percent": 0.0025,
+          "message": "Minor clipping detected."
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.7,
+          "target": -16,
+          "deviation": 7.7,
+          "message": "LUFS -23.7 deviates 7.7 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_027",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_027.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 26.8
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -3.22
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.5,
+          "target": -16,
+          "deviation": 7.5,
+          "message": "LUFS -23.5 deviates 7.5 from target -16."
+        }
+      }
+    },
+    {
+      "chunk_id": "chapter01_scene01_028",
+      "file": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01_028.wav",
+      "status": "warn",
+      "checks": {
+        "snr": {
+          "status": "pass",
+          "snr_db": 26.6
+        },
+        "clipping": {
+          "status": "pass",
+          "peak_dbfs": -2.58
+        },
+        "lufs": {
+          "status": "warn",
+          "lufs": -23.0,
+          "target": -16,
+          "deviation": 7.0,
+          "message": "LUFS -23.0 deviates 7.0 from target -16."
+        }
+      }
+    }
+  ]
+}

@@ -144,12 +144,13 @@ class TestLUFSCheck:
             result = _check_lufs(clean_wav, target=-16.0, max_deviation=3.0)
             assert result["status"] == "pass"
 
-    def test_lufs_fail(self, clean_wav: Path) -> None:
+    def test_lufs_large_deviation_warns(self, clean_wav: Path) -> None:
         with patch("audioformation.qc.scanner.measure_lufs") as mock_lufs:
             mock_lufs.return_value = -25.0
             # Target -16, Actual -25 -> diff 9. Max deviation 3.
+            # LUFS deviation is warn-only (normalization happens later).
             result = _check_lufs(clean_wav, target=-16.0, max_deviation=3.0)
-            assert result["status"] == "fail"
+            assert result["status"] == "warn"
 
 
 class TestQCReport:

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"E:/co/Audio-Formation\" && uv run python -c \"import ast; ast.parse\\(open\\('src/audioformation/generate.py'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")",
+      "Bash(cd \"E:/co/Audio-Formation\" && uv run python -m pytest tests/ -x -q -k \"not e2e\" 2>&1 | tail -5)"
+    ]
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "project_id": "CH01_S01_EN",
+  "nodes": {
+    "bootstrap": {
+      "status": "complete",
+      "timestamp": "2026-03-11T11:24:04.119565+00:00"
+    },
+    "ingest": {
+      "status": "complete",
+      "timestamp": "2026-03-11T13:45:59.153941+00:00",
+      "files_ingested": 0,
+      "files_skipped": 1
+    },
+    "validate": {
+      "status": "pending"
+    },
+    "generate": {
+      "status": "complete",
+      "timestamp": "2026-03-11T14:12:31.941725+00:00",
+      "engine": "per-character",
+      "chapters": {
+        "chapter01_scene01": {
+          "status": "complete",
+          "chunks": 29,
+          "failed_chunks": 0,
+          "engine_used": "edge",
+          "crossfade_ms": 120,
+          "output": "PROJECTS\\CH01_S01_EN\\03_GENERATED\\raw\\chapter01_scene01.wav"
+        }
+      },
+      "error": "Fail rate 100.0% exceeds threshold 5%"
+    },
+    "qc_scan": {
+      "status": "pending"
+    },
+    "process": {
+      "status": "pending"
+    },
+    "compose": {
+      "status": "pending"
+    },
+    "mix": {
+      "status": "pending"
+    },
+    "qc_final": {
+      "status": "pending"
+    },
+    "export": {
+      "status": "pending"
+    }
+  }
+}
