@@ -1,0 +1,4 @@
+## 2024-05-24 - [Path Traversal Bypass via Symlinks in Validation]
+**Vulnerability:** `validate_path_within` relied purely on string manipulation (`os.path.abspath` and string `startswith`) which fails to properly check symbolic links that may point outside the intended root directory, causing a path traversal bypass vulnerability.
+**Learning:** Pure string manipulation of paths without `Path.resolve()` fails to guard against symlink attacks. While it correctly avoids CodeQL Path Expression alerts by not doing filesystem access within string contexts, `Path.resolve().is_relative_to()` securely performs this directory validation.
+**Prevention:** Path validation logic must always use `Path.resolve().is_relative_to()` rather than string manipulation of `os.path.abspath()` when strictly verifying boundary limits, and safely handle potential `RuntimeError` loops.
