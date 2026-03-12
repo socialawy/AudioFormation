@@ -156,3 +156,24 @@ class TestRedactApiKeys:
 
     def test_empty_dict(self) -> None:
         assert redact_api_keys({}) == {}
+
+
+class TestValidatePathWithinSymlink:
+    def test_symlink_bypass(self, tmp_path: Path) -> None:
+        import os
+
+        root = tmp_path / "root"
+        root.mkdir()
+
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / "secret.txt").touch()
+
+        link_path = root / "link_to_outside"
+        os.symlink(outside, link_path)
+
+        target = link_path / "secret.txt"
+
+        # In current implementation, this would return True.
+        # We want it to be False.
+        assert validate_path_within(target, root) is False
