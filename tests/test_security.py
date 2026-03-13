@@ -102,6 +102,33 @@ class TestValidatePathWithin:
         sibling = tmp_path / "other_dir" / "file.txt"
         assert validate_path_within(sibling, root) is False
 
+    def test_symlink_traversal_rejected(self, tmp_path: Path) -> None:
+        """Test that symlinks pointing outside the root are rejected."""
+        import os
+
+        # Setup: root directory
+        root = tmp_path / "safe_root"
+        root.mkdir()
+
+        # Setup: sensitive file outside root
+        outside_dir = tmp_path / "outside"
+        outside_dir.mkdir()
+        sensitive_file = outside_dir / "passwd"
+        sensitive_file.touch()
+
+        # Setup: symlink inside root pointing to outside
+        symlink = root / "link_to_outside"
+        try:
+            os.symlink(outside_dir, symlink)
+        except OSError:
+            pytest.skip("Symlinks not supported on this platform")
+
+        # The path appears to be inside root: safe_root/link_to_outside/passwd
+        attack_path = symlink / "passwd"
+
+        # Should return False because it resolves to outside/passwd
+        assert validate_path_within(attack_path, root) is False
+
 
 class TestRedactApiKeys:
     """Tests for API key redaction in logging."""
