@@ -1,0 +1,4 @@
+## 2024-03-14 - Path Validation Symlink Bypass
+**Vulnerability:** Path validation using purely string-based manipulation (`os.path.abspath` or `os.path.commonpath`) does not check the file system. Thus, users can submit symlinks that pass string-based checks but ultimately point entirely outside the safe directory on the filesystem.
+**Learning:** Checking path containment with string operations is fundamentally insecure because the operating system will blindly follow symlinks. Path validation code must always use `Path.resolve()` which queries the actual filesystem to canonicalize symlinks.
+**Prevention:** Always use `Path.resolve().is_relative_to(root.resolve())` to safely validate paths instead of `os.path.abspath` or other string manipulation techniques. Be sure to catch `(TypeError, ValueError, RuntimeError)` when resolving paths to gracefully prevent crashing on infinite symlink loops or malformed paths.
