@@ -2,7 +2,7 @@
 
 from click.testing import CliRunner
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from pathlib import Path
 
 from audioformation.cli import main
