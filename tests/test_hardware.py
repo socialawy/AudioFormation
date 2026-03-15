@@ -1,13 +1,17 @@
 """Tests for hardware detection utilities."""
 
-import pytest
 from unittest.mock import patch, MagicMock
-from audioformation.utils.hardware import detect_gpu, detect_ffmpeg, detect_all, write_hardware_json
+from audioformation.utils.hardware import (
+    detect_gpu,
+    detect_ffmpeg,
+    detect_all,
+    write_hardware_json,
+)
 
 import sys
 
-class TestHardwareDetection:
 
+class TestHardwareDetection:
     def test_detect_gpu_torch(self):
         """Test GPU detection via PyTorch."""
         mock_torch = MagicMock()
