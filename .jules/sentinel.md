@@ -1,0 +1,4 @@
+## 2024-05-24 - [Path Traversal Bypass via Symlinks]
+**Vulnerability:** The function `validate_path_within` in `src/audioformation/utils/security.py` used `os.path.abspath` to validate if a path resided within a root directory. This allowed a path traversal bypass using symlinks: an attacker could create a symlink within the root directory pointing to an outside sensitive file, and `os.path.abspath` would not resolve it, erroneously returning `True`.
+**Learning:** Pure string manipulation functions like `os.path.abspath` are not sufficient for secure path validation against path traversals when symlinks are involved. CodeQL may flag `Path.resolve()` for Path Expression warnings if not careful, but it is necessary for actual security.
+**Prevention:** Always use `Path.resolve().is_relative_to(root.resolve())` to evaluate true target paths. Catch `(TypeError, ValueError, RuntimeError)` to fail securely against malformed paths or infinite symlink loops.
