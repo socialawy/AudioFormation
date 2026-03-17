@@ -102,6 +102,38 @@ class TestValidatePathWithin:
         sibling = tmp_path / "other_dir" / "file.txt"
         assert validate_path_within(sibling, root) is False
 
+    def test_symlink_traversal_rejected(self, tmp_path: Path) -> None:
+        # Given a root directory
+        root = tmp_path / "my_root_dir"
+        root.mkdir(exist_ok=True)
+
+        # And a secret file outside the root
+        secret_dir = tmp_path / "secret_dir"
+        secret_dir.mkdir(exist_ok=True)
+        secret_file = secret_dir / "secret.txt"
+        secret_file.write_text("secret")
+
+        # And a symlink inside the root pointing to the secret file
+        symlink = root / "link_to_secret"
+        symlink.symlink_to(secret_file)
+
+        # The symlink should be rejected because it resolves outside the root
+        assert validate_path_within(symlink, root) is False
+
+    def test_infinite_symlink_loop_rejected(self, tmp_path: Path) -> None:
+        root = tmp_path / "root"
+        root.mkdir(exist_ok=True)
+
+        link1 = root / "link1"
+        link2 = root / "link2"
+
+        # Create a loop: link1 -> link2 -> link1
+        link1.symlink_to(link2)
+        link2.symlink_to(link1)
+
+        # Should be rejected gracefully without throwing exception
+        assert validate_path_within(link1, root) is False
+
 
 class TestRedactApiKeys:
     """Tests for API key redaction in logging."""

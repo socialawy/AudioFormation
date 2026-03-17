@@ -200,6 +200,7 @@ class TestCrossfadeStitch:
             # Simulate export
             def _export(path, format=None, **kwargs):
                 Path(path).touch()
+
             mock_segment.export.side_effect = _export
 
             ok = crossfade_stitch(multi_chunks, output, crossfade_ms=50)
@@ -283,6 +284,7 @@ class TestSilenceTrim:
 
             def _export(path, format=None, **kwargs):
                 Path(path).touch()
+
             mock_segment.export.side_effect = _export
 
             ok = crossfade_stitch([multi_chunks[0]], output, crossfade_ms=50)
@@ -302,6 +304,7 @@ class TestSilenceTrim:
 
             def _export(path, format=None, **kwargs):
                 Path(path).touch()
+
             mock_segment.export.side_effect = _export
 
             ok = crossfade_stitch(multi_chunks, output, crossfade_ms=50)

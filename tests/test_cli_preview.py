@@ -2,7 +2,7 @@
 
 from click.testing import CliRunner
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from pathlib import Path
 
 from audioformation.cli import main
@@ -24,7 +24,7 @@ def test_preview_command(runner, sample_project, isolate_projects):
             success=True,
             output_path=Path("dummy.wav"),
             duration_sec=2.5,
-            sample_rate=24000
+            sample_rate=24000,
         )
 
         result = runner.invoke(
