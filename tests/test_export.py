@@ -35,6 +35,7 @@ class TestMP3Export:
 
             def _export(path, format=None, **kwargs):
                 Path(path).write_bytes(b"mock mp3 data")
+
             mock_segment.export.side_effect = _export
 
             ok = export_mp3(sample_wav, output, bitrate=128)
@@ -54,8 +55,10 @@ class TestMP3Export:
         with patch("audioformation.export.mp3.AudioSegment") as MockAudioSegment:
             mock_segment = MagicMock()
             MockAudioSegment.from_file.return_value = mock_segment
+
             def _export(path, format=None, **kwargs):
                 Path(path).write_bytes(b"mock mp3 data")
+
             mock_segment.export.side_effect = _export
 
             ok = export_project_mp3(sample_project["id"])
@@ -162,8 +165,10 @@ class TestManifest:
         with patch("audioformation.export.mp3.AudioSegment") as MockAudioSegment:
             mock_segment = MagicMock()
             MockAudioSegment.from_file.return_value = mock_segment
+
             def _export(path, format=None, **kwargs):
                 Path(path).write_bytes(b"mock mp3 data")
+
             mock_segment.export.side_effect = _export
 
             export_mp3(sample_wav, output)

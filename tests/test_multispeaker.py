@@ -309,9 +309,9 @@ class TestMultiSpeakerGeneration:
             assert result["total_chunks"] > 0
 
             # Verify both engines were called
-            assert (
-                edge_mock.generate.call_count > 0
-            ), "Edge should handle narrator segments"
+            assert edge_mock.generate.call_count > 0, (
+                "Edge should handle narrator segments"
+            )
             assert xtts_mock.generate.call_count > 0, "XTTS should handle hero segments"
 
             # Verify edge got narrator text, xtts got hero text
@@ -332,12 +332,12 @@ class TestMultiSpeakerGeneration:
                 for call in xtts_mock.generate.call_args_list
             ]
 
-            assert any(
-                "narrator" in t.lower() for t in edge_texts
-            ), f"Edge should get narrator text, got: {edge_texts}"
-            assert any(
-                "hero" in t.lower() for t in xtts_texts
-            ), f"XTTS should get hero text, got: {xtts_texts}"
+            assert any("narrator" in t.lower() for t in edge_texts), (
+                f"Edge should get narrator text, got: {edge_texts}"
+            )
+            assert any("hero" in t.lower() for t in xtts_texts), (
+                f"XTTS should get hero text, got: {xtts_texts}"
+            )
 
         asyncio.run(_test())
 
