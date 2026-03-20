@@ -1,0 +1,5 @@
+
+## 2025-02-23 - Path Traversal Bypass via Symbolic Links
+**Vulnerability:** The `validate_path_within` function in `src/audioformation/utils/security.py` checked bounds using string manipulation (`os.path.abspath(str(path)).startswith(abs_root)`), missing that an attacker could provide paths containing a symbolic link that resolves *outside* the expected root, effectively bypassing the validation.
+**Learning:** `os.path.abspath` normalizes `..` components but does **not** resolve symbolic links on disk. This created a dangerous logic gap when dealing with untrusted user input that might leverage symlinks uploaded or created inside restricted directories.
+**Prevention:** Always use `Path.resolve()` instead of `os.path.abspath` or string parsing to validate directory traversal. `Path.resolve()` fully resolves the physical path, converting symlinks to their ultimate target. Additionally, use `Path.is_relative_to()` to reliably check hierarchy bounds instead of string `startswith()` checks.
