@@ -1,0 +1,4 @@
+## 2024-05-28 - [Critical] Path Traversal Bypass via Symlinks
+**Vulnerability:** The `validate_path_within` function in `src/audioformation/utils/security.py` previously relied on string-based path manipulation (`os.path.abspath` and `.startswith()`) to verify if a given path falls under a root directory. This fails to resolve symlinks correctly, allowing an attacker to create a symlink that resolves outside the root directory while its string representation suggests it is within the allowed root, resulting in a path traversal vulnerability.
+**Learning:** String-based path validation is insufficient for ensuring path isolation when the filesystem allows symbolic links.
+**Prevention:** Always use `Path.resolve().is_relative_to()` to evaluate the true destination of paths and properly isolate files, explicitly handling exceptions such as `TypeError, ValueError, RuntimeError` to ensure secure failure.
