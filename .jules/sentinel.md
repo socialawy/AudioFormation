@@ -1,0 +1,4 @@
+## 2025-02-23 - Path Traversal bypass via Symlinks in validate_path_within
+**Vulnerability:** The `validate_path_within` function in `src/audioformation/utils/security.py` used string manipulation via `os.path.abspath(str(path)).startswith(...)` to check if a path resided within a base directory. This is insecure as it does not prevent path traversal bypasses via symlinks. A user can create a valid symlink inside the project's root folder that ultimately points to a sensitive file outside the directory structure.
+**Learning:** `os.path.abspath` normalizes paths based only on the literal string paths provided and does not look at the file system or resolve any symlinks, leading to bypasses when paths are checked securely but actually end up mapping to outside contents.
+**Prevention:** Path validation logic must always use `Path.resolve().is_relative_to()` instead of string-based manipulation to securely handle symlinks.
