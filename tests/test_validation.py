@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from unittest.mock import patch
+
 from audioformation.validation import validate_project, ValidationResult
 from audioformation.project import load_project_json, save_project_json
 
@@ -36,8 +38,6 @@ class TestValidationResult:
         assert s["failures"] == 1
         assert s["ok"] is False
 
-
-from unittest.mock import patch
 
 @patch("audioformation.utils.hardware.detect_ffmpeg")
 class TestValidateProject:
