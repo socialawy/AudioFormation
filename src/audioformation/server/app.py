@@ -6,7 +6,7 @@ Port: 4001 (default).
 """
 
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -41,6 +41,19 @@ app.add_middleware(
 app.include_router(router, prefix="/api")
 
 
+class SafeStaticFiles(StaticFiles):
+    """Secure static file handler that blocks access to sensitive directories."""
+
+    async def get_response(self, path: str, scope):
+        # Prevent access to configuration directory and hidden files
+        parts = path.split("/")
+        if "00_CONFIG" in parts or any(p.startswith(".") for p in parts):
+            raise HTTPException(
+                status_code=403, detail="Access denied to sensitive files"
+            )
+        return await super().get_response(path, scope)
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
@@ -50,7 +63,7 @@ async def health_check():
 # Mount projects directory for audio streaming (e.g., /projects/MY_NOVEL/...)
 # Ensure directory exists so mount doesn't fail or get skipped
 PROJECTS_ROOT.mkdir(parents=True, exist_ok=True)
-app.mount("/projects", StaticFiles(directory=PROJECTS_ROOT), name="projects")
+app.mount("/projects", SafeStaticFiles(directory=PROJECTS_ROOT), name="projects")
 
 # Mount static files (Dashboard)
 # Must be mounted AFTER API routes to avoid capturing /api calls

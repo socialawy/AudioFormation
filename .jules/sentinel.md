@@ -1,0 +1,4 @@
+## 2024-03-24 - Secure FastAPI Static File Serving
+**Vulnerability:** StaticFiles mounted over `PROJECTS_ROOT` exposed sensitive configuration and system directories (e.g. `00_CONFIG` with `engines.json` containing API keys) to unauthenticated users.
+**Learning:** In FastAPI, mounting a directory using `StaticFiles` directly exposes all contents within it unless specific controls are implemented. When a parent directory containing both public assets (like audio files) and private configs is mounted, a custom handler is required to prevent path traversal-like exposure of sensitive files.
+**Prevention:** Always implement a custom `StaticFiles` subclass (like `SafeStaticFiles`) that overrides the `get_response` method to explicitly block access to restricted paths (e.g. `00_CONFIG`, `.hidden`) when serving files from mixed-content directories.
