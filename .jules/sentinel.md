@@ -1,0 +1,4 @@
+## 2024-05-02 - Path Traversal Bypass via String Manipulation
+**Vulnerability:** The `validate_path_within` function used string manipulation (`os.path.abspath` and `.startswith()`) to ensure paths were within a directory. This approach could be bypassed using symbolic links that resolve outside the intended root.
+**Learning:** `os.path.abspath` normalizes `..` and `.` but does not resolve symlinks. Thus, it checks the path conceptually, not where it physically points. Resolving the physical path is crucial for actual security boundaries.
+**Prevention:** To securely validate paths and prevent traversal via symlinks, always use `Path.resolve().is_relative_to()` to evaluate the real, physical filesystem paths. Additionally, wrap resolutions in try/except blocks to gracefully catch loops or malformed paths.
