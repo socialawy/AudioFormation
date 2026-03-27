@@ -102,6 +102,25 @@ class TestValidatePathWithin:
         sibling = tmp_path / "other_dir" / "file.txt"
         assert validate_path_within(sibling, root) is False
 
+    def test_symlink_bypass_rejected(self, tmp_path: Path) -> None:
+        import os
+
+        root_dir = tmp_path / "root_dir"
+        root_dir.mkdir()
+
+        outside_dir = tmp_path / "outside_dir"
+        outside_dir.mkdir()
+
+        # Create a symlink inside root_dir that points outside
+        symlink_path = root_dir / "link"
+        os.symlink(outside_dir, symlink_path)
+
+        # Attempt to access a file through the symlink
+        path_to_check = symlink_path / "secret.txt"
+
+        # Path.resolve() should correctly identify this is outside root_dir
+        assert validate_path_within(path_to_check, root_dir) is False
+
 
 class TestRedactApiKeys:
     """Tests for API key redaction in logging."""
