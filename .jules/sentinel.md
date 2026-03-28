@@ -1,0 +1,4 @@
+## 2024-05-30 - [Path Traversal bypass using purely string manipulations]
+**Vulnerability:** Path traversal bypass in `validate_path_within` when using string-based operations like `os.path.abspath`. Specifically, comparing absolute string paths may leave applications vulnerable to path traversal attacks via symlinks.
+**Learning:** `os.path.abspath` normalizes '.' and '..' components, but doesn't resolve symlinks. A user can provide a path that includes a symlink pointing outside the root directory, bypassing the prefix check when comparing raw absolute paths.
+**Prevention:** Use `Path.resolve().is_relative_to()` to perform secure path validation. `Path.resolve()` correctly resolves symlinks, ensuring that checks evaluate the real destination of the file on disk. Additionally, ensure exceptions such as `RuntimeError` (thrown by infinite symlink loops) are properly caught.
