@@ -64,28 +64,20 @@ def sanitize_filename(raw: str) -> str:
 
 def validate_path_within(path: Path, root: Path) -> bool:
     """
-    Ensure `path` is within `root` using pure string manipulation.
-    Does NOT access the filesystem, avoiding CodeQL 'Path Expression' alerts.
+    Ensure `path` is within `root` securely handling symlinks.
+
+    SECURITY: Uses Path.resolve() instead of string manipulation (os.path.abspath).
+    String manipulation can be bypassed via symlinks or hard links to escape
+    the intended root directory.
     """
     try:
-        # 1. Get absolute paths (String manipulation only, no disk I/O)
-        # os.path.abspath normalizes '..' and '.' components.
-        abs_path = os.path.abspath(str(path))
-        abs_root = os.path.abspath(str(root))
-
-        # 2. Exact match is valid
-        if abs_path == abs_root:
-            return True
-
-        # 3. Ensure root ends with separator to prevent partial matches
-        # e.g. /tmp/foo vs /tmp/foobar
-        if not abs_root.endswith(os.path.sep):
-            abs_root += os.path.sep
-
-        # 4. Check prefix
-        # We ensure the path starts with the root directory.
-        return abs_path.startswith(abs_root)
-    except (TypeError, ValueError):
+        # Resolve resolves symlinks and normalizes the path
+        # is_relative_to ensures the path is actually under the root
+        resolved_path = Path(path).resolve()
+        resolved_root = Path(root).resolve()
+        return resolved_path.is_relative_to(resolved_root)
+    except (TypeError, ValueError, RuntimeError):
+        # Catch RuntimeError for potential infinite symlink loops
         return False
 
 
