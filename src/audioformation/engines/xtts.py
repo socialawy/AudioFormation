@@ -139,20 +139,45 @@ class XTTSEngine(TTSEngine):
             return self._model
 
         try:
-            from TTS.api import TTS  # type: ignore[import-untyped]
+            from TTS.tts.configs.xtts_config import XttsConfig  # type: ignore[import-untyped]
+            from TTS.tts.models.xtts import Xtts  # type: ignore[import-untyped]
         except ImportError as exc:
             raise RuntimeError(
                 "coqui-tts is not installed. Run:  pip install coqui-tts"
             ) from exc
 
-        logger.info("XTTS: loading %s on %s …", _MODEL_NAME, self.device)
-        model = TTS(_MODEL_NAME)
+        # Resolve model cache directory (TTS manager downloads here).
+        model_dir = self._find_model_dir()
+        if model_dir is None:
+            raise RuntimeError(
+                f"XTTS model not found in cache. Run once with:  "
+                f"python -c \"from TTS.api import TTS; TTS('{_MODEL_NAME}')\""
+            )
+
+        logger.info("XTTS: loading from %s on %s …", model_dir, self.device)
+        config = XttsConfig()
+        config.load_json(str(Path(model_dir) / "config.json"))
+        model = Xtts.init_from_config(config)
+        model.load_checkpoint(config, checkpoint_dir=str(model_dir), eval=True)
         if self.device == "cuda":
-            model.to("cuda")
+            model.cuda()
 
         self._model = model
         logger.info("XTTS: model ready.")
         return self._model
+
+    @staticmethod
+    def _find_model_dir() -> str | None:
+        """Locate the cached XTTS v2 model directory."""
+        cache_name = _MODEL_NAME.replace("/", "--")
+        candidates = [
+            Path.home() / "AppData" / "Local" / "tts" / cache_name,
+            Path.home() / ".local" / "share" / "tts" / cache_name,
+        ]
+        for p in candidates:
+            if p.exists() and (p / "config.json").exists():
+                return str(p)
+        return None
 
     def release_vram(self) -> None:
         """
@@ -235,19 +260,30 @@ class XTTSEngine(TTSEngine):
         repetition_penalty = float(params.get("repetition_penalty", 5.0))
 
         try:
+            import torch
+            import torchaudio
+
             model = self._ensure_model()
 
             # XTTS outputs WAV natively — no conversion needed.
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            model.tts_to_file(
+            # Compute speaker conditioning from reference audio.
+            gpt_cond_latent, speaker_embedding = model.get_conditioning_latents(
+                audio_path=[str(ref_path)]
+            )
+
+            out = model.inference(
                 text=request.text,
-                file_path=str(output_path),
-                speaker_wav=str(ref_path),
                 language=language,
+                gpt_cond_latent=gpt_cond_latent,
+                speaker_embedding=speaker_embedding,
                 temperature=temperature,
                 repetition_penalty=repetition_penalty,
             )
+
+            wav_tensor = torch.tensor(out["wav"]).unsqueeze(0)
+            torchaudio.save(str(output_path), wav_tensor, 24000)
 
             self._generation_count += 1
 

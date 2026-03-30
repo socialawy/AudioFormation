@@ -63,9 +63,16 @@ def normalize_text_for_tts(text: str) -> str:
     if not text:
         return text
 
-    # Step 0: Strip markdown formatting (bold, italic, blockquotes)
+    # Step 0: Strip markdown formatting (headers, bold, italic, blockquotes)
+    # 0a: Strip headers (###, ##, #) at the start of lines
+    text = re.sub(r"^#+\s?", "", text, flags=re.MULTILINE)
+    # 0b: Strip bold/italic markers
+    text = re.sub(r"\*\*\*(.+?)\*\*\*", r"\1", text)  # ***bold-italic*** → bold-italic
     text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)  # **bold** → bold
     text = re.sub(r"\*(.+?)\*", r"\1", text)  # *italic* → italic
+    text = re.sub(r"__(.+?)__", r"\1", text)  # __bold__ → bold
+    text = re.sub(r"_(.+?)_", r"\1", text)  # _italic_ → italic
+    # 0c: Strip blockquotes
     text = re.sub(r"^>\s?", "", text, flags=re.MULTILINE)  # > blockquote → text
 
     # Step 1: Unicode normalization (NFC = composed form, most TTS-friendly)

@@ -1,0 +1,30 @@
+﻿Usage: python -m audioformation [OPTIONS] COMMAND [ARGS]...
+
+  ≡ƒÅ¡ AudioFormation ΓÇö Production audio pipeline.
+
+Options:
+  --version  Show the version and exit.
+  --help     Show this message and exit.
+
+Commands:
+  cast      Manage project characters and voices.
+  compare   Generate A/B comparisons using multiple engines.
+  compose   Generate ambient pad music (Node 5).
+  engines   Manage TTS engines.
+  export    Export final audio files (Node 8).
+  generate  Run TTS generation (Node 3).
+  hardware  Detect and display hardware capabilities.
+  ingest    Import text files into a project (Node 1).
+  list      List all projects.
+  mix       Mix voice and music with ducking (Node 6).
+  new       Create a new audio project.
+  preview   Generate a quick preview of a chapter.
+  process   Normalize and trim generated audio (Node 4).
+  qc        View QC scan results (Node 3.5).
+  qc-final  Run Final QC on mixed audio (Node 7).
+  quick     Quick TTS generation without a project.
+  run       Run the full pipeline or resume from a node.
+  serve     Start the AudioFormation API server.
+  sfx       FXForge: Procedural sound effects.
+  status    Show detailed project status.
+  validate  Run validation gate (Node 2) on a project.

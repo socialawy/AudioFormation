@@ -142,6 +142,7 @@ PROJECTS/**/06_MIX/renders/**/*.wav
 PROJECTS/**/07_EXPORT/**/*.mp3
 PROJECTS/**/07_EXPORT/**/*.m4b
 PROJECTS/**/07_EXPORT/**/*.wav
+PROJECTS/
 
 # Test projects (E2E tests, development projects)
 PROJECTS/E2E_TEST_*/
@@ -176,3 +177,11 @@ E2E_TEST_RESULTS_*.md
 node_modules/
 # Generated Artifacts
 PROJECTS/API_*/
+generate_log_utf8.txt
+generate_log.txt
+.gitignore
+PROJECTS/CH01_S02/01_TEXT/chapters/ch01_s02_ar.txt
+PROJECTS/CH01_S02/01_TEXT/chapters/ch01_s02_en.txt
+scripts/casting_log_utf8.txt
+scripts/casting_log.txt
+scripts/test_xtts.wav
