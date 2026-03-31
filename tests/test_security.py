@@ -102,6 +102,31 @@ class TestValidatePathWithin:
         sibling = tmp_path / "other_dir" / "file.txt"
         assert validate_path_within(sibling, root) is False
 
+    def test_symlink_traversal_rejected(self, tmp_path: Path) -> None:
+        # 1. Setup vault (protected) and sandbox (where user can write)
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        secret = vault / "secret.txt"
+        secret.write_text("sensitive")
+
+        sandbox = tmp_path / "sandbox"
+        sandbox.mkdir()
+
+        # 2. Add a symlink inside sandbox that points to vault
+        # This is the 'attack' vector
+        malicious_link = sandbox / "link_to_vault"
+        try:
+            malicious_link.symlink_to(vault, target_is_directory=True)
+        except OSError:
+            pytest.skip("Symlinks not supported on this platform/user")
+
+        # 3. Path within sandbox that resolves to vault
+        traversal_path = malicious_link / "secret.txt"
+
+        # Should be REJECTED despite being technically 'under' sandbox path string
+        # because it resolves outside the root.
+        assert validate_path_within(traversal_path, sandbox) is False
+
 
 class TestRedactApiKeys:
     """Tests for API key redaction in logging."""

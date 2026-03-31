@@ -1,3 +1,22 @@
+## Session 10: "Sentinel" security PRs (March 31, 2026)
+
+**Focus**: Consolidating 35+ automated security PRs into a single verified patch.
+
+### Key Achievements
+
+- **Security Consolidation**: 35+ redundant "Sentinel" security PRs consolidated into a single, high-fidelity implementation.
+- **Path Traversal Fix**: Replaced string-based `abspath` check with robust `Path.resolve().is_relative_to()` validation in `src/audioformation/utils/security.py`.
+- **Symlink Protection**: Added explicit test coverage for symlink-based sandbox escapes to ensure total isolation.
+- **Static File Hardening**: Implemented `SafeStaticFiles` in `src/audioformation/server/app.py` to block unauthorized internal file exposure (.env, .git, 00_CONFIG).
+- **Markdown Sanitization**: Refined `normalize_text_for_tts` regex in `src/audioformation/utils/text.py` to strip headers (`###`), bold/italic (`***`), and blockquotes (`>`) to prevent TTS from reading formatting aloud.
+- **Code Maintenance**: Synchronized codebase formatting with `black` and verified core stability (41/41 security and ingestion tests passing).
+
+### Verification Results
+
+- **41 tests collected, 41 passing** (Security & Ingest suites).
+- **New Test**: `TestValidatePathWithin.test_symlink_traversal_rejected` (PASSED).
+- **Format**: 118 files checked/reformatted with `black`.
+
 ## Session 9: Loudness normalization (March 11, 2026)
 
 - src/audioformation/generate.py — fixed fallback logic to keep partial output when fail rate is under threshold; added 3-way status

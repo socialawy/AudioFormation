@@ -39,6 +39,7 @@ class TestValidationResult:
 
 from unittest.mock import patch
 
+
 @patch("audioformation.utils.hardware.detect_ffmpeg")
 class TestValidateProject:
     """Tests for the full validation gate."""

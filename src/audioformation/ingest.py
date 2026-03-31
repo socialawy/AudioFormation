@@ -18,7 +18,6 @@ from audioformation.pipeline import update_node_status
 from audioformation.utils.arabic import detect_language, classify_diacritization
 from audioformation.utils.security import sanitize_filename
 
-
 # Non-chapter filenames to skip during ingest
 _SKIP_FILENAMES = {
     "readme",

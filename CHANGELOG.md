@@ -1,4 +1,3 @@
-
 # Changelog
 
 All notable changes to AudioFormation will be documented in this file.
@@ -8,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed 2026-03-31 ("Sentinel" security PRs)
+
+- **Path Traversal Vulnerability**: Replaced string-based `os.path.abspath` with symlink-aware `Path.resolve().is_relative_to()` validation in `security.py`.
+- **Symlink Bypass Prevention**: Added explicit test coverage for symlink-based sandbox escapes to ensure robust path validation.
+- **Static File Exposure**: Implemented `SafeStaticFiles` in `server/app.py` to block unauthorized access to `.env`, `.git`, and `00_CONFIG` directories.
+- **Code Consistency**: Consolidated 35+ automated "Sentinel" pull requests into a single verified patch and synchronized formatting with `black`.
+- **Markdown Leakage**: Refined regex-based text normalization in `utils/text.py` to strip markdown artifacts before TTS ingestion (preventing "header" or "star" speech artifacts).
+
 ### Fixed 2026-02-18 (Session 6 — Dashboard Security & Code Quality)
+
 - **Poll Isolation**: Single `pollInterval` caused cross-contamination between generation, mix, and export polls
   - Replaced with `activePolls{}` object, each poller gets isolated key
   - Added `stopAllPolls()` to clear all polls on navigation
@@ -33,16 +41,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Visual feedback on Save Changes button
 
 ### Security 2026-02-18
+
 - **Snyk Code Scan**: Reduced from 7 XSS vulnerabilities to 5 false positives
 - **Real vulnerabilities eliminated**: 2 critical XSS issues in QC report rendering
 - **Production readiness**: All actual security issues resolved
 
 ### Tests 2026-02-18
+
 - **423 tests collected, 423 passing** (100% success rate)
 - **Coverage: 76%** (up from 69%)
 - **All 6 dashboard patches verified** via automated and manual inspection
 
 ### Fixed 2026-02-17 (Session 5 — Production Debugging)
+
 - **`ch*.wav` hard-coded glob**: Process, Mix commands only found `ch`-prefixed files.
   Changed to `*.wav` with chunk-file exclusion filter in:
   - `cli.py` process_audio (~line 754)
@@ -58,17 +69,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   qc-final step. Added to steps array and nodeMap.
 
 ### Added 2026-02-17 (Session 5)
+
 - **"Run From" dropdown**: Pipeline can now resume from any step (validate → export).
   HTML select + `runFromStep()` JS function. Reuses existing `waitForNode()`.
 - **First M4B audiobook export**: Verified end-to-end on Project 10 (Arabic, edge-tts).
 
 ### Tests
+
 - **387 collected, 378 passed, 9 skipped, 0 failed**
 - **Coverage: 69.03%** (up from 64.98%)
 - E2E tests now exercise: bootstrap → ingest → validate → generate → qc-scan →
   process → mix → qc-final (soft) → export (conditional)
 
 ### Added 2026-02-16 (Session 3)
+
 - **QC Scan API**: New endpoint for quality control scanning
   - POST /api/projects/{id}/qc-scan (Node 3.5)
   - Scans generated audio for SNR, clipping, duration, LUFS, pitch, boundary artifacts
@@ -93,6 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced test coverage: 63.40% (60% minimum met)
 
 ### Added 2026-02-16 (Session 2)
+
 - **Pipeline Status Tracking Wrapper**: Comprehensive background task monitoring
   - Async-aware `_run_with_status()` wrapper for all pipeline functions
   - Detects and awaits coroutines from async functions (generate, mix, process, compose, export)
@@ -117,6 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cleaner browser console during normal operation
 
 ### Fixed 2026-02-16 (Session 2)
+
 - **Background Task Execution**: Generate/mix/process/compose/export functions now execute
   - Made `_run_with_status()` async with `asyncio.iscoroutine()` detection
   - FastAPI properly awaits all async pipeline functions
@@ -144,18 +160,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Visible in UI status popup for debugging
 
 ### Changed 2026-02-16 (Session 2)
+
 - **routes.py**: Added `asyncio` import, made wrapper async-aware, fixed all 5 background task calls
 - **app.js**: Simplified `runAllPipeline()` with step array loop, added `waitForNode()` helper, improved error handling
 - **validation.py**: Already had `.summary()` method (no changes needed)
 - **style.css**: Added `.btn.success` green button styling for "Run All Pipeline"
 
 ### Tests
+
 - All existing tests passing (371 tests)
 - Manual testing confirms: validation failures show in UI, background tasks execute and write status, polling timeouts gracefully
 
 ## [0.3.0+] - 2026-02-16
 
 ### Added 2026-02-16
+
 - **Code Quality Infrastructure**: Comprehensive tooling for robust development
   - Ruff linting with automated fixes (31 issues resolved)
   - pytest-cov coverage reporting with 80% threshold
@@ -169,18 +188,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Type Safety**: 21 type errors identified for gradual resolution
 
 ### Changed
+
 - **Dependencies**: Added pytest-cov, mypy, types-jsonschema to dev group
 - **CI Pipeline**: Enhanced with linting, type checking, and coverage reporting
 - **Pre-commit**: Added MyPy type checking hook
 - **Configuration**: Updated pytest.ini with coverage options and thresholds
 
 ### Fixed
+
 - **Ruff Installation**: Resolved missing linter tooling
 - **XSS Vulnerabilities**: All 3 Medium-severity issues resolved in app.js
 - **Import Issues**: Fixed unused imports and circular dependencies
 - **Type Annotations**: Improved type hints across codebase
 
 ### Tests
+
 - **371 tests passing** with comprehensive coverage reporting
 - **Current coverage**: 65% (targeting 80%+)
 - **Quality gates**: Automated linting, type checking, and security scanning
@@ -188,6 +210,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2026-02-14
 
 ### Added
+
 - **Mixer engine** (`audio/mixer.py`): Multi-track mixing with VAD-based ducking (Silero) and energy fallback
 - **Mix pipeline node** (`mix.py`): Orchestrator with auto-detect background music, processed→raw fallback
 - **QC Final gate** (`qc/final.py`): LUFS ±1, true peak, clipping validation on mixed output
@@ -254,6 +277,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ElevenLabs auto-registration in engine registry (requires httpx)
 
 ### Changed
+
 - **Project schema:** updated with all Phase 2/3 fields (fallback, crossfade, ducking, VRAM, multi-speaker)
 - **Pipeline:** status tracking now at chunk level with resume support
 - **Server:** routes expanded from 4 to 13 endpoints
@@ -275,6 +299,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Updated generation requests:** to use segment-specific voice and reference audio
 
 ### Fixed
+
 - **Server import error:** (`scan_project_chunks` removed — dead import)
 - **Schema validation:** now covers generation, mix, export, and QC sections
 - **Envelope edge artifacts:** in mixer (smooth fade vs hard set)
@@ -289,15 +314,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Type checking for malformed chapter entries**
 
 ### Removed
+
 - **Duplicate `text.py`**: Removed root-level `src/audioformation/text.py` (duplicate of `utils/text.py`, not in architecture)
 
 ### Tests
+
 - **371 tests passing** (up from 264 in v0.2)
 - New test suites: test_mix_unit, test_multispeaker, test_xtts, test_qc_final, test_sfx, test_composer, test_server
 
 ## [0.1.0] - 2026-02-13
 
 ### Added
+
 - Initial AudioFormation pipeline implementation
 - Project scaffolding and management
 - Edge TTS integration with Arabic voice support
@@ -311,6 +339,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (218/218 passing)
 
 ### Features
+
 - **Core Pipeline**: Bootstrap → Ingest → Validate → Generate → QC → Process → Export
 - **TTS Engines**: edge-tts (primary), gTTS (fallback)
 - **Audio Processing**: LUFS normalization, silence trimming, QC scanning
@@ -319,6 +348,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Testing**: Comprehensive test coverage with fixtures
 
 ### Architecture
+
 - Five-domain architecture: VoxEngine (TTS), FXForge (SFX), ComposeEngine (Music), MixBus (Mixing), ShipIt (Export)
 - JSON schema validation for project configuration
 - Chunk-level resumability for long-running operations
