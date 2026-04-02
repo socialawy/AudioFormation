@@ -347,6 +347,8 @@ async def trigger_mix(
     music_file = music
     if music == "FORCE_NO_MUSIC":
         music_file = "FORCE_NO_MUSIC"
+    elif music is not None:
+        music_file = sanitize_filename(music)
 
     background_tasks.add_task(
         _run_with_status,
