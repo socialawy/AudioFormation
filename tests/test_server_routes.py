@@ -301,6 +301,42 @@ class TestServerRoutes:
             assert data["status"] == "running"
             assert "Mixing started" in data["message"]
 
+    def test_trigger_mix_path_traversal(self, client, sample_project):
+        """Test POST /projects/{project_id}/mix with path traversal in music parameter."""
+        project_id = sample_project["id"]
+
+        with patch("audioformation.server.routes.mix_project") as mock_mix:
+            mock_mix.return_value = None
+
+            # Attempt path traversal
+            response = client.post(f"/api/projects/{project_id}/mix?music=../../../etc/passwd")
+
+            assert response.status_code == 200
+            # Wait a small moment to let background task execute the lambda (mocked)
+            import time
+            time.sleep(0.1)
+
+            # Assert that the `music_file` argument passed to mix_project was sanitized
+            # Note: The background task is executed via a starlette BackgroundTask, which runs after the response.
+            # In Starlette TestClient, background tasks run synchronously during the request cycle.
+            mock_mix.assert_called_once()
+            _, kwargs = mock_mix.call_args
+            assert kwargs.get("music_file") == "passwd"
+
+    def test_trigger_mix_force_no_music(self, client, sample_project):
+        """Test POST /projects/{project_id}/mix with FORCE_NO_MUSIC."""
+        project_id = sample_project["id"]
+
+        with patch("audioformation.server.routes.mix_project") as mock_mix:
+            mock_mix.return_value = None
+
+            response = client.post(f"/api/projects/{project_id}/mix?music=FORCE_NO_MUSIC")
+
+            assert response.status_code == 200
+            mock_mix.assert_called_once()
+            _, kwargs = mock_mix.call_args
+            assert kwargs.get("music_file") == "FORCE_NO_MUSIC"
+
     def test_trigger_validate(self, client, sample_project):
         """Test POST /projects/{project_id}/validate - Run validation."""
         project_id = sample_project["id"]
