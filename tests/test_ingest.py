@@ -89,9 +89,9 @@ class TestIngestText:
             ch for ch in config.get("chapters", []) if ch.get("id") == "ch02"
         ]
         assert len(ch02_entries) >= 1, "ch02 not found in project.json"
-        assert (
-            ch02_entries[0].get("language") == "ar"
-        ), f"Expected language='ar' (override), got: {ch02_entries[0].get('language')}"
+        assert ch02_entries[0].get("language") == "ar", (
+            f"Expected language='ar' (override), got: {ch02_entries[0].get('language')}"
+        )
 
     def test_copies_files_to_project(self, sample_project, isolate_projects, tmp_path):
         source = tmp_path / "source"
