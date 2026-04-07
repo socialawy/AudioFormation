@@ -75,7 +75,9 @@ def validate_path_within(path: Path, root: Path) -> bool:
         # Check if the resolved path is a child of the resolved root
         # .is_relative_to() specifically handles this case in a cross-platform way.
         return resolved_path.is_relative_to(resolved_root)
-    except (ValueError, RuntimeError):
+    except (TypeError, ValueError, RuntimeError, AttributeError):
+        # AttributeError: raised if path is None
+        # TypeError: raised if path isn't valid for Path operations
         # ValueError: raised if the paths are on different drives or not relative
         # RuntimeError: raised on some platforms for infinite symlink loops
         return False
