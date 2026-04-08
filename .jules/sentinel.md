@@ -2,3 +2,8 @@
 **Vulnerability:** The `/projects/{project_id}/mix` API endpoint in `src/audioformation/server/routes.py` accepted a `music` parameter (meant to specify a filename within the `05_MUSIC/generated` directory) but directly passed it to `mix_project` without sanitization. This allowed directory traversal payloads like `../../../etc/passwd` to be used for background music resolution.
 **Learning:** Even internal API inputs that map strictly to filenames inside an expected directory must be sanitized. A simple check for file existence (`if not bg_music_path.exists():`) is insufficient as it confirms existence but allows looking outside the bounded directory.
 **Prevention:** Always use established sanitization helpers (like `sanitize_filename`) or bound checks (like `validate_path_within`) for any user-supplied string that forms part of a filesystem path. Ensure bypass parameters like `FORCE_NO_MUSIC` are handled before and mutually exclusively from sanitization.
+
+## 2025-04-08 - SafeStaticFiles String Manipulation Error
+**Vulnerability:** In `src/audioformation/server/app.py`, `SafeStaticFiles.get_response` attempts to call `.lower()` on a `Path` object (`p = Path(path).lower()`), which raises an `AttributeError`. This crashed the server when trying to serve static files.
+**Learning:** Python's `pathlib.Path` objects do not have a `.lower()` method. This bug bypassed the intended security checks for sensitive files (like `.git`, `.env`, and `00_config`) and caused a Denial of Service (DoS) by crashing the endpoint.
+**Prevention:** Always convert path strings to lower case before instantiating `Path` objects (e.g. `Path(path.lower())`) to avoid `AttributeError` and ensure case-insensitive security checks function correctly.

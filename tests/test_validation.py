@@ -37,7 +37,7 @@ class TestValidationResult:
         assert s["ok"] is False
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: E402
 
 
 @patch("audioformation.utils.hardware.detect_ffmpeg")
