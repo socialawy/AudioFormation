@@ -15,6 +15,7 @@ from audioformation.project import (
     load_project_json,
 )
 from audioformation.pipeline import update_node_status
+from audioformation.utils.security import validate_path_within
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +65,14 @@ def mix_project(
 
     # Determine background music path
     bg_music_path: Path | None = None
-    if music_file:
+    if music_file == "FORCE_NO_MUSIC":
+        _notify("  Mixing voice only (forced).")
+    elif music_file:
         bg_music_path = music_dir / music_file
-        if not bg_music_path.exists():
+        if not validate_path_within(bg_music_path, music_dir):
+            _notify(f"⚠ Invalid music path: {music_file}", "error")
+            bg_music_path = None
+        elif not bg_music_path.exists():
             _notify(f"⚠ Music file not found: {music_file}", "warning")
             bg_music_path = None
     else:
