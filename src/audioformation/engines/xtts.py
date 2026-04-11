@@ -282,8 +282,8 @@ class XTTSEngine(TTSEngine):
                 repetition_penalty=repetition_penalty,
             )
 
-            wav_tensor = torch.tensor(out["wav"]).unsqueeze(0)
-            torchaudio.save(str(output_path), wav_tensor, 24000)
+            import soundfile as sf
+            sf.write(str(output_path), out["wav"], 24000)
 
             self._generation_count += 1
 

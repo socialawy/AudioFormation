@@ -11,6 +11,7 @@ import numpy as np
 import soundfile as sf
 from pathlib import Path
 from typing import Optional, Literal
+import tempfile
 
 from audioformation.config import PROJECTS_ROOT
 from audioformation.audio.synthesis import (
@@ -72,22 +73,19 @@ def generate_sfx(
         audio = audio / peak * 0.9
 
     if output_path:
-        # CODEQL FIX: Use string-based validation (no FS access)
-        # validate_path_within now uses abspath() which is safe.
-        valid = False
+        # CODEQL FIX: Validate path before any filesystem operation (like mkdir)
+        is_safe = False
         try:
+            # Must be in PROJECTS_ROOT or system temp
             if validate_path_within(output_path, PROJECTS_ROOT):
-                valid = True
-            else:
-                import tempfile
-
-                if validate_path_within(output_path, Path(tempfile.gettempdir())):
-                    valid = True
+                is_safe = True
+            elif validate_path_within(output_path, Path(tempfile.gettempdir())):
+                is_safe = True
         except Exception:
-            pass
+            is_safe = False
 
-        if not valid:
-            raise ValueError("Security Alert: Output path unsafe")
+        if not is_safe:
+            raise ValueError(f"Security Alert: Output path '{output_path}' is outside allowed directories.")
 
         # Safe to create directory now
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)

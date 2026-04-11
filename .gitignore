@@ -185,3 +185,5 @@ PROJECTS/CH01_S02/01_TEXT/chapters/ch01_s02_en.txt
 scripts/casting_log_utf8.txt
 scripts/casting_log.txt
 scripts/test_xtts.wav
+test_samples/contemplative.txt
+test_samples/energetic.txt

@@ -45,7 +45,7 @@ from audioformation.config import (
     DEFAULT_MP3_BITRATE,
     DEFAULT_M4B_AAC_BITRATE,
 )
-from audioformation.utils.security import sanitize_project_id
+from audioformation.utils.security import sanitize_project_id, validate_path_within
 
 
 def get_project_path(project_id: str) -> Path:
@@ -66,7 +66,13 @@ def get_project_path(project_id: str) -> Path:
 
     # 3. Construct path safely
     # Since safe_id cannot contain separators, this is guaranteed to be a child of PROJECTS_ROOT
-    return PROJECTS_ROOT / safe_id
+    path = PROJECTS_ROOT / safe_id
+    
+    # Final safety check to satisfy automated scanners
+    if not validate_path_within(path, PROJECTS_ROOT):
+        raise ValueError(f"Security Alert: Path traversal detected for ID: {project_id}")
+        
+    return path
 
 
 def create_project(project_id: str) -> Path:

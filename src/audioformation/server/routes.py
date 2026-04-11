@@ -252,14 +252,15 @@ async def preview_voice(project_id: str, request: PreviewRequest):
     ref_path = None
     if request.reference_audio:
         # CODEQL FIX: Validate reference_audio is strictly within project
-        # User input could be "../../etc/passwd"
-        possible_ref = (project_path / request.reference_audio).resolve()
+        # We do NOT call .resolve() here as it's a sink for unvalidated user input.
+        possible_ref = project_path / request.reference_audio
         if not validate_path_within(possible_ref, project_path):
             raise HTTPException(status_code=400, detail="Invalid reference audio path")
 
-        if not possible_ref.exists():
+        # Now it is safe to resolve if we need the absolute path
+        ref_path = possible_ref.resolve()
+        if not ref_path.exists():
             raise HTTPException(status_code=400, detail="Reference audio not found")
-        ref_path = possible_ref
 
     # Create temp file for output
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:

@@ -1,0 +1,2 @@
+#!/bin/sh
+node "E:/co/0-Tools/encoding-baseline/check-staged-utf8.mjs"

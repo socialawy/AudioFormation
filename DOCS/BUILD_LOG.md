@@ -1,3 +1,46 @@
+## Session 11: CI Fix & PR Cleanup (April 11, 2026)
+
+**Focus**: Unblock CI pipeline, close stale PRs, harden CodeQL compliance.
+
+### CI Pipeline Fix
+
+- **Root cause**: Committed `uv.lock` was stale — resolved `llvmlite==0.36.0` which cannot build on Python 3.12.
+- **Fix**: Refreshed `uv.lock` (resolves `llvmlite==0.47.0`), re-exported `requirements.txt` (was UTF-16/broken, now proper ASCII).
+- **Workflow permissions**: Added `permissions: contents: read` to `ci.yml` (fixes CodeQL alert #64).
+
+### PR Cleanup
+
+- **7 Sentinel PRs closed** (#49-#52, #54-#56): All redundant — security fixes already consolidated on `main` in Session 10.
+- **Dependabot PR #53 closed**: `transformers` bump to `5.0.0rc3` rejected — breaks XTTS v2 (`transformers<5` pin).
+- **0 open PRs remaining**.
+
+### Security Hardening (CodeQL)
+
+| File | Change | Alert |
+|------|--------|-------|
+| `security.py` | `validate_path_within` — Windows drive-letter normalization, two-step check (abspath + resolve), added `OSError` catch | `py/path-injection` #102, #103 |
+| `routes.py` | `preview_voice` — moved `.resolve()` after `validate_path_within()` to prevent unvalidated user input flowing into resolve | `py/path-injection` #60 |
+| `sfx.py` | `generate_sfx` — cleaner path validation structure, explicit error messages | `py/path-injection` #58 |
+| `project.py` | `get_project_path` — added `validate_path_within` check after path construction | `py/path-injection` |
+| `list_all_voices.py` | Added docstring clarifying public metadata only | `py/clear-text-logging` #98, #99 |
+
+### Other Fixes
+
+- **XTTS engine**: Replaced `torch.tensor` + `torchaudio.save` with `soundfile.sf.write` — removes torchaudio save dependency.
+- **test_xtts.py**: Added mock returns for `get_conditioning_latents` and `inference`.
+- **Reverted**: Sentinel's default narrator voice/dialect change (`en-US-AndrewMultilingualNeural`/`msa` → empty strings) — preserves Session 8 language-neutral defaults.
+
+### GitHub Security Status
+
+| Category | Open Alerts | Notes |
+|----------|-------------|-------|
+| Code Scanning | 13 | Mostly CodeQL false positives (paths pass through sanitizers) |
+| Dependabot | 2 | `transformers` (blocked by XTTS pin), `Pygments` ReDoS (low) |
+| Secret Scanning | 0 | Clean |
+| Security Advisories | 0 | Clean |
+
+---
+
 ## Session 10: "Sentinel" security PRs (March 31, 2026)
 
 **Focus**: Consolidating 35+ automated security PRs into a single verified patch.

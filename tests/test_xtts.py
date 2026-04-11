@@ -46,6 +46,8 @@ def mock_tts_model(tmp_path):
         p.write_bytes(b"MOCK_AUDIO_DATA" * 50)
 
     model = MagicMock()
+    model.get_conditioning_latents = MagicMock(return_value=(MagicMock(), MagicMock()))
+    model.inference = MagicMock(return_value={"wav": [0.1] * 100})
     model.tts_to_file = MagicMock(side_effect=_fake_tts_to_file)
     return model
 

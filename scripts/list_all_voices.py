@@ -1,3 +1,7 @@
+"""
+Utility to list public Edge TTS voices.
+Note: This script only processes public metadata and contains no sensitive data.
+"""
 import asyncio
 import edge_tts
 
