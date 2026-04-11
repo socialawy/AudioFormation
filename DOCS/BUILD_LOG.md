@@ -30,14 +30,33 @@
 - **test_xtts.py**: Added mock returns for `get_conditioning_latents` and `inference`.
 - **Reverted**: Sentinel's default narrator voice/dialect change (`en-US-AndrewMultilingualNeural`/`msa` → empty strings) — preserves Session 8 language-neutral defaults.
 
-### GitHub Security Status
+### Code Quality
 
-| Category | Open Alerts | Notes |
-|----------|-------------|-------|
-| Code Scanning | 13 | Mostly CodeQL false positives (paths pass through sanitizers) |
-| Dependabot | 2 | `transformers` (blocked by XTTS pin), `Pygments` ReDoS (low) |
+- **Ruff format**: 10 files reformatted to pass `ruff format --check`.
+- **Ruff lint**: Removed dead `torch`/`torchaudio` imports in `xtts.py` (replaced by `soundfile`).
+- **Ruff config**: Added `[tool.ruff.lint]` ignoring E402 (structural imports after try/except — by design).
+
+### CodeQL Alert Triage (13 alerts dismissed)
+
+All 13 open code scanning alerts reviewed and dismissed as false positives:
+
+| Category | Alerts | Reason |
+|----------|--------|--------|
+| `py/path-injection` (security.py) | #104, #105 | Flagged `resolve()` inside `validate_path_within` — the validator itself, not an unguarded sink |
+| `py/path-injection` (routes.py) | #49, #60, #62, #106, #107 | All paths validated by `validate_path_within()` before filesystem ops; CodeQL cannot trace custom sanitizers |
+| `py/path-injection` (sfx.py) | #58 | Same — `validate_path_within(output_path, PROJECTS_ROOT)` called before `mkdir`/`write` |
+| `py/clear-text-logging` (scripts/) | #98, #99, #100, #101 | Dev utility scripts printing public Edge TTS voice names — no sensitive data |
+| `actions/missing-workflow-permissions` | #64 | Already fixed in prior commit (`permissions: contents: read` added) |
+
+### GitHub Security Status (Final)
+
+| Category | Open Alerts | Status |
+|----------|-------------|--------|
+| Code Scanning | 0 | All 13 dismissed (false positives) |
+| Dependabot | 0 | All resolved or dismissed |
 | Secret Scanning | 0 | Clean |
 | Security Advisories | 0 | Clean |
+| **Open PRs** | **0** | All 8 closed (7 Sentinel + 1 Dependabot) |
 
 ---
 
