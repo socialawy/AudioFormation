@@ -85,7 +85,9 @@ def generate_sfx(
             is_safe = False
 
         if not is_safe:
-            raise ValueError(f"Security Alert: Output path '{output_path}' is outside allowed directories.")
+            raise ValueError(
+                f"Security Alert: Output path '{output_path}' is outside allowed directories."
+            )
 
         # Safe to create directory now
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)

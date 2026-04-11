@@ -67,11 +67,13 @@ def get_project_path(project_id: str) -> Path:
     # 3. Construct path safely
     # Since safe_id cannot contain separators, this is guaranteed to be a child of PROJECTS_ROOT
     path = PROJECTS_ROOT / safe_id
-    
+
     # Final safety check to satisfy automated scanners
     if not validate_path_within(path, PROJECTS_ROOT):
-        raise ValueError(f"Security Alert: Path traversal detected for ID: {project_id}")
-        
+        raise ValueError(
+            f"Security Alert: Path traversal detected for ID: {project_id}"
+        )
+
     return path
 
 

@@ -71,7 +71,7 @@ def validate_path_within(path: Path, root: Path) -> bool:
         # Resolve to absolute paths first
         abs_path = os.path.abspath(str(path))
         abs_root = os.path.abspath(str(root))
-        
+
         # On Windows, abspath can have different casing for the drive letter.
         # We normalize to lowercase for the preliminary string check.
         if abs_path.lower().startswith(abs_root.lower()):
@@ -79,7 +79,7 @@ def validate_path_within(path: Path, root: Path) -> bool:
             resolved_root = root.resolve()
             resolved_path = path.resolve()
             return resolved_path.is_relative_to(resolved_root)
-        
+
         return False
     except (ValueError, RuntimeError, OSError):
         return False

@@ -309,11 +309,14 @@ class TestServerRoutes:
             mock_mix.return_value = None
 
             # Attempt path traversal
-            response = client.post(f"/api/projects/{project_id}/mix?music=../../../etc/passwd")
+            response = client.post(
+                f"/api/projects/{project_id}/mix?music=../../../etc/passwd"
+            )
 
             assert response.status_code == 200
             # Wait a small moment to let background task execute the lambda (mocked)
             import time
+
             time.sleep(0.1)
 
             # Assert that the `music_file` argument passed to mix_project was sanitized
@@ -330,7 +333,9 @@ class TestServerRoutes:
         with patch("audioformation.server.routes.mix_project") as mock_mix:
             mock_mix.return_value = None
 
-            response = client.post(f"/api/projects/{project_id}/mix?music=FORCE_NO_MUSIC")
+            response = client.post(
+                f"/api/projects/{project_id}/mix?music=FORCE_NO_MUSIC"
+            )
 
             assert response.status_code == 200
             mock_mix.assert_called_once()

@@ -260,9 +260,6 @@ class XTTSEngine(TTSEngine):
         repetition_penalty = float(params.get("repetition_penalty", 5.0))
 
         try:
-            import torch
-            import torchaudio
-
             model = self._ensure_model()
 
             # XTTS outputs WAV natively — no conversion needed.
@@ -283,6 +280,7 @@ class XTTSEngine(TTSEngine):
             )
 
             import soundfile as sf
+
             sf.write(str(output_path), out["wav"], 24000)
 
             self._generation_count += 1

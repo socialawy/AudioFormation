@@ -88,6 +88,12 @@ addopts = [
     "--cov-fail-under=60",
 ]
 
+[tool.ruff.lint]
+ignore = ["E402"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["T201"]
+
 [dependency-groups]
 dev = [
     "ruff>=0.15.1",
