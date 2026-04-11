@@ -486,7 +486,9 @@ def validate(project_id: str) -> None:
         click.secho(
             "ERROR Validation FAILED — fix issues and retry", fg="red", bold=True
         )
-        update_node_status(project_id, "validate", "failed")
+        # Pass the first failure as the error for the pipeline status
+        first_fail = summary["details"]["failures"][0] if summary["details"]["failures"] else "Validation failed"
+        update_node_status(project_id, "validate", "failed", error=first_fail)
         sys.exit(1)
 
 

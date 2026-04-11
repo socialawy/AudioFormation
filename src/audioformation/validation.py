@@ -190,8 +190,9 @@ def _check_characters(
 
         if engine in ("edge", "elevenlabs", "openai-tts", "gemini-tts"):
             if not voice:
-                result.fail(
-                    f"Character '{char_id}': engine '{engine}' requires a voice ID."
+                result.warn(
+                    f"Character '{char_id}': engine '{engine}' voice is not specified. "
+                    "Will use engine default (may not match project language)."
                 )
             else:
                 result.pass_(
