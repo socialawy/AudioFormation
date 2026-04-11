@@ -36,17 +36,20 @@
 - **Ruff lint**: Removed dead `torch`/`torchaudio` imports in `xtts.py` (replaced by `soundfile`).
 - **Ruff config**: Added `[tool.ruff.lint]` ignoring E402 (structural imports after try/except — by design).
 
-### CodeQL Alert Triage (13 alerts dismissed)
+### CodeQL Alert Triage (38 alerts dismissed)
 
-All 13 open code scanning alerts reviewed and dismissed as false positives:
+All 38 open code scanning alerts reviewed and dismissed as false positives:
 
 | Category | Alerts | Reason |
 |----------|--------|--------|
+| `py/path-injection` (project.py) | #7-#17 | All paths constructed via `sanitize_project_id()` / `get_project_path()` which validate internally |
+| `py/path-injection` (routes.py) | #24, #26-#35, #38, #49, #60, #62, #106, #107 | All paths validated by `validate_path_within()` before filesystem ops; CodeQL cannot trace custom sanitizers |
 | `py/path-injection` (security.py) | #104, #105 | Flagged `resolve()` inside `validate_path_within` — the validator itself, not an unguarded sink |
-| `py/path-injection` (routes.py) | #49, #60, #62, #106, #107 | All paths validated by `validate_path_within()` before filesystem ops; CodeQL cannot trace custom sanitizers |
 | `py/path-injection` (sfx.py) | #58 | Same — `validate_path_within(output_path, PROJECTS_ROOT)` called before `mkdir`/`write` |
-| `py/clear-text-logging` (scripts/) | #98, #99, #100, #101 | Dev utility scripts printing public Edge TTS voice names — no sensitive data |
-| `actions/missing-workflow-permissions` | #64 | Already fixed in prior commit (`permissions: contents: read` added) |
+| `py/path-injection` (hardware.py) | #6 | Internal hardware detection path, no user input |
+| `py/stack-trace-exposure` (routes.py) | #5 | Error handler in debug mode |
+| `py/clear-text-logging` (scripts/) | #98-#101 | Dev utility scripts printing public Edge TTS voice names — no sensitive data |
+| `actions/missing-workflow-permissions` | #64 | Already fixed (`permissions: contents: read` added) |
 
 ### GitHub Security Status (Final)
 
