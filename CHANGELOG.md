@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added 2026-04-11 (Session 11 — CI Fix & PR Cleanup)
+
+- **CI Pipeline Stability**: Refreshed `uv.lock` and `requirements.txt` to resolve `llvmlite` build failures on Python 3.12.
+- **Workflow Security**: Added `permissions: contents: read` to `ci.yml` to satisfy CodeQL security requirements (prevents workflow bypass alerts).
+- **Validation Flexibility**: Relaxed voice ID requirements in `validation.py` to allow language-neutral defaults (empty strings now trigger a warning rather than a hard failure).
+- **CLI Error Context**: Enhanced `audioformation validate` to pass detailed failure reasons to the pipeline status, eliminating "Unknown error" log entries.
+- **PR Governance**: Closed 8 redundant or breaking PRs (7 Sentinel + 1 Dependabot) to consolidate security fixes and protect legacy dependencies.
+- **Infrastructure Hardening**: Integrated `validate_path_within` across `security.py`, `routes.py`, `sfx.py`, and `project.py` with multi-step validation (abspath + resolve).
+- **XTTS Synthesis Refactor**: Replaced `torchaudio` dependency with `soundfile` in `xtts.py` for better cross-platform compatibility and reduced dependency footprint.
+
 ### Fixed 2026-03-31 ("Sentinel" security PRs)
 
 - **Path Traversal Vulnerability**: Replaced string-based `os.path.abspath` with symlink-aware `Path.resolve().is_relative_to()` validation in `security.py`.
