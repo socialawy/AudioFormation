@@ -59,7 +59,7 @@ dev = [
     "pytest-cov>=4.0,<8",
     "httpx[test]",
     "pre-commit>=3.6,<5",
-    "ruff>=0.1.9",
+    "ruff>=0.15.1",
     "black>=23.12",
     "mypy>=1.0,<2",
 ]
