@@ -81,7 +81,7 @@ def validate_path_within(path: Path, root: Path) -> bool:
             return resolved_path.is_relative_to(resolved_root)
 
         return False
-    except (ValueError, RuntimeError, OSError):
+    except (ValueError, RuntimeError, OSError, TypeError, AttributeError):
         return False
 
 
