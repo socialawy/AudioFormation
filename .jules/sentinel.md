@@ -2,3 +2,8 @@
 **Vulnerability:** The `/projects/{project_id}/mix` API endpoint in `src/audioformation/server/routes.py` accepted a `music` parameter (meant to specify a filename within the `05_MUSIC/generated` directory) but directly passed it to `mix_project` without sanitization. This allowed directory traversal payloads like `../../../etc/passwd` to be used for background music resolution.
 **Learning:** Even internal API inputs that map strictly to filenames inside an expected directory must be sanitized. A simple check for file existence (`if not bg_music_path.exists():`) is insufficient as it confirms existence but allows looking outside the bounded directory.
 **Prevention:** Always use established sanitization helpers (like `sanitize_filename`) or bound checks (like `validate_path_within`) for any user-supplied string that forms part of a filesystem path. Ensure bypass parameters like `FORCE_NO_MUSIC` are handled before and mutually exclusively from sanitization.
+
+## 2025-02-21 - Exception Detail Leakage in Upload Endpoint
+**Vulnerability:** The /projects/{project_id}/upload and similar ingest endpoints in src/audioformation/server/routes.py included the raw exception object (e) directly inside the HTTPException detail message string. This could leak internal paths, underlying library exceptions, or environmental details to untrusted clients if the upload process fails.
+**Learning:** When raising HTTP errors that are exposed to clients, avoid formatting internal exceptions into the response detail. Internal details must be logged privately on the server side.
+**Prevention:** Use a private logging mechanism (e.g. logger.error) and return generic error details to the user (e.g. raise HTTPException(status_code=500, detail="Upload failed")).
