@@ -185,7 +185,10 @@ async def ingest_files(
                 shutil.copyfileobj(file.file, buffer)
     except Exception as e:
         shutil.rmtree(tmp_dir, ignore_errors=True)
-        raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
+        logger.error(f"Upload failed for project {project_id}: {e}")
+        raise HTTPException(
+            status_code=500, detail="Upload failed due to an internal error"
+        )
 
     background_tasks.add_task(
         _run_with_status,
