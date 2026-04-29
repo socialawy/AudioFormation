@@ -109,9 +109,8 @@ async def create_new_project(request: ProjectCreateRequest):
     """Create a new project."""
     project_id = request.id
     if project_exists(project_id):
-        raise HTTPException(
-            status_code=409, detail=f"Project '{project_id}' already exists."
-        )
+        logger.warning(f"Project '{project_id}' already exists.")
+        raise HTTPException(status_code=409, detail="Project already exists.")
 
     try:
         path = create_project(project_id)
@@ -185,7 +184,8 @@ async def ingest_files(
                 shutil.copyfileobj(file.file, buffer)
     except Exception as e:
         shutil.rmtree(tmp_dir, ignore_errors=True)
-        raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
+        logger.error(f"Upload failed: {e}")
+        raise HTTPException(status_code=500, detail="Upload failed")
 
     background_tasks.add_task(
         _run_with_status,
@@ -244,9 +244,8 @@ async def preview_voice(project_id: str, request: PreviewRequest):
     try:
         engine = registry.get(request.engine)
     except KeyError:
-        raise HTTPException(
-            status_code=400, detail=f"Engine '{request.engine}' not found"
-        )
+        logger.warning(f"Engine '{request.engine}' not found")
+        raise HTTPException(status_code=400, detail="Engine not found")
 
     # Resolve reference audio if present
     ref_path = None
@@ -739,7 +738,8 @@ async def list_engine_voices(name: str, lang: Optional[str] = None):
         voices = await engine.list_voices(language=lang)
         return voices
     except KeyError:
-        raise HTTPException(status_code=404, detail=f"Engine '{name}' not found")
+        logger.warning(f"Engine '{name}' not found")
+        raise HTTPException(status_code=404, detail="Engine not found")
     except Exception as e:
         logger.error(f"Failed to list voices for engine {name}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
