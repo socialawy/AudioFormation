@@ -184,8 +184,9 @@ async def ingest_files(
             with open(dest, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
     except Exception as e:
+        logger.error(f"Upload failed: {e}")
         shutil.rmtree(tmp_dir, ignore_errors=True)
-        raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
+        raise HTTPException(status_code=500, detail="Upload failed")
 
     background_tasks.add_task(
         _run_with_status,
@@ -727,7 +728,7 @@ async def list_engines():
             )
         except Exception as e:
             logger.warning(f"Failed to load engine {name}: {e}")
-            engines.append({"id": name, "error": str(e)})
+            engines.append({"id": name, "error": "Failed to load engine"})
     return engines
 
 
