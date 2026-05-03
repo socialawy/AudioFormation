@@ -24,10 +24,16 @@ class SafeStaticFiles(StaticFiles):
 
     async def get_response(self, path: str, scope) -> Response:
         # Normalize path for check
-        p = Path(path).lower()
-        if "00_config" in p.parts or p.name.startswith(".env") or ".git" in p.parts:
+        try:
+            p = Path(path.lower())
+            if "00_config" in p.parts or p.name.startswith(".env") or ".git" in p.parts:
+                raise HTTPException(
+                    status_code=403, detail="Access denied to sensitive resource"
+                )
+        except (TypeError, ValueError, AttributeError):
+            # Fail closed: deny access if path parsing fails
             raise HTTPException(
-                status_code=403, detail="Access denied to sensitive resource"
+                status_code=400, detail="Invalid path"
             )
 
         return await super().get_response(path, scope)
