@@ -1,4 +1,9 @@
-## 2025-02-21 - Path Traversal in Mix Endpoint API Parameter
-**Vulnerability:** The `/projects/{project_id}/mix` API endpoint in `src/audioformation/server/routes.py` accepted a `music` parameter (meant to specify a filename within the `05_MUSIC/generated` directory) but directly passed it to `mix_project` without sanitization. This allowed directory traversal payloads like `../../../etc/passwd` to be used for background music resolution.
-**Learning:** Even internal API inputs that map strictly to filenames inside an expected directory must be sanitized. A simple check for file existence (`if not bg_music_path.exists():`) is insufficient as it confirms existence but allows looking outside the bounded directory.
-**Prevention:** Always use established sanitization helpers (like `sanitize_filename`) or bound checks (like `validate_path_within`) for any user-supplied string that forms part of a filesystem path. Ensure bypass parameters like `FORCE_NO_MUSIC` are handled before and mutually exclusively from sanitization.
+## 2024-05-28 - Fast API Security Handling Enhancement
+**Vulnerability:** Fast API routes might expose sensitive information if exception handling doesn't use `raise HTTPException` with minimal explicit messages.
+**Learning:** Returning error messages should abstract internal errors while retaining useful logs locally via `logger.error()`.
+**Prevention:** Always use `HTTPException` appropriately configured to mask generic or traceback information from users.
+
+## 2024-05-28 - SafeStaticFiles Path Normalization Crash
+**Vulnerability:** `SafeStaticFiles` implemented in FastAPI attempted to call `.lower()` directly on a `Path` object which raises an `AttributeError`. A malicious user might craft requests specifically to trigger unhandled internal server crashes, or bypass security rules by supplying NoneType or unexpected objects that crash the normalizer before the actual path block checks occur (failing open if error handlers are improperly set).
+**Learning:** When writing path normalization for blocking secure files, ensure proper type coercion. A crash in security checks creates blind spots and potential DoS.
+**Prevention:** Explicitly cast external inputs to `str` before calling string normalization methods, ensuring robust error-free evaluation: `Path(str(path).lower())`.
