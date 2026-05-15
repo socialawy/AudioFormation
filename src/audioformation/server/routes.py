@@ -208,15 +208,25 @@ async def upload_file(project_id: str, category: str, file: UploadFile = File(..
         target_dir = project_path / "05_MUSIC" / "generated"
     else:
         raise HTTPException(status_code=400, detail="Invalid category")
-    target_dir.mkdir(parents=True, exist_ok=True)
 
-    # Secure filename handling
-    safe_name = os.path.basename(file.filename)
-    # Additional strict regex guard
-    if not re.fullmatch(r"^[A-Za-z0-9_.-]+$", safe_name):
-        raise HTTPException(status_code=400, detail="Invalid filename characters")
+    try:
+        target_dir.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        logger.error(f"Failed to create upload directory: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Upload failed")
 
-    dest = target_dir / safe_name
+    try:
+        # Secure filename handling
+        safe_name = os.path.basename(file.filename)
+        # Additional strict regex guard
+        if not re.fullmatch(r"^[A-Za-z0-9_.-]+$", safe_name):
+            raise HTTPException(status_code=400, detail="Invalid filename characters")
+
+        dest = target_dir / safe_name
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid path")
 
     # Check bounds using fixed validator
     if not validate_path_within(dest, target_dir):
@@ -229,7 +239,8 @@ async def upload_file(project_id: str, category: str, file: UploadFile = File(..
             "path": str(dest.relative_to(project_path)).replace("\\", "/"),
             "filename": safe_name,
         }
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to create upload directory: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Upload failed")
 
 
@@ -253,21 +264,34 @@ async def preview_voice(project_id: str, request: PreviewRequest):
     if request.reference_audio:
         # CODEQL FIX: Validate reference_audio is strictly within project
         # We do NOT call .resolve() here as it's a sink for unvalidated user input.
-        possible_ref = project_path / request.reference_audio
+        try:
+            possible_ref = project_path / request.reference_audio
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid reference audio path")
+
         if not validate_path_within(possible_ref, project_path):
             raise HTTPException(status_code=400, detail="Invalid reference audio path")
 
         # Now it is safe to resolve if we need the absolute path
-        ref_path = possible_ref.resolve()
+        try:
+            ref_path = possible_ref.resolve()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid reference audio path")
+
         if not ref_path.exists():
             raise HTTPException(status_code=400, detail="Reference audio not found")
 
     # Create temp file for output
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-        output_path = Path(tmp.name)
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            output_path = Path(tmp.name)
 
-    # Validate temp path is within system temp directory
-    temp_root = Path(tempfile.gettempdir())
+        # Validate temp path is within system temp directory
+        temp_root = Path(tempfile.gettempdir())
+    except Exception as e:
+        logger.error(f"Failed to create temp path: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Invalid temp path")
+
     if not validate_path_within(output_path, temp_root):
         raise HTTPException(status_code=500, detail="Invalid temp path")
 

@@ -67,6 +67,9 @@ def validate_path_within(path: Path, root: Path) -> bool:
     Ensure `path` is within `root`, resolving all symlinks.
     This prevents path traversal and symlink bypass attacks.
     """
+    if path is None or root is None:
+        return False
+
     try:
         # Resolve to absolute paths first
         abs_path = os.path.abspath(str(path))
@@ -81,7 +84,7 @@ def validate_path_within(path: Path, root: Path) -> bool:
             return resolved_path.is_relative_to(resolved_root)
 
         return False
-    except (ValueError, RuntimeError, OSError):
+    except (TypeError, ValueError, RuntimeError, OSError, AttributeError):
         return False
 
 
