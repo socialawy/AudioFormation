@@ -68,20 +68,13 @@ def validate_path_within(path: Path, root: Path) -> bool:
     This prevents path traversal and symlink bypass attacks.
     """
     try:
-        # Resolve to absolute paths first
-        abs_path = os.path.abspath(str(path))
-        abs_root = os.path.abspath(str(root))
+        if path is None or root is None:
+            return False
 
-        # On Windows, abspath can have different casing for the drive letter.
-        # We normalize to lowercase for the preliminary string check.
-        if abs_path.lower().startswith(abs_root.lower()):
-            # String check passed, now do the rigorous resolution check
-            resolved_root = root.resolve()
-            resolved_path = path.resolve()
-            return resolved_path.is_relative_to(resolved_root)
-
-        return False
-    except (ValueError, RuntimeError, OSError):
+        resolved_path = path.resolve()
+        resolved_root = root.resolve()
+        return resolved_path.is_relative_to(resolved_root)
+    except (TypeError, ValueError, RuntimeError, AttributeError, OSError):
         return False
 
 
