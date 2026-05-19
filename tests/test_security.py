@@ -127,6 +127,12 @@ class TestValidatePathWithin:
         # because it resolves outside the root.
         assert validate_path_within(traversal_path, sandbox) is False
 
+    def test_validate_path_within_none(self, tmp_path: Path) -> None:
+        assert validate_path_within(None, tmp_path) is False
+
+    def test_validate_path_within_none_root(self, tmp_path: Path) -> None:
+        assert validate_path_within(tmp_path, None) is False
+
 
 class TestRedactApiKeys:
     """Tests for API key redaction in logging."""
