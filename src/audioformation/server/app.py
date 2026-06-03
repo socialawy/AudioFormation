@@ -23,9 +23,16 @@ class SafeStaticFiles(StaticFiles):
     """
 
     async def get_response(self, path: str, scope) -> Response:
+        if path is None:
+            raise HTTPException(status_code=400, detail="Path cannot be null")
+
         # Normalize path for check
         p = Path(str(path).lower())
-        if "00_config" in p.parts or p.name.startswith(".env") or ".git" in p.parts:
+
+        # Block access to 00_config and any hidden files/directories
+        if "00_config" in p.parts or any(
+            part.startswith(".") and part not in (".", "..") for part in p.parts
+        ):
             raise HTTPException(
                 status_code=403, detail="Access denied to sensitive resource"
             )
