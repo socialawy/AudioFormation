@@ -6,3 +6,8 @@
 **Vulnerability:** The custom `SafeStaticFiles` middleware in `src/audioformation/server/app.py` intended to block access to sensitive directories (like `00_CONFIG` and `.git`). However, it used `p = Path(path).lower()`, which raises an `AttributeError` because `pathlib.Path` objects lack a `.lower()` method. This effectively broke static file serving entirely (causing 500 errors) and represented a malformed security check. If such errors were ever 'swallowed' without raising an HTTP exception, it could result in 'failing open' and allowing access to sensitive files.
 **Learning:** Security checks that rely on path manipulation or normalization must be carefully tested for runtime exceptions. An unhandled exception in a security gate can either block legitimate traffic (Denial of Service) or, if caught improperly elsewhere, fail open. Always normalize the string representation of paths before converting them to `Path` objects.
 **Prevention:** Thoroughly test security middleware endpoints for both valid and invalid access attempts. Ensure that path string normalizations like `.lower()` are applied directly to the string before instantiating `Path(str(path).lower())`.
+
+## 2024-05-24 - [Information Disclosure in Static Files]
+**Vulnerability:** `SafeStaticFiles` only blocked specific hidden files like `.env` or `.git`, allowing access to other hidden files or files inside hidden directories (e.g. `.aws/credentials`).
+**Learning:** Only checking `p.name` or specific parts for hidden files is insufficient and fails open.
+**Prevention:** Always evaluate all path components using `any(part.startswith('.') and part not in ('.', '..') for part in p.parts)` to securely block all hidden paths and fail closed.
