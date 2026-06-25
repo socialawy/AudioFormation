@@ -13,7 +13,10 @@ import soundfile as sf
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
+import tempfile
 
+from audioformation.config import PROJECTS_ROOT
+from audioformation.utils.security import validate_path_within
 from audioformation.audio.synthesis import (
     oscillator,
     cents_to_ratio,
@@ -251,23 +254,19 @@ def generate_pad(
         # Validate output path is safe (prevent directory traversal)
         # For pad generation, we allow any path as long as it doesn't escape intended directories
         # This is a defensive measure - the calling code should ensure proper sandboxing
+        is_safe = False
         try:
-            resolved_path = output_path.resolve()
-            # Basic safety check - don't write to system directories
-            if any(
-                system_dir in str(resolved_path)
-                for system_dir in [
-                    "/bin",
-                    "/sbin",
-                    "/usr",
-                    "/etc",
-                    "/Windows",
-                    "/Program Files",
-                ]
-            ):
-                raise ValueError(f"Unsafe output path: {output_path}")
-        except (OSError, ValueError):
-            raise ValueError(f"Invalid output path: {output_path}")
+            if validate_path_within(output_path, PROJECTS_ROOT):
+                is_safe = True
+            elif validate_path_within(output_path, Path(tempfile.gettempdir())):
+                is_safe = True
+        except Exception:
+            is_safe = False
+
+        if not is_safe:
+            raise ValueError(
+                f"Security Alert: Output path '{output_path}' is outside allowed directories."
+            )
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         sf.write(str(output_path), mix, sr)
