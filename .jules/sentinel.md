@@ -6,3 +6,8 @@
 **Vulnerability:** The custom `SafeStaticFiles` middleware in `src/audioformation/server/app.py` intended to block access to sensitive directories (like `00_CONFIG` and `.git`). However, it used `p = Path(path).lower()`, which raises an `AttributeError` because `pathlib.Path` objects lack a `.lower()` method. This effectively broke static file serving entirely (causing 500 errors) and represented a malformed security check. If such errors were ever 'swallowed' without raising an HTTP exception, it could result in 'failing open' and allowing access to sensitive files.
 **Learning:** Security checks that rely on path manipulation or normalization must be carefully tested for runtime exceptions. An unhandled exception in a security gate can either block legitimate traffic (Denial of Service) or, if caught improperly elsewhere, fail open. Always normalize the string representation of paths before converting them to `Path` objects.
 **Prevention:** Thoroughly test security middleware endpoints for both valid and invalid access attempts. Ensure that path string normalizations like `.lower()` are applied directly to the string before instantiating `Path(str(path).lower())`.
+
+## 2024-07-05 - Enhance path validation in static files
+**Vulnerability:** StaticFiles subclass used string blocklists for specific hidden files (.env, .git) which left other hidden files vulnerable, and lacked a path None check.
+**Learning:** Using an explicit `any(part.startswith('.') ...)` check is more secure and covers all hidden items instead of just `.env` or `.git`. Fail-closed mechanisms require checking against None before coercion to string.
+**Prevention:** Use property-based evaluations for path blocklists instead of string hardcoding.
