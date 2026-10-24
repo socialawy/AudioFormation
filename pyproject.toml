@@ -30,7 +30,7 @@ dependencies = [
 
 [project.optional-dependencies]
 xtts = [
-    "coqui-tts>=0.27,<0.28",  # Pin: community fork, Idiap
+    "coqui-tts>=0.27,<0.29",  # Pin: community fork, Idiap
 ]
 vad = [
     "silero-vad>=6.0,<7",     # Pin: community-maintained
